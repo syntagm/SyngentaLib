@@ -1,0 +1,1368 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>AMISTAR___Afr___2008_01_21 Page4</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #nav button {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #nav select {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var type;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        d("container").style.width = width + "px";
+        d("container").style.height = height + "px";
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page === 1) return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+			}
+				else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<div id="nav" style="background-color:#919191; padding-top: 10px; text-align: center; position: fixed; width: 100%; height: 40px; z-index:999;">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:30px;">&gt;&gt; Next</button>
+
+    <button onclick="zoomOut()" id="zoomOut">Zoom Out</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">Zoom In</button>
+</div>
+<div style="position:relative; width: 100%; height: 50px;"></div>
+
+<div id="container" style="margin: 0 auto 10px;">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<!--[if lt IE 9]><style type="text/css">.t div div{zoom: 25%;}</style><![endif]-->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+}
+.t div div {
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load4();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_4{left:1573px;top:183px;}
+#t2_4{left:1795px;top:171px;}
+#t3_4{left:1847px;top:183px;}
+#t4_4{left:267px;top:276px;}
+#t5_4{left:1390px;top:276px;}
+#t6_4{left:267px;top:334px;}
+#t7_4{left:278px;top:334px;}
+#t8_4{left:626px;top:334px;}
+#t9_4{left:267px;top:1048px;}
+#ta_4{left:405px;top:1048px;}
+#tb_4{left:267px;top:1164px;}
+#tc_4{left:336px;top:1164px;}
+#td_4{left:517px;top:1164px;}
+#te_4{left:757px;top:1164px;}
+#tf_4{left:336px;top:1222px;}
+#tg_4{left:267px;top:1297px;}
+#th_4{left:336px;top:1297px;}
+#ti_4{left:1150px;top:1297px;}
+#tj_4{left:1397px;top:1297px;}
+#tk_4{left:336px;top:1355px;}
+#tl_4{left:267px;top:1431px;}
+#tm_4{left:336px;top:1431px;}
+#tn_4{left:548px;top:1431px;}
+#to_4{left:793px;top:1431px;}
+#tp_4{left:336px;top:1489px;}
+#tq_4{left:267px;top:1564px;}
+#tr_4{left:336px;top:1564px;}
+#ts_4{left:575px;top:1564px;}
+#tt_4{left:811px;top:1564px;}
+#tu_4{left:336px;top:1622px;}
+#tv_4{left:267px;top:1697px;}
+#tw_4{left:336px;top:1697px;}
+#tx_4{left:523px;top:1697px;}
+#ty_4{left:755px;top:1697px;}
+#tz_4{left:336px;top:1756px;}
+#t10_4{left:267px;top:2801px;}
+#t11_4{left:267px;top:2917px;}
+#t12_4{left:336px;top:2917px;}
+#t13_4{left:516px;top:2917px;}
+#t14_4{left:753px;top:2917px;}
+#t15_4{left:267px;top:2983px;}
+#t16_4{left:336px;top:2983px;}
+#t17_4{left:1150px;top:2983px;}
+#t18_4{left:1397px;top:2983px;}
+#t19_4{left:336px;top:3041px;}
+#t1a_4{left:267px;top:3108px;}
+#t1b_4{left:336px;top:3108px;}
+#t1c_4{left:548px;top:3108px;}
+#t1d_4{left:793px;top:3108px;}
+#t1e_4{left:336px;top:3166px;}
+#t1f_4{left:267px;top:3233px;}
+#t1g_4{left:336px;top:3233px;}
+#t1h_4{left:575px;top:3233px;}
+#t1i_4{left:811px;top:3233px;}
+#t1j_4{left:336px;top:3291px;}
+#t1k_4{left:267px;top:4684px;}
+#t1l_4{left:405px;top:4684px;}
+#t1m_4{left:267px;top:4800px;}
+#t1n_4{left:336px;top:4800px;}
+#t1o_4{left:536px;top:4800px;}
+#t1p_4{left:795px;top:4800px;}
+#t1q_4{left:336px;top:4858px;}
+#t1r_4{left:267px;top:4916px;}
+#t1s_4{left:336px;top:4916px;}
+#t1t_4{left:697px;top:4916px;}
+#t1u_4{left:919px;top:4916px;}
+#t1v_4{left:297px;top:1904px;}
+#t1w_4{left:291px;top:2021px;}
+#t1x_4{left:291px;top:2079px;}
+#t1y_4{left:291px;top:2195px;}
+#t1z_4{left:291px;top:2253px;}
+#t20_4{left:291px;top:2311px;}
+#t21_4{left:303px;top:2311px;}
+#t22_4{left:291px;top:2369px;}
+#t23_4{left:291px;top:2427px;}
+#t24_4{left:615px;top:2427px;}
+#t25_4{left:786px;top:1904px;}
+#t26_4{left:757px;top:2021px;}
+#t27_4{left:797px;top:2079px;}
+#t28_4{left:838px;top:2079px;}
+#t29_4{left:859px;top:2079px;}
+#t2a_4{left:1171px;top:1904px;}
+#t2b_4{left:1020px;top:2021px;}
+#t2c_4{left:1020px;top:2079px;letter-spacing:1px;}
+#t2d_4{left:1298px;top:2079px;letter-spacing:1px;}
+#t2e_4{left:1020px;top:2137px;}
+#t2f_4{left:1020px;top:2195px;}
+#t2g_4{left:1020px;top:2253px;}
+#t2h_4{left:1020px;top:2311px;}
+#t2i_4{left:1020px;top:2369px;}
+#t2j_4{left:1020px;top:2427px;}
+#t2k_4{left:1020px;top:2485px;}
+#t2l_4{left:1259px;top:2485px;}
+#t2m_4{left:1020px;top:2543px;}
+#t2n_4{left:1020px;top:2601px;}
+#t2o_4{left:1020px;top:2659px;}
+#t2p_4{left:297px;top:3427px;}
+#t2q_4{left:291px;top:3543px;}
+#t2r_4{left:291px;top:3659px;}
+#t2s_4{left:291px;top:3717px;}
+#t2t_4{left:303px;top:3717px;}
+#t2u_4{left:291px;top:3775px;}
+#t2v_4{left:639px;top:3775px;}
+#t2w_4{left:787px;top:3427px;}
+#t2x_4{left:749px;top:3543px;}
+#t2y_4{left:887px;top:3543px;}
+#t2z_4{left:908px;top:3543px;}
+#t30_4{left:1171px;top:3427px;}
+#t31_4{left:1021px;top:3543px;}
+#t32_4{left:1021px;top:3601px;}
+#t33_4{left:1021px;top:3659px;}
+#t34_4{left:1021px;top:3717px;}
+#t35_4{left:1021px;top:3775px;}
+#t36_4{left:1021px;top:3833px;}
+#t37_4{left:1021px;top:3891px;}
+#t38_4{left:1021px;top:3950px;}
+#t39_4{left:1021px;top:4008px;}
+#t3a_4{left:1021px;top:4066px;}
+#t3b_4{left:1021px;top:4182px;}
+#t3c_4{left:1175px;top:4182px;}
+#t3d_4{left:1512px;top:4182px;}
+#t3e_4{left:1021px;top:4240px;}
+#t3f_4{left:1102px;top:4240px;}
+#t3g_4{left:1348px;top:4240px;}
+#t3h_4{left:1578px;top:4240px;}
+#t3i_4{left:1021px;top:4298px;}
+#t3j_4{left:1353px;top:4298px;}
+#t3k_4{left:1021px;top:4356px;}
+#t3l_4{left:1021px;top:4472px;letter-spacing:1px;}
+#t3m_4{left:1247px;top:4472px;}
+#t3n_4{left:1368px;top:4472px;letter-spacing:1px;}
+#t3o_4{left:1021px;top:4530px;}
+#t3p_4{left:1901px;top:279px;}
+#t3q_4{left:1901px;top:337px;}
+#t3r_4{left:1832px;top:395px;}
+#t3s_4{left:1901px;top:395px;}
+#t3t_4{left:2113px;top:395px;}
+#t3u_4{left:2357px;top:395px;}
+#t3v_4{left:1901px;top:453px;}
+#t3w_4{left:1832px;top:511px;}
+#t3x_4{left:1901px;top:511px;}
+#t3y_4{left:2139px;top:511px;}
+#t3z_4{left:2375px;top:511px;}
+#t40_4{left:1901px;top:569px;}
+#t41_4{left:1832px;top:1730px;}
+#t42_4{left:1970px;top:1730px;}
+#t43_4{left:1832px;top:1846px;}
+#t44_4{left:1901px;top:1846px;}
+#t45_4{left:2078px;top:1846px;}
+#t46_4{left:2313px;top:1846px;}
+#t47_4{left:1901px;top:1904px;}
+#t48_4{left:1832px;top:1962px;}
+#t49_4{left:1901px;top:1962px;}
+#t4a_4{left:2730px;top:1962px;}
+#t4b_4{left:2970px;top:1962px;}
+#t4c_4{left:1901px;top:2020px;}
+#t4d_4{left:1832px;top:2078px;}
+#t4e_4{left:1901px;top:2078px;}
+#t4f_4{left:2079px;top:2078px;}
+#t4g_4{left:2327px;top:2078px;}
+#t4h_4{left:1901px;top:2137px;}
+#t4i_4{left:1832px;top:2195px;}
+#t4j_4{left:1901px;top:2195px;}
+#t4k_4{left:2139px;top:2195px;}
+#t4l_4{left:2375px;top:2195px;}
+#t4m_4{left:1901px;top:2253px;}
+#t4n_4{left:1866px;top:4407px;}
+#t4o_4{left:2065px;top:4414px;}
+#t4p_4{left:2082px;top:4407px;}
+#t4q_4{left:2306px;top:4414px;}
+#t4r_4{left:2324px;top:4407px;}
+#t4s_4{left:2523px;top:4414px;}
+#t4t_4{left:2540px;top:4407px;}
+#t4u_4{left:2776px;top:4414px;}
+#t4v_4{left:2826px;top:4407px;}
+#t4w_4{left:1866px;top:4465px;}
+#t4x_4{left:1944px;top:4472px;}
+#t4y_4{left:1961px;top:4465px;}
+#t4z_4{left:2171px;top:4472px;}
+#t50_4{left:2188px;top:4465px;}
+#t51_4{left:2226px;top:4465px;}
+#t52_4{left:2377px;top:4472px;}
+#t53_4{left:2421px;top:4465px;}
+#t54_4{left:2493px;top:4465px;}
+#t55_4{left:2802px;top:4472px;}
+#t56_4{left:2846px;top:4465px;}
+#t57_4{left:1866px;top:4523px;}
+#t58_4{left:1866px;top:4755px;}
+#t59_4{left:2353px;top:4755px;}
+#t5a_4{left:1866px;top:4813px;}
+#t5b_4{left:2805px;top:4929px;}
+#t5c_4{left:1855px;top:717px;}
+#t5d_4{left:1850px;top:833px;}
+#t5e_4{left:1850px;top:949px;}
+#t5f_4{left:1850px;top:1007px;}
+#t5g_4{left:1850px;top:1065px;}
+#t5h_4{left:1862px;top:1065px;}
+#t5i_4{left:2223px;top:1065px;}
+#t5j_4{left:2344px;top:717px;}
+#t5k_4{left:2346px;top:833px;}
+#t5l_4{left:2456px;top:833px;}
+#t5m_4{left:2477px;top:833px;}
+#t5n_4{left:2361px;top:891px;}
+#t5o_4{left:2457px;top:891px;}
+#t5p_4{left:2361px;top:949px;}
+#t5q_4{left:2727px;top:717px;}
+#t5r_4{left:2577px;top:833px;}
+#t5s_4{left:2577px;top:891px;letter-spacing:1px;}
+#t5t_4{left:2938px;top:891px;}
+#t5u_4{left:2577px;top:949px;}
+#t5v_4{left:2577px;top:1007px;}
+#t5w_4{left:2577px;top:1065px;}
+#t5x_4{left:2577px;top:1123px;}
+#t5y_4{left:2577px;top:1181px;}
+#t5z_4{left:2577px;top:1239px;}
+#t60_4{left:1848px;top:1338px;}
+#t61_4{left:1985px;top:1338px;}
+#t62_4{left:1848px;top:1396px;}
+#t63_4{left:1848px;top:1454px;}
+#t64_4{left:1848px;top:1512px;}
+#t65_4{left:1848px;top:1570px;}
+#t66_4{left:1856px;top:2405px;}
+#t67_4{left:1850px;top:2521px;}
+#t68_4{left:1850px;top:2637px;}
+#t69_4{left:1850px;top:2695px;}
+#t6a_4{left:1850px;top:2753px;}
+#t6b_4{left:1850px;top:2811px;}
+#t6c_4{left:1850px;top:2869px;}
+#t6d_4{left:1850px;top:2928px;}
+#t6e_4{left:2345px;top:2405px;}
+#t6f_4{left:2334px;top:2521px;}
+#t6g_4{left:2471px;top:2521px;}
+#t6h_4{left:2493px;top:2521px;}
+#t6i_4{left:2396px;top:2579px;}
+#t6j_4{left:2730px;top:2405px;}
+#t6k_4{left:2579px;top:2521px;}
+#t6l_4{left:2579px;top:2579px;letter-spacing:1px;}
+#t6m_4{left:2941px;top:2579px;letter-spacing:1px;}
+#t6n_4{left:2579px;top:2637px;}
+#t6o_4{left:2579px;top:2695px;}
+#t6p_4{left:2579px;top:2753px;}
+#t6q_4{left:2579px;top:2811px;}
+#t6r_4{left:2579px;top:2869px;}
+#t6s_4{left:2579px;top:2928px;}
+#t6t_4{left:2579px;top:2986px;}
+#t6u_4{left:2579px;top:3044px;}
+#t6v_4{left:2579px;top:3102px;}
+#t6w_4{left:2579px;top:3160px;}
+#t6x_4{left:3145px;top:3160px;}
+#t6y_4{left:2579px;top:3218px;}
+#t6z_4{left:1848px;top:3345px;}
+#t70_4{left:1995px;top:3345px;}
+#t71_4{left:1848px;top:3403px;}
+#t72_4{left:2106px;top:3403px;}
+#t73_4{left:2358px;top:3403px;}
+#t74_4{left:1848px;top:3461px;}
+#t75_4{left:1848px;top:3519px;}
+#t76_4{left:296px;top:482px;}
+#t77_4{left:296px;top:598px;}
+#t78_4{left:296px;top:656px;}
+#t79_4{left:296px;top:714px;}
+#t7a_4{left:308px;top:714px;}
+#t7b_4{left:296px;top:772px;}
+#t7c_4{left:490px;top:772px;}
+#t7d_4{left:1104px;top:482px;}
+#t7e_4{left:747px;top:598px;}
+#t7f_4{left:747px;top:656px;}
+#t7g_4{left:1036px;top:656px;}
+#t7h_4{left:1088px;top:656px;}
+#t7i_4{left:1311px;top:656px;}
+#t7j_4{left:1440px;top:656px;}
+#t7k_4{left:1496px;top:656px;}
+#t7l_4{left:747px;top:714px;}
+#t7m_4{left:1410px;top:714px;}
+#t7n_4{left:747px;top:772px;}
+#t7o_4{left:940px;top:772px;}
+#t7p_4{left:961px;top:772px;}
+#t7q_4{left:1086px;top:772px;}
+#t7r_4{left:1133px;top:772px;}
+#t7s_4{left:747px;top:830px;}
+#t7t_4{left:747px;top:888px;}
+
+.s7_4{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Bd4;
+	color: rgb(0,0,0);
+}
+
+.s1_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Bd4;
+	color: rgb(0,0,0);
+}
+
+.s3_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Lt4;
+	color: rgb(0,0,0);
+}
+
+.s5_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Lt_C0_1_34314;
+	color: rgb(0,0,0);
+}
+
+.s8_4{
+	FONT-SIZE: 21px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Bd_T1_0_7014;
+	color: rgb(0,0,0);
+}
+
+.s9_4{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Lt4;
+	color: rgb(0,0,0);
+}
+
+.s6_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: Mt-ExtraPlain4;
+	color: rgb(0,0,0);
+}
+
+.s4_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-It4;
+	color: rgb(0,0,0);
+}
+
+.s2_4{
+	FONT-SIZE: 36px;
+	FONT-FAMILY: VZYHWR-HelveticaNeueLTStd-Bd_T1_0_7014;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: VZYHWR-HelveticaNeueLTStd-Bd4;
+	src: url("4/fonts/VZYHWR-HelveticaNeueLTStd-Bd.otf");
+}
+
+@font-face {
+	font-family: VZYHWR-HelveticaNeueLTStd-Lt_C0_1_34314;
+	src: url("4/fonts/VZYHWR-HelveticaNeueLTStd-Lt_C0_1_3431.otf");
+}
+
+@font-face {
+	font-family: VZYHWR-HelveticaNeueLTStd-Bd_T1_0_7014;
+	src: url("4/fonts/VZYHWR-HelveticaNeueLTStd-Bd_T1_0_701.otf");
+}
+
+@font-face {
+	font-family: VZYHWR-HelveticaNeueLTStd-Lt4;
+	src: url("4/fonts/VZYHWR-HelveticaNeueLTStd-Lt.otf");
+}
+
+@font-face {
+	font-family: Mt-ExtraPlain4;
+	src: url("4/fonts/Mt-ExtraPlain.otf");
+}
+
+@font-face {
+	font-family: VZYHWR-HelveticaNeueLTStd-It4;
+	src: url("4/fonts/VZYHWR-HelveticaNeueLTStd-It.otf");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div class="t">
+<div class="s1_4">
+<div id="t1_4">AMISTAR</div>
+</div>
+<div class="s2_4">
+<div id="t2_4">®</div>
+</div>
+<div class="s3_4">
+<div id="t3_4">/ 4</div>
+<div id="t4_4">Die voorgestelde spuitprogram op tamaties sal ook </div>
+</div>
+<div class="s1_4">
+<div id="t5_4">vroeë	roes	</div>
+</div>
+<div class="s3_4">
+<div id="t6_4">(</div>
+</div>
+<div class="s4_4">
+<div id="t7_4">Alternaria solani</div>
+</div>
+<div class="s3_4">
+<div id="t8_4">) beheer. </div>
+<div id="t9_4">4.3.6 </div>
+<div id="ta_4">PAMPOENGEWASSE</div>
+</div>
+<div class="s5_4">
+<div id="tb_4">•	</div>
+<div id="tc_4">Gebruik	</div>
+</div>
+<div class="s1_4">
+<div id="td_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="te_4">in ‘n spuitprogram saam met TOPAZ 200 </div>
+<div id="tf_4">EW (L5246), THIOVIT JET (L1061) en BRAVO 720 (L7005).</div>
+</div>
+<div class="s5_4">
+<div id="tg_4">•	</div>
+<div id="th_4">Moet	 nie	 meer	 as	 twee	 toedienings	</div>
+</div>
+<div class="s1_4">
+<div id="ti_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="tj_4">in dieselfde </div>
+<div id="tk_4">seisoen toedien nie.</div>
+</div>
+<div class="s5_4">
+<div id="tl_4">•	</div>
+<div id="tm_4">Moet	 nie	</div>
+</div>
+<div class="s1_4">
+<div id="tn_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="to_4">as die eerste of laaste toediening in ‘n </div>
+<div id="tp_4">spuitprogram gebruik nie.</div>
+</div>
+<div class="s5_4">
+<div id="tq_4">•	</div>
+<div id="tr_4">Moet	nooit	</div>
+</div>
+<div class="s1_4">
+<div id="ts_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="tt_4">as ‘n korrektiewe bespuiting gebruik nie </div>
+<div id="tu_4">of na ‘n onsuksesvolle toediening van enige ander produk nie.</div>
+</div>
+<div class="s5_4">
+<div id="tv_4">•	</div>
+<div id="tw_4">Moet	nie	</div>
+</div>
+<div class="s1_4">
+<div id="tx_4">AMISTAR	</div>
+</div>
+<div class="s3_4">
+<div id="ty_4">saam met ‘n benatter soos COMPLEMENT </div>
+<div id="tz_4">(L4853) gebruik nie.</div>
+<div id="t10_4">4.3.7 DROËBONE</div>
+</div>
+<div class="s5_4">
+<div id="t11_4">•	</div>
+<div id="t12_4">Gebruik	</div>
+</div>
+<div class="s1_4">
+<div id="t13_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t14_4">in ‘n spuitprogram saam met SCORE.</div>
+</div>
+<div class="s5_4">
+<div id="t15_4">•	</div>
+<div id="t16_4">Moet	 nie	 meer	 as	 twee	 toedienings	</div>
+</div>
+<div class="s1_4">
+<div id="t17_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t18_4">in dieselfde </div>
+<div id="t19_4">seisoen toedien nie.</div>
+</div>
+<div class="s5_4">
+<div id="t1a_4">•	</div>
+<div id="t1b_4">Moet	 nie	</div>
+</div>
+<div class="s1_4">
+<div id="t1c_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t1d_4">as die eerste of laaste toediening in ‘n </div>
+<div id="t1e_4">spuitprogram gebruik nie.</div>
+</div>
+<div class="s5_4">
+<div id="t1f_4">•	</div>
+<div id="t1g_4">Moet	nooit	</div>
+</div>
+<div class="s1_4">
+<div id="t1h_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t1i_4">as ‘n korrektiewe bespuiting gebruik nie </div>
+<div id="t1j_4">of na ‘n onsuksesvolle toediening van enige ander produk nie.</div>
+<div id="t1k_4">4.3.8 </div>
+<div id="t1l_4">RISSIES (SOET, CHILLI EN PIQUANTE)</div>
+</div>
+<div class="s5_4">
+<div id="t1m_4">•	</div>
+<div id="t1n_4">Gebruik	</div>
+</div>
+<div class="s1_4">
+<div id="t1o_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t1p_4">in ‘n spuitprogram saam met ander </div>
+<div id="t1q_4">geregi streerde swamdoders.</div>
+</div>
+<div class="s5_4">
+<div id="t1r_4">•	</div>
+<div id="t1s_4">Die	totale	aantal	</div>
+</div>
+<div class="s1_4">
+<div id="t1t_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t1u_4">-bespuitings per seisoen, mag nie </div>
+</div>
+<div class="s1_4">
+<div id="t1v_4">GEWAS	/	SIEKTE</div>
+<div id="t1w_4">PAMPOEN-</div>
+<div id="t1x_4">GEWASSE</div>
+<div id="t1y_4">Poeieragtige	</div>
+<div id="t1z_4">meeldou</div>
+</div>
+<div class="s3_4">
+<div id="t20_4">(</div>
+</div>
+<div class="s4_4">
+<div id="t21_4">Sphaerotheca </div>
+<div id="t22_4">fuliginea/Erysiphe </div>
+<div id="t23_4">cichoracearum</div>
+</div>
+<div class="s3_4">
+<div id="t24_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t25_4">DOSIS</div>
+</div>
+<div class="s3_4">
+<div id="t26_4">400 - 500 </div>
+<div id="t27_4">m</div>
+</div>
+<div class="s6_4">
+<div id="t28_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t29_4">/ha</div>
+</div>
+<div class="s1_4">
+<div id="t2a_4">OPMERKING</div>
+</div>
+<div class="s3_4">
+<div id="t2b_4">Dien toe as ‘n volle voor-</div>
+<div id="t2c_4">komende </div>
+<div id="t2d_4">dekbespuiting. </div>
+<div id="t2e_4">Dien toe in twee opeenvol-</div>
+<div id="t2f_4">gende bespuitings 7 dae uit-</div>
+<div id="t2g_4">mekaar met blom. Gebruik </div>
+<div id="t2h_4">die hoër dosis onder hoë </div>
+<div id="t2i_4">siekte druk. Dien toe in </div>
+<div id="t2j_4">genoeg water om volledige </div>
+<div id="t2k_4">benatting </div>
+<div id="t2l_4">te ver seker. Dien </div>
+<div id="t2m_4">toe in ‘n spuitprogram saam </div>
+<div id="t2n_4">met TOPAZ 200 EW en </div>
+<div id="t2o_4">BRAVO 720.</div>
+</div>
+<div class="s1_4">
+<div id="t2p_4">GEWAS	/	SIEKTE</div>
+<div id="t2q_4">DROËBONE	</div>
+<div id="t2r_4">Antraknose</div>
+</div>
+<div class="s3_4">
+<div id="t2s_4">(</div>
+</div>
+<div class="s4_4">
+<div id="t2t_4">Colletotrichum</div>
+<div id="t2u_4">lindemuthianum</div>
+</div>
+<div class="s3_4">
+<div id="t2v_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t2w_4">DOSIS</div>
+</div>
+<div class="s3_4">
+<div id="t2x_4">400 m</div>
+</div>
+<div class="s6_4">
+<div id="t2y_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t2z_4">/ha</div>
+</div>
+<div class="s1_4">
+<div id="t30_4">OPMERKING</div>
+</div>
+<div class="s3_4">
+<div id="t31_4">Dien toe as ‘n volle voorko-</div>
+<div id="t32_4">mende dekbespui ting. Dien </div>
+<div id="t33_4">toe in twee opeenvolgende </div>
+<div id="t34_4">bespuitings 14 dae uitme-</div>
+<div id="t35_4">kaar met blom. Dien toe in </div>
+<div id="t36_4">genoeg water om volledige </div>
+<div id="t37_4">benatting te verseker. Vir </div>
+<div id="t38_4">optimale swamsiektebeheer, </div>
+<div id="t39_4">dien toe in ‘n spuitprogram </div>
+<div id="t3a_4">saam met SCORE.</div>
+<div id="t3b_4">Teen </div>
+<div id="t3c_4">bogenoemde </div>
+<div id="t3d_4">dosis </div>
+<div id="t3e_4">sal</div>
+</div>
+<div class="s1_4">
+<div id="t3f_4">AMISTAR	</div>
+</div>
+<div class="s3_4">
+<div id="t3g_4">ook roes (</div>
+</div>
+<div class="s4_4">
+<div id="t3h_4">U. </div>
+<div id="t3i_4">appendiculatus</div>
+</div>
+<div class="s3_4">
+<div id="t3j_4">) beheer in -</div>
+<div id="t3k_4">dien teenwoordig. </div>
+<div id="t3l_4">Verwys </div>
+<div id="t3m_4">na </div>
+<div id="t3n_4">Weerstand-</div>
+<div id="t3o_4">bestuur strate gie bo.</div>
+<div id="t3p_4">30 % (tot ’n maximum van 6) van die totale aantal bespui tings </div>
+<div id="t3q_4">oorskry nie.</div>
+</div>
+<div class="s5_4">
+<div id="t3r_4">•	</div>
+<div id="t3s_4">Moet	 nie	</div>
+</div>
+<div class="s1_4">
+<div id="t3t_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t3u_4">as die eerste of laaste toediening in ‘n </div>
+<div id="t3v_4">spuitprogram gebruik nie.</div>
+</div>
+<div class="s5_4">
+<div id="t3w_4">•	</div>
+<div id="t3x_4">Moet	nooit	</div>
+</div>
+<div class="s1_4">
+<div id="t3y_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t3z_4">as ‘n korrektiewe bespuiting gebruik nie </div>
+<div id="t40_4">of na ‘n onsuksesvolle toediening van enige ander produk nie.</div>
+<div id="t41_4">4.3.9 </div>
+<div id="t42_4">UIE</div>
+</div>
+<div class="s5_4">
+<div id="t43_4">•	</div>
+<div id="t44_4">Gebruik	</div>
+</div>
+<div class="s1_4">
+<div id="t45_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t46_4">in ‘n spuitprogram saam met ander geregi-</div>
+<div id="t47_4">streerde swamdoders.</div>
+</div>
+<div class="s5_4">
+<div id="t48_4">•	</div>
+<div id="t49_4">Moenie	meer	as	twee	toedienings	van	</div>
+</div>
+<div class="s1_4">
+<div id="t4a_4">AMISTAR	</div>
+</div>
+<div class="s3_4">
+<div id="t4b_4">op uie toe-</div>
+<div id="t4c_4">dien in dieselfde seisoen nie.</div>
+</div>
+<div class="s5_4">
+<div id="t4d_4">•	</div>
+<div id="t4e_4">Moenie	</div>
+</div>
+<div class="s1_4">
+<div id="t4f_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t4g_4">toedien as die eerste of die laaste toe-</div>
+<div id="t4h_4">diening van die seisoen nie.</div>
+</div>
+<div class="s5_4">
+<div id="t4i_4">•	</div>
+<div id="t4j_4">Moet	nooit	</div>
+</div>
+<div class="s1_4">
+<div id="t4k_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t4l_4">as ‘n korrektiewe bespuiting gebruik nie </div>
+<div id="t4m_4">of na ‘n onsuksesvolle toediening van enige ander produk nie.</div>
+</div>
+<div class="s7_4">
+<div id="t4n_4">AMISTAR</div>
+</div>
+<div class="s8_4">
+<div id="t4o_4">®</div>
+</div>
+<div class="s7_4">
+<div id="t4p_4">,	 KARATE</div>
+</div>
+<div class="s8_4">
+<div id="t4q_4">®</div>
+</div>
+<div class="s7_4">
+<div id="t4r_4">,	 BRAVO</div>
+</div>
+<div class="s8_4">
+<div id="t4s_4">®</div>
+</div>
+<div class="s7_4">
+<div id="t4t_4">,	 RIDOMIL</div>
+</div>
+<div class="s8_4">
+<div id="t4u_4">®</div>
+</div>
+<div class="s7_4">
+<div id="t4v_4">GOLD,	 THIOVIT	</div>
+<div id="t4w_4">JET</div>
+</div>
+<div class="s8_4">
+<div id="t4x_4">®</div>
+</div>
+<div class="s7_4">
+<div id="t4y_4">,	 	 TOPAZ</div>
+</div>
+<div class="s8_4">
+<div id="t4z_4">®</div>
+</div>
+<div class="s7_4">
+<div id="t50_4">,</div>
+<div id="t51_4">SCORE</div>
+</div>
+<div class="s8_4">
+<div id="t52_4">®</div>
+</div>
+<div class="s9_4">
+<div id="t53_4">en</div>
+</div>
+<div class="s7_4">
+<div id="t54_4">COMPLEMENT</div>
+</div>
+<div class="s8_4">
+<div id="t55_4">®</div>
+</div>
+<div class="s9_4">
+<div id="t56_4">= Geregistreerde </div>
+<div id="t57_4">Handelsmerke van ‘n Syngenta Groep Maatskappy. </div>
+</div>
+<div class="s7_4">
+<div id="t58_4">©	SYNGENTA	AG,	2000</div>
+</div>
+<div class="s9_4">
+<div id="t59_4">. Kopiereg van die dokument is voorbehou. </div>
+<div id="t5a_4">Alle ongemagtigde vermeerdering word verbied. </div>
+<div id="t5b_4">SA. Reg. 2008-01-21</div>
+</div>
+<div class="s1_4">
+<div id="t5c_4">GEWAS	/	SIEKTE</div>
+<div id="t5d_4">RISSIES</div>
+<div id="t5e_4">Poeieragtige	</div>
+<div id="t5f_4">meeldou</div>
+</div>
+<div class="s3_4">
+<div id="t5g_4">(</div>
+</div>
+<div class="s4_4">
+<div id="t5h_4">Leveillula taurica</div>
+</div>
+<div class="s3_4">
+<div id="t5i_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t5j_4">DOSIS</div>
+</div>
+<div class="s3_4">
+<div id="t5k_4">60 m</div>
+</div>
+<div class="s6_4">
+<div id="t5l_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t5m_4">/</div>
+<div id="t5n_4">100 </div>
+</div>
+<div class="s6_4">
+<div id="t5o_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t5p_4">water</div>
+</div>
+<div class="s1_4">
+<div id="t5q_4">OPMERKING</div>
+</div>
+<div class="s3_4">
+<div id="t5r_4">Dien toe as ‘n vol dek </div>
+<div id="t5s_4">voorkomende </div>
+<div id="t5t_4">toediening. </div>
+<div id="t5u_4">Dien twee opeenvolgende </div>
+<div id="t5v_4">bespuitings toe 7 dae uit-</div>
+<div id="t5w_4">mekaar beginnende by blom </div>
+<div id="t5x_4">inisiasie. Dien toe in genoeg </div>
+<div id="t5y_4">water om volledige benatting </div>
+<div id="t5z_4">te verseker. </div>
+</div>
+<div class="s1_4">
+<div id="t60_4">Nota:</div>
+</div>
+<div class="s3_4">
+<div id="t61_4">Toedienings moet voorkomend gedoen word en kan ook </div>
+<div id="t62_4">in intervalle van 14 dae gedoen word. Indien ‘n 14 dag program </div>
+<div id="t63_4">verkies word, moet die produk waarmee afgewissel word op 7 </div>
+<div id="t64_4">dae gespuit word veral as die weersomstandighede gunstig vir </div>
+<div id="t65_4">die siekte ontwikkeling is.</div>
+</div>
+<div class="s1_4">
+<div id="t66_4">GEWAS	/	SIEKTE</div>
+<div id="t67_4">UIE</div>
+<div id="t68_4">Altenaria	vlek</div>
+</div>
+<div class="s4_4">
+<div id="t69_4">(Alternaria porri)</div>
+</div>
+<div class="s1_4">
+<div id="t6a_4">Stemphylium	</div>
+<div id="t6b_4">blaar	vlek</div>
+</div>
+<div class="s4_4">
+<div id="t6c_4">(Stemphylium </div>
+<div id="t6d_4">vesicarium)</div>
+</div>
+<div class="s1_4">
+<div id="t6e_4">DOSIS</div>
+</div>
+<div class="s3_4">
+<div id="t6f_4">400 m</div>
+</div>
+<div class="s6_4">
+<div id="t6g_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t6h_4">/</div>
+<div id="t6i_4">ha</div>
+</div>
+<div class="s1_4">
+<div id="t6j_4">OPMERKING</div>
+</div>
+<div class="s3_4">
+<div id="t6k_4">Dien toe as ‘n vol dek </div>
+<div id="t6l_4">voorkomende </div>
+<div id="t6m_4">toediening. </div>
+<div id="t6n_4">Dien twee opeenvolgende </div>
+<div id="t6o_4">bespuitings toe 14 dae uit-</div>
+<div id="t6p_4">mekaar beginnende sodra </div>
+<div id="t6q_4">die blaar basisse begin ver-</div>
+<div id="t6r_4">dik of later in die seisoen </div>
+<div id="t6s_4">sodra die weersomstandig-</div>
+<div id="t6t_4">hede gunstig raak vir die </div>
+<div id="t6u_4">ontwikkeling van die siekte. </div>
+<div id="t6v_4">Dien toe in genoeg water </div>
+<div id="t6w_4">om volledige benatting </div>
+<div id="t6x_4">te </div>
+<div id="t6y_4">verseker.</div>
+</div>
+<div class="s1_4">
+<div id="t6z_4">Nota:</div>
+</div>
+<div class="s3_4">
+<div id="t70_4">Weens die wasagtig aard van die ui blare, word aan-</div>
+<div id="t71_4">beveel dat </div>
+</div>
+<div class="s1_4">
+<div id="t72_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t73_4">toegedien word met COMPLEMENT </div>
+<div id="t74_4">teen 0.25% om deeglike bedekking en goeie beheer te </div>
+<div id="t75_4">verseker. </div>
+</div>
+<div class="s1_4">
+<div id="t76_4">GEWAS	/	SIEKTE</div>
+<div id="t77_4">TAMATIES</div>
+<div id="t78_4">Laatroes</div>
+</div>
+<div class="s3_4">
+<div id="t79_4">(</div>
+</div>
+<div class="s4_4">
+<div id="t7a_4">Phytophthora </div>
+<div id="t7b_4">infestans</div>
+</div>
+<div class="s3_4">
+<div id="t7c_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t7d_4">DOSIS</div>
+<div id="t7e_4">Grondtoediening:</div>
+</div>
+<div class="s3_4">
+<div id="t7f_4">80 - 120 m</div>
+</div>
+<div class="s6_4">
+<div id="t7g_4">l</div>
+</div>
+<div class="s1_4">
+<div id="t7h_4">AMISTAR</div>
+</div>
+<div class="s3_4">
+<div id="t7i_4">/100 </div>
+</div>
+<div class="s6_4">
+<div id="t7j_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t7k_4">water </div>
+<div id="t7l_4">afgewissel met BRAVO 720</div>
+<div id="t7m_4">teen 100 </div>
+<div id="t7n_4">- 380 m</div>
+</div>
+<div class="s6_4">
+<div id="t7o_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t7p_4">/100 </div>
+</div>
+<div class="s6_4">
+<div id="t7q_4">l</div>
+</div>
+<div class="s3_4">
+<div id="t7r_4">water afhangende die </div>
+<div id="t7s_4">siektedruk soos beskryf op die BRAVO </div>
+<div id="t7t_4">720 etiket.</div>
+</div>
+</div>
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg4Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0);"></div>
+<div id="pg4"><img src="4/4.png" id="pdf4" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var f4 = [['t3_4',58],['t4_4',1104],['t7_4',347],['t8_4',186],['te_4',886],['tf_4',1246],['th_4',802],['tj_4',246],['tk_4',420],['tm_4',203],['to_4',850],['tp_4',540],['tt_4',832],['tu_4',1306],['ty_4',887],['tz_4',418],['t10_4',387],['t14_4',802],['t16_4',802],['t18_4',246],['t19_4',420],['t1b_4',203],['t1d_4',850],['t1e_4',540],['t1i_4',832],['t1j_4',1306],['t1l_4',835],['t1p_4',847],['t1q_4',604],['t1u_4',723],['t26_4',211],['t2b_4',605],['t2e_4',605],['t2f_4',605],['t2g_4',605],['t2h_4',606],['t2i_4',605],['t2j_4',605],['t2l_4',367],['t2m_4',605],['t2n_4',605],['t2o_4',271],['t2x_4',137],['t31_4',605],['t32_4',605],['t33_4',606],['t34_4',605],['t35_4',606],['t36_4',606],['t37_4',606],['t38_4',605],['t39_4',606],['t3a_4',402],['t3g_4',229],['t3j_4',273],['t3k_4',379],['t3o_4',423],['t3p_4',1304],['t3q_4',244],['t3s_4',203],['t3u_4',848],['t3v_4',540],['t3z_4',830],['t40_4',1304],['t46_4',892],['t47_4',474],['t4b_4',235],['t4c_4',604],['t4g_4',878],['t4h_4',582],['t4l_4',830],['t4m_4',1304],['t4p_4',223],['t4r_4',198],['t4t_4',234],['t4v_4',355],['t4y_4',209],['t56_4',324],['t57_4',957],['t59_4',817],['t5a_4',886],['t5b_4',400],['t5h_4',360],['t5k_4',110],['t5r_4',603],['t5u_4',603],['t5v_4',603],['t5w_4',603],['t5x_4',603],['t5y_4',603],['t5z_4',245],['t61_4',1186],['t62_4',1323],['t63_4',1323],['t64_4',1323],['t65_4',534],['t69_4',347],['t6f_4',137],['t6k_4',605],['t6n_4',606],['t6o_4',605],['t6p_4',606],['t6q_4',605],['t6r_4',605],['t6s_4',605],['t6t_4',605],['t6u_4',605],['t6v_4',605],['t6w_4',506],['t70_4',1179],['t71_4',235],['t73_4',816],['t74_4',1327],['t7f_4',288],['t7l_4',631],['t7m_4',203],['t7n_4',192],['t7r_4',479],['t7s_4',865],['t7t_4',223]];
+var c4 = 0;
+function fontAdjustments4(){;
+	if (c4<f4.length) {
+		adjustWordSpacing(f4[c4][0],f4[c4][1]);
+		c4++;
+		if (c4%10 == 0) {
+			setTimeout(function(){fontAdjustments4()},0);
+		} else {
+			fontAdjustments4();
+		}
+	}
+};
+function load4(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments4,timeout);
+}
+</script>
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(4,4,909,1286,0);
+</script>
+</body>
+</html>

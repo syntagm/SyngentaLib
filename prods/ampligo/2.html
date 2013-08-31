@@ -1,0 +1,1175 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>AMPLIGO____Afr__2012_10_25 Page2</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #nav button {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #nav select {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var type;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        d("container").style.width = width + "px";
+        d("container").style.height = height + "px";
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page === 1) return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+			}
+				else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<div id="nav" style="background-color:#919191; padding-top: 10px; text-align: center; position: fixed; width: 100%; height: 40px; z-index:999;">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:30px;">&gt;&gt; Next</button>
+
+    <button onclick="zoomOut()" id="zoomOut">Zoom Out</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">Zoom In</button>
+</div>
+<div style="position:relative; width: 100%; height: 50px;"></div>
+
+<div id="container" style="margin: 0 auto 10px;">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<!--[if lt IE 9]><style type="text/css">.t div div{zoom: 25%;}</style><![endif]-->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+}
+.t div div {
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load2();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_2{left:1581px;top:165px;}
+#t2_2{left:1825px;top:165px;}
+#t3_2{left:266px;top:274px;}
+#t4_2{left:1274px;top:274px;}
+#t5_2{left:1517px;top:274px;}
+#t6_2{left:266px;top:333px;}
+#t7_2{left:266px;top:392px;}
+#t8_2{left:266px;top:509px;}
+#t9_2{left:860px;top:509px;}
+#ta_2{left:1118px;top:509px;}
+#tb_2{left:335px;top:568px;}
+#tc_2{left:335px;top:626px;}
+#td_2{left:335px;top:685px;}
+#te_2{left:335px;top:744px;}
+#tf_2{left:335px;top:802px;}
+#tg_2{left:680px;top:802px;}
+#th_2{left:921px;top:802px;}
+#ti_2{left:1173px;top:802px;}
+#tj_2{left:335px;top:861px;}
+#tk_2{left:810px;top:861px;}
+#tl_2{left:1423px;top:861px;}
+#tm_2{left:335px;top:920px;}
+#tn_2{left:266px;top:987px;}
+#to_2{left:1130px;top:987px;}
+#tp_2{left:1385px;top:987px;}
+#tq_2{left:335px;top:1046px;}
+#tr_2{left:776px;top:1046px;}
+#ts_2{left:1002px;top:1046px;}
+#tt_2{left:1203px;top:1046px;}
+#tu_2{left:1444px;top:1046px;}
+#tv_2{left:1621px;top:1046px;}
+#tw_2{left:335px;top:1104px;}
+#tx_2{left:335px;top:1163px;}
+#ty_2{left:1049px;top:1163px;}
+#tz_2{left:1301px;top:1163px;}
+#t10_2{left:335px;top:1222px;}
+#t11_2{left:335px;top:1280px;}
+#t12_2{left:335px;top:1339px;}
+#t13_2{left:266px;top:1456px;}
+#t14_2{left:266px;top:1515px;}
+#t15_2{left:266px;top:1632px;}
+#t16_2{left:266px;top:1750px;}
+#t17_2{left:511px;top:1750px;}
+#t18_2{left:266px;top:1808px;}
+#t19_2{left:512px;top:1808px;}
+#t1a_2{left:266px;top:1867px;}
+#t1b_2{left:1240px;top:1867px;}
+#t1c_2{left:1484px;top:1867px;}
+#t1d_2{left:266px;top:1926px;}
+#t1e_2{left:266px;top:1984px;}
+#t1f_2{left:1166px;top:1984px;}
+#t1g_2{left:1410px;top:1984px;}
+#t1h_2{left:266px;top:2043px;}
+#t1i_2{left:266px;top:2160px;}
+#t1j_2{left:1032px;top:2160px;}
+#t1k_2{left:266px;top:2278px;}
+#t1l_2{left:266px;top:2336px;}
+#t1m_2{left:266px;top:2395px;}
+#t1n_2{left:266px;top:2512px;}
+#t1o_2{left:266px;top:2630px;}
+#t1p_2{left:266px;top:2747px;}
+#t1q_2{left:756px;top:2747px;}
+#t1r_2{left:1139px;top:2747px;}
+#t1s_2{left:266px;top:2806px;}
+#t1t_2{left:335px;top:2806px;}
+#t1u_2{left:693px;top:2806px;}
+#t1v_2{left:266px;top:2864px;}
+#t1w_2{left:1621px;top:2864px;}
+#t1x_2{left:266px;top:2923px;}
+#t1y_2{left:266px;top:2982px;}
+#t1z_2{left:266px;top:3040px;}
+#t20_2{left:1621px;top:3040px;}
+#t21_2{left:266px;top:3099px;}
+#t22_2{left:266px;top:3158px;}
+#t23_2{left:266px;top:3216px;}
+#t24_2{left:266px;top:3334px;}
+#t25_2{left:266px;top:3392px;}
+#t26_2{left:335px;top:3392px;}
+#t27_2{left:553px;top:3392px;}
+#t28_2{left:939px;top:3392px;}
+#t29_2{left:960px;top:3392px;}
+#t2a_2{left:335px;top:3451px;}
+#t2b_2{left:335px;top:3510px;}
+#t2c_2{left:335px;top:3568px;}
+#t2d_2{left:335px;top:3627px;}
+#t2e_2{left:335px;top:3686px;}
+#t2f_2{left:266px;top:3762px;}
+#t2g_2{left:335px;top:3762px;}
+#t2h_2{left:807px;top:3762px;}
+#t2i_2{left:1621px;top:3762px;}
+#t2j_2{left:335px;top:3820px;}
+#t2k_2{left:266px;top:3896px;}
+#t2l_2{left:335px;top:3896px;}
+#t2m_2{left:743px;top:3896px;}
+#t2n_2{left:335px;top:3955px;}
+#t2o_2{left:335px;top:4014px;}
+#t2p_2{left:335px;top:4072px;}
+#t2q_2{left:266px;top:4148px;}
+#t2r_2{left:335px;top:4148px;}
+#t2s_2{left:670px;top:4148px;}
+#t2t_2{left:335px;top:4207px;}
+#t2u_2{left:1621px;top:4207px;}
+#t2v_2{left:335px;top:4266px;}
+#t2w_2{left:335px;top:4324px;}
+#t2x_2{left:266px;top:4442px;}
+#t2y_2{left:266px;top:4500px;}
+#t2z_2{left:1621px;top:4500px;}
+#t30_2{left:266px;top:4559px;}
+#t31_2{left:1621px;top:4559px;}
+#t32_2{left:266px;top:4618px;}
+#t33_2{left:266px;top:4676px;}
+#t34_2{left:266px;top:4735px;}
+#t35_2{left:266px;top:4794px;}
+#t36_2{left:266px;top:4911px;}
+#t37_2{left:1820px;top:268px;}
+#t38_2{left:1820px;top:327px;}
+#t39_2{left:1820px;top:444px;}
+#t3a_2{left:1820px;top:503px;}
+#t3b_2{left:1820px;top:562px;}
+#t3c_2{left:1820px;top:620px;}
+#t3d_2{left:1820px;top:679px;}
+#t3e_2{left:1820px;top:796px;}
+#t3f_2{left:1820px;top:914px;}
+#t3g_2{left:1820px;top:972px;}
+#t3h_2{left:1820px;top:1031px;}
+#t3i_2{left:1820px;top:1148px;}
+#t3j_2{left:1820px;top:1207px;}
+#t3k_2{left:1820px;top:1266px;}
+#t3l_2{left:1820px;top:1383px;}
+#t3m_2{left:1890px;top:1383px;}
+#t3n_2{left:1890px;top:1442px;}
+#t3o_2{left:1890px;top:1500px;}
+#t3p_2{left:1820px;top:1559px;}
+#t3q_2{left:1890px;top:1559px;}
+#t3r_2{left:1890px;top:1618px;}
+#t3s_2{left:1820px;top:1735px;}
+#t3t_2{left:1820px;top:1794px;}
+#t3u_2{left:1820px;top:1852px;}
+#t3v_2{left:1820px;top:1970px;}
+#t3w_2{left:1820px;top:2087px;}
+#t3x_2{left:1820px;top:2146px;}
+#t3y_2{left:2089px;top:2146px;}
+#t3z_2{left:2337px;top:2146px;}
+#t40_2{left:2394px;top:2146px;}
+#t41_2{left:1820px;top:2204px;}
+#t42_2{left:1820px;top:2263px;}
+#t43_2{left:1820px;top:2322px;}
+#t44_2{left:1820px;top:2380px;}
+#t45_2{left:1820px;top:2439px;}
+#t46_2{left:1820px;top:2556px;}
+#t47_2{left:1820px;top:2674px;}
+#t48_2{left:1890px;top:2674px;}
+#t49_2{left:2121px;top:2674px;}
+#t4a_2{left:2367px;top:2812px;}
+#t4b_2{left:2328px;top:2929px;}
+#t4c_2{left:2467px;top:2929px;}
+#t4d_2{left:2489px;top:2929px;}
+#t4e_2{left:2341px;top:3820px;}
+#t4f_2{left:2492px;top:3820px;}
+#t4g_2{left:2528px;top:3820px;}
+#t4h_2{left:2348px;top:3879px;}
+#t4i_2{left:2364px;top:4759px;}
+#t4j_2{left:2501px;top:4759px;}
+#t4k_2{left:2401px;top:4817px;}
+#t4l_2{left:2716px;top:2812px;}
+#t4m_2{left:2603px;top:2929px;}
+#t4n_2{left:2603px;top:3023px;}
+#t4o_2{left:3148px;top:3023px;}
+#t4p_2{left:2603px;top:3081px;}
+#t4q_2{left:2603px;top:3140px;}
+#t4r_2{left:2603px;top:3199px;}
+#t4s_2{left:2603px;top:3292px;}
+#t4t_2{left:2603px;top:3351px;}
+#t4u_2{left:2690px;top:3351px;}
+#t4v_2{left:2603px;top:3409px;}
+#t4w_2{left:3148px;top:3409px;}
+#t4x_2{left:2603px;top:3468px;}
+#t4y_2{left:2603px;top:3527px;}
+#t4z_2{left:2974px;top:3527px;}
+#t50_2{left:2603px;top:3585px;}
+#t51_2{left:2603px;top:3644px;}
+#t52_2{left:2603px;top:3703px;}
+#t53_2{left:2603px;top:3820px;}
+#t54_2{left:2603px;top:3937px;}
+#t55_2{left:2603px;top:3996px;}
+#t56_2{left:2603px;top:4055px;}
+#t57_2{left:3148px;top:4055px;}
+#t58_2{left:2603px;top:4113px;}
+#t59_2{left:2603px;top:4172px;}
+#t5a_2{left:2721px;top:4172px;}
+#t5b_2{left:3010px;top:4172px;}
+#t5c_2{left:2603px;top:4231px;}
+#t5d_2{left:2603px;top:4289px;}
+#t5e_2{left:2603px;top:4348px;}
+#t5f_2{left:3011px;top:4348px;}
+#t5g_2{left:3046px;top:4348px;}
+#t5h_2{left:2603px;top:4407px;}
+#t5i_2{left:2603px;top:4465px;}
+#t5j_2{left:2603px;top:4583px;}
+#t5k_2{left:2603px;top:4641px;}
+#t5l_2{left:2603px;top:4759px;}
+#t5m_2{left:2603px;top:4876px;}
+#t5n_2{left:2906px;top:4876px;}
+#t5o_2{left:2941px;top:4876px;}
+#t5p_2{left:1875px;top:2812px;}
+#t5q_2{left:1849px;top:2929px;}
+#t5r_2{left:1849px;top:2988px;}
+#t5s_2{left:1849px;top:3047px;}
+#t5t_2{left:1861px;top:3047px;}
+#t5u_2{left:1849px;top:3105px;}
+#t5v_2{left:2086px;top:3105px;}
+#t5w_2{left:1849px;top:3820px;}
+#t5x_2{left:1849px;top:3879px;}
+#t5y_2{left:1849px;top:3937px;}
+#t5z_2{left:1861px;top:3937px;}
+#t60_2{left:2031px;top:3937px;}
+#t61_2{left:1849px;top:3996px;}
+#t62_2{left:1849px;top:4055px;}
+#t63_2{left:1861px;top:4055px;}
+#t64_2{left:2134px;top:4055px;}
+#t65_2{left:1849px;top:4113px;}
+#t66_2{left:1849px;top:4172px;}
+#t67_2{left:1861px;top:4172px;}
+#t68_2{left:1849px;top:4231px;}
+#t69_2{left:2039px;top:4231px;}
+#t6a_2{left:1849px;top:4289px;}
+#t6b_2{left:1849px;top:4348px;}
+#t6c_2{left:1861px;top:4348px;}
+#t6d_2{left:1849px;top:4407px;}
+#t6e_2{left:2161px;top:4407px;}
+
+.s1_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOOLFV-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s3_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOOLFV-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+.s5_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: FGEFRX-HelveticaNeueLTStd-It2;
+	color: rgb(0,0,0);
+}
+
+.s2_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: HWYRTT-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+.s4_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: MT-Extra2;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: FGEFRX-HelveticaNeueLTStd-It2;
+	src: url("2/fonts/FGEFRX-HelveticaNeueLTStd-It.otf");
+}
+
+@font-face {
+	font-family: MT-Extra2;
+	src: url("2/fonts/MT-Extra.otf");
+}
+
+@font-face {
+	font-family: HWYRTT-HelveticaNeueLTStd-Lt2;
+	src: url("2/fonts/HWYRTT-HelveticaNeueLTStd-Lt.otf");
+}
+
+@font-face {
+	font-family: GOOLFV-HelveticaNeueLTStd-Bd2;
+	src: url("2/fonts/GOOLFV-HelveticaNeueLTStd-Bd.otf");
+}
+
+@font-face {
+	font-family: GOOLFV-HelveticaNeueLTStd-Lt2;
+	src: url("2/fonts/GOOLFV-HelveticaNeueLTStd-Lt.otf");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div class="t">
+<div class="s1_2">
+<div id="t1_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="t2_2">/	2</div>
+<div id="t3_2">As	gevolg	van	sy	unieke	metode	van	werking	is	</div>
+</div>
+<div class="s1_2">
+<div id="t4_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="t5_2">ideaal	</div>
+<div id="t6_2">geskik	waar	weerstandsbestuur	belang	rik	is.	Hierdie	riglyne	sal	die	</div>
+<div id="t7_2">effektiewe	lewensduur	van	die	produk	maksimeer:</div>
+<div id="t8_2">1.	 	Waar	 toepaslik,	 wissel	</div>
+</div>
+<div class="s1_2">
+<div id="t9_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="ta_2">af	 met	 verbindings	 van	</div>
+<div id="tb_2">ander	chemiese	klasse	(oxadiasien,	piretroïed,	organofosfaat,	</div>
+<div id="tc_2">neonikotinoïed,	spinosien,	diasielhidrasien	of	ander	insekgroei-</div>
+<div id="td_2">reguleerders).	 Ons	 beveel	 afwisseling	 met	 geregistreerde	</div>
+<div id="te_2">produkte	in	hierdie	klasse	aan	en	om	nie	die	maksimum	aantal	</div>
+<div id="tf_2">bespuitings	met	</div>
+</div>
+<div class="s1_2">
+<div id="tg_2">AMPLIGO </div>
+</div>
+<div class="s3_2">
+<div id="th_2">per seisoen</div>
+</div>
+<div class="s2_2">
+<div id="ti_2">te	oorskry	nie,	volgens	</div>
+</div>
+<div class="s3_2">
+<div id="tj_2">die instruksies onder </div>
+</div>
+<div class="s1_2">
+<div id="tk_2">GEBRUIKSAANWYSINGS </div>
+</div>
+<div class="s3_2">
+<div id="tl_2">op hierdie </div>
+<div id="tm_2">etiket. </div>
+</div>
+<div class="s2_2">
+<div id="tn_2">2.	 	Kontroleer	 insekbevolkings	 en	 dien	</div>
+</div>
+<div class="s1_2">
+<div id="to_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="tp_2">toe	 volgens	</div>
+<div id="tq_2">etiketaanbevelings	</div>
+<div id="tr_2">wanneer	</div>
+<div id="ts_2">plaaslik	</div>
+<div id="tt_2">bepaalde	</div>
+<div id="tu_2">drempel</div>
+</div>
+<div class="s3_2">
+<div id="tv_2">-</div>
+</div>
+<div class="s2_2">
+<div id="tw_2">waardes	bereik	word.	Daar	word	aanbeveel	dat	twee	tot	drie	</div>
+<div id="tx_2">opeenvolgende	 bespuitings	 met	</div>
+</div>
+<div class="s1_2">
+<div id="ty_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="tz_2">toegedien	 word	</div>
+<div id="t10_2">as	 ‘n	 blokbespuiting.	 Volg	 hierdie	 etiketaanbevelings	 presies	</div>
+<div id="t11_2">vir	toedieningshoeveelhede,	spuitintervalle	en	die	optimum	tyd	</div>
+<div id="t12_2">van	toediening.</div>
+</div>
+<div class="s1_2">
+<div id="t13_2">Vir spesifieke inligting i.v.m. weerstands bestuur, skakel die </div>
+<div id="t14_2">registrasiehouer van hierdie produk.</div>
+<div id="t15_2">4. PRODUKEIENSKAPPE</div>
+<div id="t16_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="t17_2">is	doeltreffend	vir	die	beheer	van	Lepidoptera	larwes.	</div>
+</div>
+<div class="s1_2">
+<div id="t18_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="t19_2">is	langwerkend	en	werk	deur	inname	en	kontak,	met	</div>
+<div id="t1a_2">eierdodende	en	eier-larfdodende	eienskappe.	</div>
+</div>
+<div class="s1_2">
+<div id="t1b_2">AMPLIGO </div>
+</div>
+<div class="s3_2">
+<div id="t1c_2">is doel-</div>
+</div>
+<div class="s2_2">
+<div id="t1d_2">treffend	teen	larwes	wat	bestand	is	teen	organofosfate,	piretroïde	</div>
+<div id="t1e_2">en	insekgroeireguleerders.	Na	inname	van	</div>
+</div>
+<div class="s1_2">
+<div id="t1f_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="t1g_2">hou	larwes	</div>
+<div id="t1h_2">onmiddelik	op	om	te	voed	tot	die	dood	intree.		</div>
+</div>
+<div class="s1_2">
+<div id="t1i_2">5. GEBRUIKSAANWYSINGS  </div>
+</div>
+<div class="s2_2">
+<div id="t1j_2">Gebruik	slegs	soos	aangedui</div>
+<div id="t1k_2">Deeglike	 en	 egalige	 bedekking	 van	 die	 gewas	 is	 noodsaaklik.	</div>
+<div id="t1l_2">Moet	nie	toedien	gedurende	die	warmste	tyd	van	die	dag	nie,	as	</div>
+<div id="t1m_2">die	plante	nat	is,	of	wanneer	reën	verwag	word	nie.</div>
+<div id="t1n_2">5.1	 ALGEMENE	AANWYSINGS</div>
+</div>
+<div class="s1_2">
+<div id="t1o_2">Lugtoediening: </div>
+<div id="t1p_2">Voorsorgmaatreëls: </div>
+</div>
+<div class="s2_2">
+<div id="t1q_2">Lugtoediening	op	</div>
+</div>
+<div class="s1_2">
+<div id="t1r_2">mielies, suikermielies</div>
+</div>
+<div class="s3_2">
+<div id="t1s_2">en </div>
+</div>
+<div class="s1_2">
+<div id="t1t_2">graansorghum </div>
+</div>
+<div class="s2_2">
+<div id="t1u_2">mag	slegs	deur	‘n	geregistreerde	lugbespui-</div>
+<div id="t1v_2">tings	operateur	met	‘n	korrek	gekalibreerde,	geregistreerde	vlieg</div>
+</div>
+<div class="s3_2">
+<div id="t1w_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t1x_2">tuig	 volgens	 die	 instruksies	 van	 SANS	 10118	 (Aerial	 application	</div>
+<div id="t1y_2">of	 Agricultural	 Remedies)	 gedoen	 word.	 	 Dit	 is	 belangrik	 om	 te	</div>
+<div id="t1z_2">verseker	 dat	 die	 spuitmengsel	 eweredig	 oor	 die	 teikenarea	 ver</div>
+</div>
+<div class="s3_2">
+<div id="t20_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t21_2">sprei	word	en	dat	die	verlies	aan	spuitmengsel	tydens	toediening	</div>
+<div id="t22_2">tot	 ‘n	 minimum	 beperk	 word.	 	 Dit	 is	 dus	 belangrik	 om	 aan	 die	</div>
+<div id="t23_2">volgende	kriteria	te	voldoen:</div>
+<div id="t24_2">a)		Toedieningsparameters:</div>
+</div>
+<div class="s3_2">
+<div id="t25_2">- </div>
+</div>
+<div class="s1_2">
+<div id="t26_2">Volume:</div>
+</div>
+<div class="s2_2">
+<div id="t27_2">‘n	Volume	van	30	</div>
+</div>
+<div class="s4_2">
+<div id="t28_2">l</div>
+</div>
+<div class="s2_2">
+<div id="t29_2">/ha	word	aanbeveel.		Aangesien	</div>
+<div id="t2a_2">hierdie	produk	nie	teen	‘n	laer	volume	getoets	is	nie,	kan	die	</div>
+<div id="t2b_2">registrasiehouer	nie	effektitwieit	waarborg,	of	verantwoordelik	</div>
+<div id="t2c_2">gehou	 word	 vir	 enige	 nadelige	 effekte	 indien	 hierdie	 produk	</div>
+<div id="t2d_2">teen	‘n	laer	volume,	as	hierbo	aanbeveel,	uit	die	lug	toegedien	</div>
+</div>
+<div class="s3_2">
+<div id="t2e_2">word nie.</div>
+<div id="t2f_2">- </div>
+</div>
+<div class="s1_2">
+<div id="t2g_2">Druppelbedekking:</div>
+</div>
+<div class="s2_2">
+<div id="t2h_2">‘n	Druppelbedekking	van	25	-	30	drup</div>
+</div>
+<div class="s3_2">
+<div id="t2i_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t2j_2">pels/cm²	moet	op	die	teikenarea	herwin	word.</div>
+</div>
+<div class="s3_2">
+<div id="t2k_2">- </div>
+</div>
+<div class="s1_2">
+<div id="t2l_2">Druppelgrootte:</div>
+</div>
+<div class="s2_2">
+<div id="t2m_2">‘n	Druppelspektrum	met	‘n	VMD	van	280	</div>
+<div id="t2n_2">-	 300	 mikrons	 word	 aanbeveel.	 	 Verseker	 dat	 die	 produksie	</div>
+<div id="t2o_2">van	 fyn	 druppels	 (kleiner	 as	 150	 mikrons	 –	 hoë	 drywing	 en	</div>
+<div id="t2p_2">verdampingspotensiaal)	tot	‘n	minimum	beperk	word.</div>
+</div>
+<div class="s3_2">
+<div id="t2q_2">- </div>
+</div>
+<div class="s1_2">
+<div id="t2r_2">Vlieghoogte:</div>
+</div>
+<div class="s2_2">
+<div id="t2s_2">Die	 hoogte	 van	 die	 spuitbalk	 moet	 op	 3	 -	 4	</div>
+<div id="t2t_2">meter	 bo	 die	 teiken	 gehandhaaf	 word.	 	 Moet	 nie	 spuit	 wan</div>
+</div>
+<div class="s3_2">
+<div id="t2u_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t2v_2">neer	die	vliegtuig	aan	die	bopunt	is	van,	of	tydens	‘n	duik	nie,	</div>
+<div id="t2w_2">of	terwyl	dit	uitklim	of	draai	nie.</div>
+<div id="t2x_2">b)		Toerusting:</div>
+<div id="t2y_2">Gebruik	 geskikte	 spuitapparaat	 (hidroliese	 of	 roterende	 spuit</div>
+</div>
+<div class="s3_2">
+<div id="t2z_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t30_2">koppe)	wat	die	vereiste	druppelgrootte	en	bedekking	sal	produ</div>
+</div>
+<div class="s3_2">
+<div id="t31_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t32_2">seer,	maar	wat	die	minste	verlies	van	produk	deur	endodrywing	</div>
+<div id="t33_2">(binne	 die	 teikenarea)	 of	 eksodrywing	 (buite	 die	 teikenarea)	 sal	</div>
+<div id="t34_2">verseker.		Die	operateur	moet	‘n	stelsel	kies	wat	‘n	druppelspek-</div>
+<div id="t35_2">trum	met	die	kleinste	moontlike	relatiewe	span	sal	produseer.</div>
+<div id="t36_2">Al	die	spuitneuse	/	atomiseerders	moet	in	die	binneste	60%	-	75%	</div>
+<div id="t37_2">van	die	vlerkspan	geplaas	word	om	die	beweging	van	druppels	in	</div>
+<div id="t38_2">die	vlerkvorteks	in	te	beperk.</div>
+<div id="t39_2">c)		Meteorologiese	toestande:</div>
+<div id="t3a_2">Die	verskil	in	temperatuur	tussen	die	nat-	en	droëboltermometer	</div>
+<div id="t3b_2">van	‘n	swaaihigrometer,	moet	nie	8°C	oorskry	nie.		Die	byvoeging	</div>
+<div id="t3c_2">van	‘n	geskikte	anti-evaporant	word	aanbeveel	indien	die	VMD	van	</div>
+<div id="t3d_2">die	druppels	kleiner	as	200	-	250	mikrons	is.</div>
+<div id="t3e_2">Stop	bespuiting	indien	die	windspoed	15	km/uur	oorskry.</div>
+<div id="t3f_2">Hierdie	 produk	 moet	 nie	 uit	 die	 lug	 toegedien	 word	 tydens	</div>
+<div id="t3g_2">onstabiele,	turbulente	toestande	gedurende	die	hitte	van	die	dag	</div>
+<div id="t3h_2">wanneer	styg	en	dalende	konveksie	windbeweging	plaasvind	nie.	</div>
+<div id="t3i_2">Dit	 is	 belangrik	 om	 daarop	 te	 let	 dat	 die	 lugtoediening	 van	 hierdie	</div>
+<div id="t3j_2">produk	onder	temperatuur	inversie	toestande	(deur	bo	of	binne	die	</div>
+<div id="t3k_2">inversie	laag	te	spuit)	tot	die	volgende	probleme	mag	aanleiding	gee.</div>
+<div id="t3l_2">•	</div>
+<div id="t3m_2">Verlaagde	effektiwiteit	aangesien	die	druppels	as	‘n	wolk	in	die	</div>
+<div id="t3n_2">lug	bly	hang	en	moontlik	verdamp	(onvoldoende	bedekking	op	</div>
+<div id="t3o_2">teiken),	of</div>
+<div id="t3p_2">•	</div>
+<div id="t3q_2">Skade	aan	ander	nie-teiken	gewasse	of	ander	sensitiewe	areas	</div>
+<div id="t3r_2">a.g.v.		die	wegdryf	van	die	spuitwolk	tot	by	daardie	area.</div>
+</div>
+<div class="s1_2">
+<div id="t3s_2">Dit is noodsaaklik om ‘n versekering van die spuitopera-</div>
+<div id="t3t_2">teur te verkry dat aan bogenoemde vereistes voldoen sal </div>
+<div id="t3u_2">word.</div>
+</div>
+<div class="s2_2">
+<div id="t3v_2">5.2	 MENGAANBEVELINGS:</div>
+<div id="t3w_2">Vul	 ¼	 van	 die	 spuittenk	 met	 skoon	 water.	 Meet	 die	 benodigde	</div>
+<div id="t3x_2">hoeveelheid	</div>
+</div>
+<div class="s1_2">
+<div id="t3y_2">AMPLIGO </div>
+</div>
+<div class="s2_2">
+<div id="t3z_2">af</div>
+<div id="t40_2">en	voeg	in	die	tenk.	Vul	die	spuittenk	</div>
+<div id="t41_2">met	water	terwyl	aanhoudend	geroer	word	om	deeglike	vermen-</div>
+<div id="t42_2">ging	 te	 verseker.	 Hou	 aan	 met	 roering	 gedurende	 bespuiting.	</div>
+<div id="t43_2">Gebruik	die	voorbereide	spuitmengsel	onmiddelik.	Moet	nie	meer	</div>
+<div id="t44_2">spuitmengsel	voorberei	as	wat	onmiddelik	vir	toediening	benodig	</div>
+<div id="t45_2">word	nie.	Moet	nie	oornag	laat	oorstaan	nie.</div>
+<div id="t46_2">5.3	 TOEDIENINGSHOEVEELHEDE</div>
+<div id="t47_2">•	</div>
+</div>
+<div class="s1_2">
+<div id="t48_2">Moet NIE</div>
+</div>
+<div class="s2_2">
+<div id="t49_2">toedien	wanneer	bye	aktief	is	nie.</div>
+</div>
+<div class="s1_2">
+<div id="t4a_2">DOSIS</div>
+</div>
+<div class="s2_2">
+<div id="t4b_2">100	m</div>
+</div>
+<div class="s4_2">
+<div id="t4c_2">l</div>
+</div>
+<div class="s2_2">
+<div id="t4d_2">/ha</div>
+<div id="t4e_2">1,08	m</div>
+</div>
+<div class="s4_2">
+<div id="t4f_2">l</div>
+</div>
+<div class="s2_2">
+<div id="t4g_2">/	</div>
+<div id="t4h_2">100	m	ry</div>
+<div id="t4i_2">120	m</div>
+</div>
+<div class="s4_2">
+<div id="t4j_2">l</div>
+</div>
+<div class="s2_2">
+<div id="t4k_2">/	ha</div>
+</div>
+<div class="s1_2">
+<div id="t4l_2">OPMERKINGS</div>
+<div id="t4m_2">Grondtoediening:</div>
+</div>
+<div class="s2_2">
+<div id="t4n_2">Dien	 toe	 sodra	 mot	 teen</div>
+</div>
+<div class="s3_2">
+<div id="t4o_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t4p_2">woordigheid	 waargeneem	</div>
+<div id="t4q_2">word.	 Dien	 toe	 in	 7	 -	 14	</div>
+<div id="t4r_2">dae	intervalle.</div>
+<div id="t4s_2">Moet	 nie	 meer	 as	 3	 toe	-</div>
+<div id="t4t_2">die	n	</div>
+<div id="t4u_2">ings	 per	 gewassiklus	</div>
+<div id="t4v_2">maak	 nie.	 Moet	 nie	 ver</div>
+</div>
+<div class="s3_2">
+<div id="t4w_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t4x_2">wante	 chemie	 gebruik	 as	</div>
+<div id="t4y_2">herbesmetting	</div>
+<div id="t4z_2">voorkom	</div>
+<div id="t50_2">nie.	 	 	 Gebruik	 produkte	</div>
+<div id="t51_2">met	 ‘n	 ander	 metode	 van	</div>
+<div id="t52_2">werking.</div>
+</div>
+<div class="s1_2">
+<div id="t53_2">Grondtoediening:</div>
+</div>
+<div class="s2_2">
+<div id="t54_2">Dien	 toe	 voordat	 insekte	</div>
+<div id="t55_2">ekonomiese	drempelwaar-</div>
+<div id="t56_2">des	 bereik.	 Maak	 opvol</div>
+</div>
+<div class="s3_2">
+<div id="t57_2">-</div>
+</div>
+<div class="s2_2">
+<div id="t58_2">gende	 toedienings	 sodra	</div>
+<div id="t59_2">die	</div>
+<div id="t5a_2">populasies	</div>
+<div id="t5b_2">opbou,	</div>
+<div id="t5c_2">met	 ‘n	 minimum	 van	 7	</div>
+<div id="t5d_2">dae	tussen	toedienings.	‘n	</div>
+<div id="t5e_2">Minimum	van	2	-	4	</div>
+</div>
+<div class="s4_2">
+<div id="t5f_2">l</div>
+</div>
+<div class="s3_2">
+<div id="t5g_2">spuit-</div>
+</div>
+<div class="s2_2">
+<div id="t5h_2">mengsel	 /	 100	 m	 ry	 moet	</div>
+<div id="t5i_2">toegedien	word.</div>
+<div id="t5j_2">Moet	 nie	 meer	 as	 3	 keer	</div>
+</div>
+<div class="s3_2">
+<div id="t5k_2">per seisoen toedien nie.</div>
+</div>
+<div class="s1_2">
+<div id="t5l_2">Lugtoediening:</div>
+</div>
+<div class="s2_2">
+<div id="t5m_2">Dien	toe	in	30	</div>
+</div>
+<div class="s4_2">
+<div id="t5n_2">l</div>
+</div>
+<div class="s2_2">
+<div id="t5o_2">water	/	ha.</div>
+</div>
+<div class="s1_2">
+<div id="t5p_2">GEWAS / PLAAG</div>
+<div id="t5q_2">AARTAPPELS</div>
+<div id="t5r_2">Aartappelmot</div>
+</div>
+<div class="s3_2">
+<div id="t5s_2">(</div>
+</div>
+<div class="s5_2">
+<div id="t5t_2">Phthorimaea </div>
+<div id="t5u_2">operculella</div>
+</div>
+<div class="s3_2">
+<div id="t5v_2">)</div>
+</div>
+<div class="s1_2">
+<div id="t5w_2">GRAANSORGHUM</div>
+<div id="t5x_2">Snywurms</div>
+</div>
+<div class="s3_2">
+<div id="t5y_2">(</div>
+</div>
+<div class="s5_2">
+<div id="t5z_2">Agrotis </div>
+</div>
+<div class="s3_2">
+<div id="t60_2">spp.)</div>
+</div>
+<div class="s1_2">
+<div id="t61_2">Kommandowurms</div>
+</div>
+<div class="s3_2">
+<div id="t62_2">(</div>
+</div>
+<div class="s5_2">
+<div id="t63_2">Spodoptera </div>
+</div>
+<div class="s3_2">
+<div id="t64_2">spp.)</div>
+</div>
+<div class="s1_2">
+<div id="t65_2">Afrika bolwurm</div>
+</div>
+<div class="s3_2">
+<div id="t66_2">(</div>
+</div>
+<div class="s5_2">
+<div id="t67_2">Helicoverpa </div>
+<div id="t68_2">armigera</div>
+</div>
+<div class="s3_2">
+<div id="t69_2">)</div>
+</div>
+<div class="s1_2">
+<div id="t6a_2">Stronkboorders</div>
+</div>
+<div class="s3_2">
+<div id="t6b_2">(</div>
+</div>
+<div class="s5_2">
+<div id="t6c_2">Busseola fusca, </div>
+<div id="t6d_2">Chilo partellus</div>
+</div>
+<div class="s3_2">
+<div id="t6e_2">)</div>
+</div>
+</div>
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg2Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0);"></div>
+<div id="pg2"><img src="2/2.png" id="pdf2" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var f2 = [['t8_2',578],['ta_2',534],['td_2',1318],['th_2',240],['tj_2',451],['tl_2',216],['tn_2',851],['tp_2',268],['tx_2',704],['tz_2',351],['t10_2',1317],['t13_2',1373],['t14_2',847],['t15_2',594],['t1c_2',155],['t1i_2',673],['t1k_2',1387],['t1n_2',687],['t1r_2',500],['t1x_2',1387],['t1y_2',1387],['t1z_2',1355],['t22_2',1387],['t2c_2',1317],['t2e_2',196],['t2n_2',1317],['t2o_2',1318],['t2s_2',983],['t2t_2',1286],['t2y_2',1355],['t33_2',1387],['t3f_2',1393],['t3i_2',1393],['t3s_2',1380],['t3t_2',1379],['t3v_2',612],['t3w_2',1393],['t42_2',1393],['t46_2',755],['t48_2',216],['t4n_2',544],['t4p_2',576],['t4q_2',576],['t4s_2',563],['t4u_2',489],['t4v_2',544],['t4x_2',576],['t50_2',576],['t51_2',576],['t54_2',576],['t56_2',544],['t58_2',576],['t5c_2',576],['t5h_2',576],['t5j_2',576],['t5k_2',503],['t5p_2',393],['t65_2',356],['t6c_2',343],['t6d_2',311]];
+var c2 = 0;
+function fontAdjustments2(){;
+	if (c2<f2.length) {
+		adjustWordSpacing(f2[c2][0],f2[c2][1]);
+		c2++;
+		if (c2%10 == 0) {
+			setTimeout(function(){fontAdjustments2()},0);
+		} else {
+			fontAdjustments2();
+		}
+	}
+};
+function load2(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments2,timeout);
+}
+</script>
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(3,2,909,1286,0);
+</script>
+</body>
+</html>

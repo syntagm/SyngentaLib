@@ -1,0 +1,1350 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>AMISTAR_Top___AFR_2012_08_01 Page4</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #nav button {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #nav select {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var type;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        d("container").style.width = width + "px";
+        d("container").style.height = height + "px";
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page === 1) return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+			}
+				else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<div id="nav" style="background-color:#919191; padding-top: 10px; text-align: center; position: fixed; width: 100%; height: 40px; z-index:999;">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:30px;">&gt;&gt; Next</button>
+
+    <button onclick="zoomOut()" id="zoomOut">Zoom Out</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">Zoom In</button>
+</div>
+<div style="position:relative; width: 100%; height: 50px;"></div>
+
+<div id="container" style="margin: 0 auto 10px;">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<!--[if lt IE 9]><style type="text/css">.t div div{zoom: 25%;}</style><![endif]-->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+}
+.t div div {
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load4();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_4{left:1523px;top:187px;}
+#t2_4{left:1883px;top:187px;}
+#t3_4{left:269px;top:300px;}
+#t4_4{left:1230px;top:410px;}
+#t5_4{left:1021px;top:586px;}
+#t6_4{left:1095px;top:644px;}
+#t7_4{left:1427px;top:644px;}
+#t8_4{left:1448px;top:644px;}
+#t9_4{left:416px;top:410px;}
+#ta_4{left:288px;top:527px;}
+#tb_4{left:288px;top:586px;}
+#tc_4{left:288px;top:644px;}
+#td_4{left:300px;top:644px;}
+#te_4{left:703px;top:644px;}
+#tf_4{left:288px;top:703px;}
+#tg_4{left:288px;top:762px;}
+#th_4{left:300px;top:762px;}
+#ti_4{left:771px;top:762px;}
+#tj_4{left:288px;top:820px;}
+#tk_4{left:288px;top:879px;}
+#tl_4{left:300px;top:879px;}
+#tm_4{left:634px;top:879px;}
+#tn_4{left:277px;top:1006px;}
+#to_4{left:277px;top:1065px;}
+#tp_4{left:329px;top:1123px;}
+#tq_4{left:277px;top:1182px;}
+#tr_4{left:329px;top:1241px;}
+#ts_4{left:277px;top:1299px;}
+#tt_4{left:329px;top:1358px;}
+#tu_4{left:277px;top:1417px;}
+#tv_4{left:329px;top:1475px;}
+#tw_4{left:329px;top:1534px;}
+#tx_4{left:329px;top:1593px;}
+#ty_4{left:277px;top:1651px;}
+#tz_4{left:329px;top:1651px;}
+#t10_4{left:329px;top:1710px;}
+#t11_4{left:277px;top:1769px;}
+#t12_4{left:1185px;top:1769px;}
+#t13_4{left:1554px;top:1769px;}
+#t14_4{left:329px;top:1827px;}
+#t15_4{left:277px;top:1945px;}
+#t16_4{left:277px;top:2003px;}
+#t17_4{left:329px;top:2003px;}
+#t18_4{left:829px;top:2003px;}
+#t19_4{left:1055px;top:2003px;}
+#t1a_4{left:1091px;top:2003px;}
+#t1b_4{left:277px;top:2062px;}
+#t1c_4{left:329px;top:2062px;}
+#t1d_4{left:1014px;top:2062px;}
+#t1e_4{left:1240px;top:2062px;}
+#t1f_4{left:1276px;top:2062px;}
+#t1g_4{left:277px;top:2121px;}
+#t1h_4{left:329px;top:2121px;}
+#t1i_4{left:737px;top:2121px;}
+#t1j_4{left:908px;top:2121px;}
+#t1k_4{left:944px;top:2121px;}
+#t1l_4{left:277px;top:2179px;}
+#t1m_4{left:329px;top:2179px;}
+#t1n_4{left:925px;top:2179px;}
+#t1o_4{left:1097px;top:2179px;}
+#t1p_4{left:1133px;top:2179px;}
+#t1q_4{left:269px;top:2386px;}
+#t1r_4{left:1230px;top:2497px;}
+#t1s_4{left:1110px;top:2672px;}
+#t1t_4{left:1193px;top:2731px;}
+#t1u_4{left:1330px;top:2731px;}
+#t1v_4{left:1351px;top:2731px;}
+#t1w_4{left:416px;top:2497px;}
+#t1x_4{left:288px;top:2614px;}
+#t1y_4{left:288px;top:2672px;}
+#t1z_4{left:288px;top:2731px;}
+#t20_4{left:300px;top:2731px;}
+#t21_4{left:831px;top:2731px;}
+#t22_4{left:288px;top:2790px;}
+#t23_4{left:288px;top:2848px;}
+#t24_4{left:300px;top:2848px;}
+#t25_4{left:730px;top:2848px;}
+#t26_4{left:277px;top:2963px;}
+#t27_4{left:277px;top:3021px;}
+#t28_4{left:1605px;top:3021px;}
+#t29_4{left:329px;top:3080px;}
+#t2a_4{left:1605px;top:3080px;}
+#t2b_4{left:329px;top:3139px;}
+#t2c_4{left:329px;top:3197px;}
+#t2d_4{left:277px;top:3256px;}
+#t2e_4{left:1181px;top:3256px;}
+#t2f_4{left:1554px;top:3256px;}
+#t2g_4{left:329px;top:3315px;}
+#t2h_4{left:277px;top:3432px;}
+#t2i_4{left:277px;top:3491px;}
+#t2j_4{left:329px;top:3491px;}
+#t2k_4{left:784px;top:3491px;}
+#t2l_4{left:1010px;top:3491px;}
+#t2m_4{left:1046px;top:3491px;}
+#t2n_4{left:1828px;top:1331px;}
+#t2o_4{left:1984px;top:1331px;}
+#t2p_4{left:2385px;top:1331px;}
+#t2q_4{left:1984px;top:1390px;}
+#t2r_4{left:2789px;top:1498px;}
+#t2s_4{left:2580px;top:1674px;}
+#t2t_4{left:2673px;top:1733px;}
+#t2u_4{left:2967px;top:1733px;}
+#t2v_4{left:2988px;top:1733px;}
+#t2w_4{left:1975px;top:1498px;}
+#t2x_4{left:1847px;top:1615px;}
+#t2y_4{left:1847px;top:1674px;}
+#t2z_4{left:2091px;top:1674px;}
+#t30_4{left:1847px;top:1733px;}
+#t31_4{left:1859px;top:1733px;}
+#t32_4{left:2159px;top:1733px;}
+#t33_4{left:1847px;top:1791px;}
+#t34_4{left:1847px;top:1850px;}
+#t35_4{left:1859px;top:1850px;}
+#t36_4{left:2481px;top:1850px;}
+#t37_4{left:1847px;top:1909px;}
+#t38_4{left:2133px;top:1909px;}
+#t39_4{left:1847px;top:1967px;}
+#t3a_4{left:1859px;top:1967px;}
+#t3b_4{left:2384px;top:1967px;}
+#t3c_4{left:1847px;top:2026px;}
+#t3d_4{left:1847px;top:2085px;}
+#t3e_4{left:1859px;top:2085px;}
+#t3f_4{left:2246px;top:2085px;}
+#t3g_4{left:1836px;top:2211px;}
+#t3h_4{left:1836px;top:2270px;}
+#t3i_4{left:1888px;top:2328px;}
+#t3j_4{left:3164px;top:2328px;}
+#t3k_4{left:1888px;top:2387px;}
+#t3l_4{left:1836px;top:2446px;}
+#t3m_4{left:1836px;top:2504px;}
+#t3n_4{left:2833px;top:2504px;}
+#t3o_4{left:1888px;top:2563px;}
+#t3p_4{left:1888px;top:2622px;}
+#t3q_4{left:1836px;top:2680px;}
+#t3r_4{left:2762px;top:2680px;}
+#t3s_4{left:3113px;top:2680px;}
+#t3t_4{left:1888px;top:2739px;}
+#t3u_4{left:1836px;top:2798px;}
+#t3v_4{left:1888px;top:2856px;}
+#t3w_4{left:1836px;top:2915px;}
+#t3x_4{left:1888px;top:2915px;}
+#t3y_4{left:2260px;top:2915px;}
+#t3z_4{left:1888px;top:2974px;}
+#t40_4{left:1888px;top:3032px;}
+#t41_4{left:1836px;top:3150px;}
+#t42_4{left:1836px;top:3208px;}
+#t43_4{left:1888px;top:3208px;}
+#t44_4{left:2343px;top:3208px;}
+#t45_4{left:2596px;top:3208px;}
+#t46_4{left:2632px;top:3208px;}
+#t47_4{left:1836px;top:3267px;}
+#t48_4{left:1888px;top:3267px;}
+#t49_4{left:2251px;top:3267px;}
+#t4a_4{left:2422px;top:3267px;}
+#t4b_4{left:2459px;top:3267px;}
+#t4c_4{left:1828px;top:3596px;}
+#t4d_4{left:2001px;top:3596px;}
+#t4e_4{left:2789px;top:3703px;}
+#t4f_4{left:2580px;top:3878px;}
+#t4g_4{left:2752px;top:3937px;}
+#t4h_4{left:2889px;top:3937px;}
+#t4i_4{left:2910px;top:3937px;}
+#t4j_4{left:2845px;top:3996px;}
+#t4k_4{left:2681px;top:4054px;}
+#t4l_4{left:2804px;top:4054px;}
+#t4m_4{left:2842px;top:4054px;}
+#t4n_4{left:1975px;top:3703px;}
+#t4o_4{left:1847px;top:3820px;}
+#t4p_4{left:1847px;top:3878px;}
+#t4q_4{left:1847px;top:3937px;}
+#t4r_4{left:1859px;top:3937px;}
+#t4s_4{left:2239px;top:3937px;}
+#t4t_4{left:1847px;top:3996px;}
+#t4u_4{left:1847px;top:4054px;}
+#t4v_4{left:1859px;top:4054px;}
+#t4w_4{left:2330px;top:4054px;}
+#t4x_4{left:1847px;top:4113px;}
+#t4y_4{left:1847px;top:4172px;}
+#t4z_4{left:1859px;top:4172px;}
+#t50_4{left:2193px;top:4172px;}
+#t51_4{left:1836px;top:4290px;}
+#t52_4{left:1836px;top:4348px;}
+#t53_4{left:1888px;top:4407px;}
+#t54_4{left:1836px;top:4466px;}
+#t55_4{left:1888px;top:4524px;}
+#t56_4{left:1836px;top:4583px;}
+#t57_4{left:1888px;top:4642px;}
+#t58_4{left:1836px;top:4700px;}
+#t59_4{left:1888px;top:4759px;}
+#t5a_4{left:1888px;top:4818px;}
+#t5b_4{left:1888px;top:4876px;}
+#t5c_4{left:1828px;top:300px;}
+#t5d_4{left:2240px;top:300px;}
+#t5e_4{left:1836px;top:405px;}
+#t5f_4{left:1888px;top:463px;}
+#t5g_4{left:1836px;top:522px;}
+#t5h_4{left:1888px;top:522px;}
+#t5i_4{left:2260px;top:522px;}
+#t5j_4{left:1888px;top:581px;}
+#t5k_4{left:1888px;top:639px;}
+#t5l_4{left:1836px;top:698px;}
+#t5m_4{left:3164px;top:698px;}
+#t5n_4{left:1888px;top:757px;}
+#t5o_4{left:1836px;top:874px;}
+#t5p_4{left:1836px;top:933px;}
+#t5q_4{left:1888px;top:933px;}
+#t5r_4{left:2343px;top:933px;}
+#t5s_4{left:2596px;top:933px;}
+#t5t_4{left:2632px;top:933px;}
+#t5u_4{left:1836px;top:991px;}
+#t5v_4{left:1888px;top:991px;}
+#t5w_4{left:2251px;top:991px;}
+#t5x_4{left:2422px;top:991px;}
+#t5y_4{left:2459px;top:991px;}
+#t5z_4{left:269px;top:3699px;}
+#t60_4{left:805px;top:3699px;}
+#t61_4{left:1230px;top:3810px;}
+#t62_4{left:1021px;top:3985px;}
+#t63_4{left:1114px;top:4044px;}
+#t64_4{left:1408px;top:4044px;}
+#t65_4{left:1429px;top:4044px;}
+#t66_4{left:416px;top:3810px;}
+#t67_4{left:288px;top:3927px;}
+#t68_4{left:288px;top:3985px;}
+#t69_4{left:288px;top:4044px;}
+#t6a_4{left:300px;top:4044px;}
+#t6b_4{left:848px;top:4044px;}
+#t6c_4{left:288px;top:4103px;}
+#t6d_4{left:288px;top:4161px;}
+#t6e_4{left:300px;top:4161px;}
+#t6f_4{left:602px;top:4161px;}
+#t6g_4{left:288px;top:4220px;}
+#t6h_4{left:288px;top:4279px;}
+#t6i_4{left:300px;top:4279px;}
+#t6j_4{left:681px;top:4279px;}
+#t6k_4{left:288px;top:4337px;}
+#t6l_4{left:499px;top:4337px;}
+#t6m_4{left:288px;top:4396px;}
+#t6n_4{left:300px;top:4396px;}
+#t6o_4{left:579px;top:4396px;}
+#t6p_4{left:277px;top:4522px;}
+#t6q_4{left:277px;top:4581px;}
+#t6r_4{left:344px;top:4640px;}
+#t6s_4{left:277px;top:4698px;}
+#t6t_4{left:1275px;top:4698px;}
+#t6u_4{left:329px;top:4757px;}
+#t6v_4{left:277px;top:4816px;}
+#t6w_4{left:1203px;top:4816px;}
+#t6x_4{left:1554px;top:4816px;}
+#t6y_4{left:329px;top:4874px;}
+
+.s1_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GANXQV-HelveticaNeueLTStd-Bd4;
+	color: rgb(0,0,0);
+}
+
+.s3_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: MT-Extra4;
+	color: rgb(0,0,0);
+}
+
+.s5_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: CUZZMD-HelveticaNeueLTStd-It4;
+	color: rgb(0,0,0);
+}
+
+.s2_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: FSDRCX-HelveticaNeueLTStd-Lt4;
+	color: rgb(0,0,0);
+}
+
+.s6_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: DCJFAB-HelveticaNeueLTStd-BdIt4;
+	color: rgb(0,0,0);
+}
+
+.s4_4{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: DCJFAB-HelveticaNeueLTStd-Lt4;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: GANXQV-HelveticaNeueLTStd-Bd4;
+	src: url("4/fonts/GANXQV-HelveticaNeueLTStd-Bd.otf");
+}
+
+@font-face {
+	font-family: DCJFAB-HelveticaNeueLTStd-Lt4;
+	src: url("4/fonts/DCJFAB-HelveticaNeueLTStd-Lt.otf");
+}
+
+@font-face {
+	font-family: MT-Extra4;
+	src: url("4/fonts/MT-Extra.otf");
+}
+
+@font-face {
+	font-family: DCJFAB-HelveticaNeueLTStd-BdIt4;
+	src: url("4/fonts/DCJFAB-HelveticaNeueLTStd-BdIt.otf");
+}
+
+@font-face {
+	font-family: FSDRCX-HelveticaNeueLTStd-Lt4;
+	src: url("4/fonts/FSDRCX-HelveticaNeueLTStd-Lt.otf");
+}
+
+@font-face {
+	font-family: CUZZMD-HelveticaNeueLTStd-It4;
+	src: url("4/fonts/CUZZMD-HelveticaNeueLTStd-It.otf");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div class="t">
+<div class="s1_4">
+<div id="t1_4">AMISTAR TOP</div>
+</div>
+<div class="s2_4">
+<div id="t2_4">/	4</div>
+</div>
+<div class="s1_4">
+<div id="t3_4">4.4.6 GRAANSORGHUM</div>
+<div id="t4_4">DOSIS</div>
+<div id="t5_4">Grond- en lugtoediening</div>
+</div>
+<div class="s2_4">
+<div id="t6_4">500	tot	1000	m</div>
+</div>
+<div class="s3_4">
+<div id="t7_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t8_4">/ha</div>
+</div>
+<div class="s1_4">
+<div id="t9_4">GEWAS / SIEKTE</div>
+<div id="ta_4">GRAANSORGHUM</div>
+<div id="tb_4">Sorghum blaarvlek</div>
+</div>
+<div class="s4_4">
+<div id="tc_4">(</div>
+</div>
+<div class="s5_4">
+<div id="td_4">Cercospora sorghi</div>
+</div>
+<div class="s2_4">
+<div id="te_4">)</div>
+</div>
+<div class="s1_4">
+<div id="tf_4">Noordelike blaarskroei</div>
+</div>
+<div class="s4_4">
+<div id="tg_4">(</div>
+</div>
+<div class="s5_4">
+<div id="th_4">Exserohilum turcicum</div>
+</div>
+<div class="s2_4">
+<div id="ti_4">)</div>
+</div>
+<div class="s1_4">
+<div id="tj_4">Roes</div>
+</div>
+<div class="s4_4">
+<div id="tk_4">(</div>
+</div>
+<div class="s5_4">
+<div id="tl_4">Puccinia sorghi</div>
+</div>
+<div class="s2_4">
+<div id="tm_4">)</div>
+</div>
+<div class="s1_4">
+<div id="tn_4">OPMERKINGS:</div>
+</div>
+<div class="s2_4">
+<div id="to_4">•	 	Begin	toediening	voordat	3	%	van	die	totale	blaaroppervlakte	</div>
+<div id="tp_4">siektesimptome	toon.	</div>
+<div id="tq_4">•	 	Dit	 is	 belangrik	 dat	 bespuitings	 streng	 voorkomend	 gemaak	</div>
+<div id="tr_4">word	vir	doeltreffende	beheer.	</div>
+<div id="ts_4">•	 	Dien	 toe	 met	 21	 -	 28	 dae	 intervalle.	 As	 die	 siektedruk	 baie	</div>
+<div id="tt_4">hoog	is,	moet	die	korter	interval	gebruik	word.	</div>
+<div id="tu_4">•	 	Met	 kort-seisoen	 basters,	 waar	 die	 eerste	 bespuiting	 na	</div>
+<div id="tv_4">bestuiwing	gemaak	word,	sal	dit	waarskynlik	voldoende	wees	</div>
+<div id="tw_4">om	die	siekte	te	beheer	(‘n	opvolgtoediening	sal	waarskynlik	</div>
+<div id="tx_4">onnodig	wees).</div>
+<div id="ty_4">•	 	</div>
+<div id="tz_4">In	 sekere	 gevalle	 waar	 die	 eerste	 toediening	 baie	 vroeg	</div>
+<div id="t10_4">gemaak	is,	kan	‘n	derde	toediening	gemaak	word.</div>
+<div id="t11_4">•	 	Moet	 nie	 meer	 as	 drie	 (3)	 toedienings</div>
+</div>
+<div class="s1_4">
+<div id="t12_4">AMISTAR TOP </div>
+</div>
+<div class="s2_4">
+<div id="t13_4">per	</div>
+<div id="t14_4">seisoen	maak	nie.</div>
+</div>
+<div class="s1_4">
+<div id="t15_4">Spuitvolumes:</div>
+</div>
+<div class="s2_4">
+<div id="t16_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t17_4">Trekkertoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t18_4">200	-	450	</div>
+</div>
+<div class="s3_4">
+<div id="t19_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t1a_4">water/ha</div>
+<div id="t1b_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t1c_4">Hoë-balk trekkertoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t1d_4">150	-	300	</div>
+</div>
+<div class="s3_4">
+<div id="t1e_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t1f_4">water/ha</div>
+<div id="t1g_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t1h_4">Lugtoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t1i_4">30	-	40	</div>
+</div>
+<div class="s3_4">
+<div id="t1j_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t1k_4">water/ha</div>
+<div id="t1l_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t1m_4">Rugsakspuittoediening:</div>
+</div>
+<div class="s2_4">
+<div id="t1n_4">60	-	70	</div>
+</div>
+<div class="s3_4">
+<div id="t1o_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t1p_4">water/ha</div>
+</div>
+<div class="s1_4">
+<div id="t1q_4">4.4.7 GRONDBONE</div>
+<div id="t1r_4">DOSIS</div>
+<div id="t1s_4">Grondtoediening</div>
+</div>
+<div class="s2_4">
+<div id="t1t_4">500	m</div>
+</div>
+<div class="s3_4">
+<div id="t1u_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t1v_4">/ha</div>
+</div>
+<div class="s1_4">
+<div id="t1w_4">GEWAS / SIEKTE</div>
+<div id="t1x_4">GRONDBONE </div>
+<div id="t1y_4">Vroeë blaarvlek</div>
+</div>
+<div class="s4_4">
+<div id="t1z_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t20_4">Cercospora arachidicola</div>
+</div>
+<div class="s2_4">
+<div id="t21_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t22_4">Spatselvlek</div>
+</div>
+<div class="s4_4">
+<div id="t23_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t24_4">Phoma arachidicola</div>
+</div>
+<div class="s2_4">
+<div id="t25_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t26_4">OPMERKINGS:</div>
+</div>
+<div class="s2_4">
+<div id="t27_4">•	 	Dien	 twee	 (2)	 opeenvolgende	 bespuitings	 14	 -	 21	 dae	 uit</div>
+</div>
+<div class="s4_4">
+<div id="t28_4">-</div>
+</div>
+<div class="s2_4">
+<div id="t29_4">mekaar	toe	sodra	die	eerste	simptome	verskyn,	of	by	blomi</div>
+</div>
+<div class="s4_4">
+<div id="t2a_4">-</div>
+</div>
+<div class="s2_4">
+<div id="t2b_4">nisiasie	 (ongeveer	 10	 -	 12	 weke	 na	 plant)	 as	 siekte	 nog	 nie	</div>
+<div id="t2c_4">teenwoordig	is	nie.</div>
+<div id="t2d_4">•	 	Moenie	 meer	 as	 twee	 (2)	 toedienings	</div>
+</div>
+<div class="s1_4">
+<div id="t2e_4">AMISTAR TOP</div>
+</div>
+<div class="s2_4">
+<div id="t2f_4">per	</div>
+<div id="t2g_4">seisoen	maak	nie.</div>
+</div>
+<div class="s1_4">
+<div id="t2h_4">Spuitvolume:</div>
+</div>
+<div class="s2_4">
+<div id="t2i_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t2j_4">Trekkertoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t2k_4">300	-	400	</div>
+</div>
+<div class="s3_4">
+<div id="t2l_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t2m_4">water/ha</div>
+</div>
+<div class="s1_4">
+<div id="t2n_4">4.4.9 </div>
+<div id="t2o_4">KOOLGEWASSE </div>
+</div>
+<div class="s2_4">
+<div id="t2p_4">(Broccoli,	blomkool,	brusselse	spruite,	</div>
+<div id="t2q_4">kool,	kale	en	alle	variteite	en	kultivars	hiervan)</div>
+</div>
+<div class="s1_4">
+<div id="t2r_4">DOSIS</div>
+<div id="t2s_4">Grond- en lugtoediening</div>
+</div>
+<div class="s2_4">
+<div id="t2t_4">800	-	1000	m</div>
+</div>
+<div class="s3_4">
+<div id="t2u_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t2v_4">/ha</div>
+</div>
+<div class="s1_4">
+<div id="t2w_4">GEWAS / SIEKTE</div>
+<div id="t2x_4">KOOLGEWASSE</div>
+</div>
+<div class="s6_4">
+<div id="t2y_4">Alternaria</div>
+</div>
+<div class="s1_4">
+<div id="t2z_4">siektes</div>
+</div>
+<div class="s4_4">
+<div id="t30_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t31_4">Altenaria spp.</div>
+</div>
+<div class="s2_4">
+<div id="t32_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t33_4">Antraknose</div>
+</div>
+<div class="s4_4">
+<div id="t34_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t35_4">Colletotrichum higginsianum</div>
+</div>
+<div class="s2_4">
+<div id="t36_4">)</div>
+</div>
+<div class="s6_4">
+<div id="t37_4">Cercospora</div>
+</div>
+<div class="s1_4">
+<div id="t38_4">blaarvlek</div>
+</div>
+<div class="s4_4">
+<div id="t39_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t3a_4">Cercospora brassicicola</div>
+</div>
+<div class="s2_4">
+<div id="t3b_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t3c_4">Poeieragtige meeldou</div>
+</div>
+<div class="s4_4">
+<div id="t3d_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t3e_4">Erysiphe polygoni</div>
+</div>
+<div class="s2_4">
+<div id="t3f_4">)	</div>
+</div>
+<div class="s1_4">
+<div id="t3g_4">OPMERKINGS:</div>
+</div>
+<div class="s2_4">
+<div id="t3h_4">•	 	Dien	 toe	 as	 deel	 van	 ‘n	 beskermingsprogram	 voordat	 die	</div>
+<div id="t3i_4">siekte	voorkom	wanneer	kondisies	gunstig	is	vir	siekte	ontwik</div>
+</div>
+<div class="s4_4">
+<div id="t3j_4">-</div>
+</div>
+<div class="s2_4">
+<div id="t3k_4">keling.</div>
+<div id="t3l_4">•	 	Dien	toe	as	deel	van	‘n	7	tot	10	dag	spuit	skedule.	</div>
+<div id="t3m_4">•	 	Moet	 nie	 meer	 as	 een	 (1)	 bespuiting	 van	</div>
+</div>
+<div class="s1_4">
+<div id="t3n_4">AMISTAR TOP</div>
+</div>
+<div class="s2_4">
+<div id="t3o_4">toedien	voordat	daar	nie	opgevolg	word	met	‘n	produk	in	‘n	</div>
+<div id="t3p_4">ander	chemiese	groep	nie.</div>
+<div id="t3q_4">•	 	Moet	nie	meer	as	vier	(4)	bespuitings	van	</div>
+</div>
+<div class="s1_4">
+<div id="t3r_4">AMISTAR TOP</div>
+</div>
+<div class="s2_4">
+<div id="t3s_4">per	</div>
+<div id="t3t_4">seisoen	doen	nie.</div>
+<div id="t3u_4">•	 	Dien	 toe	 met	 genoegsame	 volume	 water	 om	 voldoende	</div>
+<div id="t3v_4">bedekking	te	verseker.</div>
+<div id="t3w_4">•	 	</div>
+</div>
+<div class="s1_4">
+<div id="t3x_4">AMISTAR TOP </div>
+</div>
+<div class="s2_4">
+<div id="t3y_4">kan	 gebruik	 word	 in	 ‘n	 spuitprogram	 met	</div>
+<div id="t3z_4">ander	 geregistreerde	 produkte	 wat	 nie	 asoksistrobien	 of	</div>
+<div id="t40_4">difenokonasool	bevat	nie.	</div>
+</div>
+<div class="s1_4">
+<div id="t41_4">Spuitvolumes:</div>
+</div>
+<div class="s2_4">
+<div id="t42_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t43_4">Trekkertoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t44_4">250	-	1000	</div>
+</div>
+<div class="s3_4">
+<div id="t45_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t46_4">water/ha</div>
+<div id="t47_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t48_4">Lugtoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t49_4">30	-	40</div>
+</div>
+<div class="s3_4">
+<div id="t4a_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t4b_4">water/ha</div>
+</div>
+<div class="s1_4">
+<div id="t4c_4">4.4.10 </div>
+<div id="t4d_4">MIELIES EN SUIKERMIELIES</div>
+<div id="t4e_4">DOSIS</div>
+<div id="t4f_4">Grond- en lugtoediening</div>
+</div>
+<div class="s2_4">
+<div id="t4g_4">500	m</div>
+</div>
+<div class="s3_4">
+<div id="t4h_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t4i_4">/ha	</div>
+<div id="t4j_4">of</div>
+<div id="t4k_4">4,5	m</div>
+</div>
+<div class="s3_4">
+<div id="t4l_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t4m_4">/100	m	ry</div>
+</div>
+<div class="s1_4">
+<div id="t4n_4">GEWAS / SIEKTE</div>
+<div id="t4o_4">MIELIES EN SUIKERMIELIES</div>
+<div id="t4p_4">Grysblaarvlek</div>
+</div>
+<div class="s4_4">
+<div id="t4q_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t4r_4">Cercospora zeina</div>
+</div>
+<div class="s2_4">
+<div id="t4s_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t4t_4">Noordelike blaarskroei</div>
+</div>
+<div class="s4_4">
+<div id="t4u_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t4v_4">Exserohilum turcicum</div>
+</div>
+<div class="s2_4">
+<div id="t4w_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t4x_4">Roes</div>
+</div>
+<div class="s4_4">
+<div id="t4y_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t4z_4">Puccinia sorghi</div>
+</div>
+<div class="s2_4">
+<div id="t50_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t51_4">OPMERKINGS:</div>
+</div>
+<div class="s2_4">
+<div id="t52_4">•	 	Begin	toediening	voordat	3	%	van	die	totale	blaaroppervlakte	</div>
+<div id="t53_4">siektesimptome	toon.</div>
+<div id="t54_4">•	 	Dit	 is	 belangrik	 dat	 bespuitings	 streng	 voorkomend	 gemaak	</div>
+<div id="t55_4">word	vir	doeltreffende	beheer.	</div>
+<div id="t56_4">•	 	Dien	 toe	 met	 21	 -	 28	 dae	 intervalle.	 As	 die	 siektedruk	 baie	</div>
+<div id="t57_4">hoog	is,	moet	die	korter	interval	gebruik	word.	</div>
+<div id="t58_4">•	 	Met	 kort-seisoen	 basters,	 waar	 die	 eerste	 bespuiting	 na	</div>
+<div id="t59_4">bestuiwing	gemaak	word,	sal	dit	waarskynlik	voldoende	wees	</div>
+<div id="t5a_4">om	die	siekte	te	beheer	(‘n	opvolgtoediening	sal	waarskynlik	</div>
+<div id="t5b_4">onnodig	wees).</div>
+</div>
+<div class="s1_4">
+<div id="t5c_4">KNOLGEWASSE </div>
+</div>
+<div class="s2_4">
+<div id="t5d_4">(vervolg)</div>
+<div id="t5e_4">•	 	Dien	 toe	 met	 genoegsame	 volume	 water	 om	 voldoende	</div>
+<div id="t5f_4">bedekking	te	verseker.</div>
+<div id="t5g_4">•	 	</div>
+</div>
+<div class="s1_4">
+<div id="t5h_4">AMISTAR TOP </div>
+</div>
+<div class="s2_4">
+<div id="t5i_4">kan	 gebruik	 word	 in	 ‘n	 spuitprogram	 met	</div>
+<div id="t5j_4">ander	 geregistreerde	 produkte	 wat	 nie	 asoksistrobien	 of	</div>
+<div id="t5k_4">difenokonasool	bevat	nie.</div>
+<div id="t5l_4">•	 	Die	 byvoeging	 van	 ‘n	 bymiddel	 mag	 die	 effektiwiteit	 ver</div>
+</div>
+<div class="s4_4">
+<div id="t5m_4">-</div>
+</div>
+<div class="s2_4">
+<div id="t5n_4">beter.	</div>
+</div>
+<div class="s1_4">
+<div id="t5o_4">Spuitvolumes:</div>
+</div>
+<div class="s2_4">
+<div id="t5p_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t5q_4">Trekkertoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t5r_4">250	-	1000	</div>
+</div>
+<div class="s3_4">
+<div id="t5s_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t5t_4">water/ha</div>
+<div id="t5u_4">•	</div>
+</div>
+<div class="s1_4">
+<div id="t5v_4">Lugtoediening: </div>
+</div>
+<div class="s2_4">
+<div id="t5w_4">30	-	40</div>
+</div>
+<div class="s3_4">
+<div id="t5x_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t5y_4">water/ha</div>
+</div>
+<div class="s1_4">
+<div id="t5z_4">4.4.8 KNOLGEWASSE </div>
+</div>
+<div class="s2_4">
+<div id="t60_4">(Cassava,	gemmer,	soetpatat)</div>
+</div>
+<div class="s1_4">
+<div id="t61_4">DOSIS</div>
+<div id="t62_4">Grond- en lugtoediening</div>
+</div>
+<div class="s2_4">
+<div id="t63_4">500	-	1000	m</div>
+</div>
+<div class="s3_4">
+<div id="t64_4">l</div>
+</div>
+<div class="s2_4">
+<div id="t65_4">/ha</div>
+</div>
+<div class="s1_4">
+<div id="t66_4">GEWAS / SIEKTE</div>
+<div id="t67_4">KNOLGEWASSE</div>
+<div id="t68_4">Swartvlek</div>
+</div>
+<div class="s4_4">
+<div id="t69_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t6a_4">Colletotrichum coccodes</div>
+</div>
+<div class="s2_4">
+<div id="t6b_4">)</div>
+</div>
+<div class="s1_4">
+<div id="t6c_4">Vroeë roes</div>
+</div>
+<div class="s4_4">
+<div id="t6d_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t6e_4">Alternaria spp</div>
+</div>
+<div class="s2_4">
+<div id="t6f_4">.)</div>
+</div>
+<div class="s1_4">
+<div id="t6g_4">Roes</div>
+</div>
+<div class="s4_4">
+<div id="t6h_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t6i_4">Puccinia helianthi</div>
+</div>
+<div class="s2_4">
+<div id="t6j_4">)</div>
+</div>
+<div class="s6_4">
+<div id="t6k_4">Septoria </div>
+</div>
+<div class="s1_4">
+<div id="t6l_4">blaarvlek</div>
+</div>
+<div class="s4_4">
+<div id="t6m_4">(</div>
+</div>
+<div class="s5_4">
+<div id="t6n_4">Septoria spp</div>
+</div>
+<div class="s2_4">
+<div id="t6o_4">.)</div>
+</div>
+<div class="s1_4">
+<div id="t6p_4">OPMERKINGS:</div>
+</div>
+<div class="s2_4">
+<div id="t6q_4">•	 		Dien	 toe	 as	 deel	 van	 ‘n	 beskermingsprogram	 voordat	 die	</div>
+<div id="t6r_4">siekte	voorkom.</div>
+<div id="t6s_4">•	 	Moenie	 meer	 as	 twee	 (2)	 bespuitings	 van	</div>
+</div>
+<div class="s1_4">
+<div id="t6t_4">AMISTAR TOP</div>
+</div>
+<div class="s2_4">
+<div id="t6u_4">doen	met	7	-	10	dag	intervalle	nie.</div>
+<div id="t6v_4">•	 	Moet	nie	meer	as	vier	(4)	bespuitings	van	</div>
+</div>
+<div class="s1_4">
+<div id="t6w_4">AMISTAR TOP</div>
+</div>
+<div class="s2_4">
+<div id="t6x_4">per	</div>
+<div id="t6y_4">seisoen	doen	nie.</div>
+</div>
+</div>
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg4Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0);"></div>
+<div id="pg4"><img src="4/4.png" id="pdf4" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var f4 = [['t1_4',338],['t3_4',573],['t5_4',569],['t9_4',402],['tb_4',439],['td_4',403],['tf_4',530],['th_4',471],['tl_4',334],['to_4',1359],['tq_4',1359],['ts_4',1359],['tu_4',1359],['ty_4',65],['tz_4',1307],['t11_4',884],['t12_4',346],['t1c_4',654],['t1q_4',461],['t1w_4',402],['t1y_4',362],['t20_4',531],['t24_4',430],['t27_4',1327],['t2b_4',1307],['t2d_4',892],['t2e_4',347],['t2s_4',569],['t2w_4',402],['t31_4',300],['t35_4',622],['t3a_4',525],['t3c_4',512],['t3e_4',387],['t3h_4',1359],['t3l_4',1137],['t3m_4',985],['t3n_4',348],['t3q_4',925],['t3r_4',337],['t3u_4',1359],['t3w_4',65],['t3x_4',347],['t3y_4',935],['t3z_4',1307],['t4d_4',677],['t4f_4',569],['t4n_4',402],['t4o_4',658],['t4r_4',380],['t4t_4',530],['t4v_4',471],['t4z_4',334],['t52_4',1359],['t54_4',1359],['t56_4',1359],['t58_4',1359],['t5e_4',1359],['t5g_4',65],['t5h_4',347],['t5i_4',935],['t5j_4',1307],['t5l_4',1327],['t5z_4',520],['t62_4',569],['t66_4',402],['t6a_4',548],['t6c_4',253],['t6e_4',302],['t6i_4',381],['t6n_4',279],['t6q_4',1359],['t6s_4',987],['t6t_4',347],['t6v_4',925],['t6w_4',337]];
+var c4 = 0;
+function fontAdjustments4(){;
+	if (c4<f4.length) {
+		adjustWordSpacing(f4[c4][0],f4[c4][1]);
+		c4++;
+		if (c4%10 == 0) {
+			setTimeout(function(){fontAdjustments4()},0);
+		} else {
+			fontAdjustments4();
+		}
+	}
+};
+function load4(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments4,timeout);
+}
+</script>
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(6,4,909,1286,0);
+</script>
+</body>
+</html>
