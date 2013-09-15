@@ -1,0 +1,1055 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>HALEX_GT___Afr_2009_08_21 Page2</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" />
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" />
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); z-index:-2;"></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load2();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_2{left:456px;top:70px;}
+#t2_2{left:478px;top:70px;}
+#t3_2{left:478px;top:84px;}
+#t4_2{left:478px;top:99px;}
+#t5_2{left:478px;top:113px;}
+#t6_2{left:478px;top:128px;}
+#t7_2{left:478px;top:142px;}
+#t8_2{left:456px;top:157px;}
+#t9_2{left:478px;top:157px;}
+#ta_2{left:478px;top:171px;}
+#tb_2{left:664px;top:171px;}
+#tc_2{left:731px;top:171px;}
+#td_2{left:478px;top:186px;}
+#te_2{left:595px;top:186px;}
+#tf_2{left:660px;top:186px;}
+#tg_2{left:456px;top:200px;}
+#th_2{left:640px;top:200px;}
+#ti_2{left:707px;top:200px;}
+#tj_2{left:478px;top:215px;}
+#tk_2{left:478px;top:229px;}
+#tl_2{left:637px;top:229px;}
+#tm_2{left:702px;top:229px;}
+#tn_2{left:478px;top:244px;}
+#to_2{left:478px;top:258px;}
+#tp_2{left:478px;top:273px;}
+#tq_2{left:456px;top:288px;}
+#tr_2{left:759px;top:288px;}
+#ts_2{left:478px;top:302px;}
+#tt_2{left:498px;top:302px;}
+#tu_2{left:478px;top:317px;}
+#tv_2{left:500px;top:317px;}
+#tw_2{left:500px;top:331px;}
+#tx_2{left:478px;top:346px;}
+#ty_2{left:500px;top:346px;}
+#tz_2{left:500px;top:360px;}
+#t10_2{left:500px;top:375px;}
+#t11_2{left:478px;top:389px;}
+#t12_2{left:500px;top:389px;}
+#t13_2{left:500px;top:404px;}
+#t14_2{left:456px;top:418px;}
+#t15_2{left:520px;top:418px;}
+#t16_2{left:585px;top:418px;}
+#t17_2{left:478px;top:433px;}
+#t18_2{left:500px;top:433px;}
+#t19_2{left:500px;top:447px;}
+#t1a_2{left:500px;top:462px;}
+#t1b_2{left:478px;top:476px;}
+#t1c_2{left:500px;top:476px;}
+#t1d_2{left:500px;top:491px;}
+#t1e_2{left:500px;top:505px;}
+#t1f_2{left:478px;top:520px;}
+#t1g_2{left:500px;top:520px;}
+#t1h_2{left:500px;top:534px;}
+#t1i_2{left:500px;top:549px;}
+#t1j_2{left:456px;top:563px;}
+#t1k_2{left:478px;top:578px;}
+#t1l_2{left:544px;top:578px;}
+#t1m_2{left:478px;top:592px;}
+#t1n_2{left:543px;top:592px;}
+#t1o_2{left:456px;top:607px;}
+#t1p_2{left:521px;top:607px;}
+#t1q_2{left:588px;top:607px;}
+#t1r_2{left:478px;top:621px;}
+#t1s_2{left:478px;top:636px;}
+#t1t_2{left:456px;top:650px;}
+#t1u_2{left:478px;top:665px;}
+#t1v_2{left:478px;top:679px;}
+#t1w_2{left:712px;top:679px;}
+#t1x_2{left:456px;top:708px;}
+#t1y_2{left:481px;top:708px;}
+#t1z_2{left:456px;top:737px;}
+#t20_2{left:478px;top:737px;}
+#t21_2{left:679px;top:737px;}
+#t22_2{left:745px;top:737px;}
+#t23_2{left:478px;top:752px;}
+#t24_2{left:456px;top:766px;}
+#t25_2{left:478px;top:766px;}
+#t26_2{left:516px;top:766px;}
+#t27_2{left:579px;top:766px;}
+#t28_2{left:478px;top:781px;}
+#t29_2{left:478px;top:795px;}
+#t2a_2{left:456px;top:810px;}
+#t2b_2{left:478px;top:810px;}
+#t2c_2{left:482px;top:844px;}
+#t2d_2{left:707px;top:844px;}
+#t2e_2{left:482px;top:867px;}
+#t2f_2{left:707px;top:867px;}
+#t2g_2{left:482px;top:891px;}
+#t2h_2{left:707px;top:891px;}
+#t2i_2{left:482px;top:914px;}
+#t2j_2{left:707px;top:914px;}
+#t2k_2{left:482px;top:928px;}
+#t2l_2{left:482px;top:951px;}
+#t2m_2{left:707px;top:951px;}
+#t2n_2{left:456px;top:983px;}
+#t2o_2{left:478px;top:983px;}
+#t2p_2{left:478px;top:998px;}
+#t2q_2{left:478px;top:1012px;}
+#t2r_2{left:478px;top:1027px;}
+#t2s_2{left:692px;top:1027px;}
+#t2t_2{left:757px;top:1027px;}
+#t2u_2{left:456px;top:1056px;}
+#t2v_2{left:456px;top:1070px;}
+#t2w_2{left:456px;top:1085px;}
+#t2x_2{left:456px;top:1114px;}
+#t2y_2{left:456px;top:1143px;}
+#t2z_2{left:478px;top:1143px;}
+#t30_2{left:478px;top:1157px;}
+#t31_2{left:478px;top:1172px;}
+#t32_2{left:456px;top:1186px;}
+#t33_2{left:478px;top:1186px;}
+#t34_2{left:478px;top:1201px;}
+#t35_2{left:478px;top:1216px;}
+#t36_2{left:478px;top:1230px;}
+#t37_2{left:393px;top:41px;}
+#t38_2{left:458px;top:41px;}
+#t39_2{left:66px;top:69px;}
+#t3a_2{left:66px;top:83px;}
+#t3b_2{left:66px;top:98px;}
+#t3c_2{left:66px;top:112px;}
+#t3d_2{left:158px;top:112px;}
+#t3e_2{left:224px;top:112px;}
+#t3f_2{left:66px;top:127px;}
+#t3g_2{left:66px;top:156px;}
+#t3h_2{left:130px;top:156px;}
+#t3i_2{left:66px;top:170px;}
+#t3j_2{left:66px;top:199px;}
+#t3k_2{left:140px;top:199px;}
+#t3l_2{left:66px;top:214px;}
+#t3m_2{left:66px;top:243px;}
+#t3n_2{left:66px;top:257px;}
+#t3o_2{left:66px;top:272px;}
+#t3p_2{left:66px;top:286px;}
+#t3q_2{left:66px;top:301px;}
+#t3r_2{left:66px;top:315px;}
+#t3s_2{left:66px;top:344px;}
+#t3t_2{left:66px;top:359px;}
+#t3u_2{left:66px;top:373px;}
+#t3v_2{left:66px;top:388px;}
+#t3w_2{left:66px;top:417px;}
+#t3x_2{left:88px;top:417px;}
+#t3y_2{left:88px;top:431px;}
+#t3z_2{left:88px;top:446px;}
+#t40_2{left:88px;top:460px;}
+#t41_2{left:66px;top:475px;}
+#t42_2{left:88px;top:475px;}
+#t43_2{left:88px;top:490px;}
+#t44_2{left:88px;top:504px;}
+#t45_2{left:88px;top:519px;}
+#t46_2{left:66px;top:533px;}
+#t47_2{left:88px;top:533px;}
+#t48_2{left:88px;top:548px;}
+#t49_2{left:88px;top:562px;}
+#t4a_2{left:66px;top:577px;}
+#t4b_2{left:88px;top:577px;}
+#t4c_2{left:88px;top:591px;}
+#t4d_2{left:66px;top:606px;}
+#t4e_2{left:88px;top:606px;}
+#t4f_2{left:66px;top:620px;}
+#t4g_2{left:88px;top:620px;}
+#t4h_2{left:88px;top:635px;}
+#t4i_2{left:88px;top:649px;}
+#t4j_2{left:88px;top:664px;}
+#t4k_2{left:66px;top:693px;}
+#t4l_2{left:66px;top:707px;}
+#t4m_2{left:66px;top:722px;}
+#t4n_2{left:66px;top:736px;}
+#t4o_2{left:66px;top:751px;}
+#t4p_2{left:197px;top:751px;}
+#t4q_2{left:269px;top:751px;}
+#t4r_2{left:66px;top:765px;}
+#t4s_2{left:112px;top:765px;}
+#t4t_2{left:177px;top:765px;}
+#t4u_2{left:66px;top:794px;}
+#t4v_2{left:66px;top:809px;}
+#t4w_2{left:66px;top:838px;}
+#t4x_2{left:66px;top:867px;}
+#t4y_2{left:66px;top:896px;}
+#t4z_2{left:88px;top:896px;}
+#t50_2{left:141px;top:896px;}
+#t51_2{left:208px;top:896px;}
+#t52_2{left:88px;top:910px;}
+#t53_2{left:88px;top:925px;}
+#t54_2{left:66px;top:939px;}
+#t55_2{left:88px;top:939px;}
+#t56_2{left:161px;top:939px;}
+#t57_2{left:387px;top:939px;}
+#t58_2{left:88px;top:954px;}
+#t59_2{left:159px;top:954px;}
+#t5a_2{left:310px;top:956px;}
+#t5b_2{left:320px;top:954px;}
+#t5c_2{left:381px;top:956px;}
+#t5d_2{left:391px;top:954px;}
+#t5e_2{left:88px;top:968px;}
+#t5f_2{left:66px;top:983px;}
+#t5g_2{left:88px;top:983px;}
+#t5h_2{left:188px;top:983px;}
+#t5i_2{left:255px;top:983px;}
+#t5j_2{left:88px;top:997px;}
+#t5k_2{left:66px;top:1012px;}
+#t5l_2{left:88px;top:1012px;}
+#t5m_2{left:141px;top:1012px;}
+#t5n_2{left:209px;top:1012px;}
+#t5o_2{left:88px;top:1027px;}
+#t5p_2{left:66px;top:1041px;}
+#t5q_2{left:130px;top:1041px;}
+#t5r_2{left:195px;top:1041px;}
+#t5s_2{left:66px;top:1056px;}
+#t5t_2{left:88px;top:1056px;}
+#t5u_2{left:88px;top:1070px;}
+#t5v_2{left:88px;top:1085px;}
+#t5w_2{left:66px;top:1099px;}
+#t5x_2{left:88px;top:1099px;}
+#t5y_2{left:88px;top:1114px;}
+#t5z_2{left:88px;top:1128px;}
+#t60_2{left:88px;top:1143px;}
+#t61_2{left:88px;top:1157px;}
+#t62_2{left:88px;top:1172px;}
+#t63_2{left:88px;top:1186px;}
+#t64_2{left:270px;top:1186px;}
+#t65_2{left:336px;top:1186px;}
+#t66_2{left:88px;top:1201px;}
+#t67_2{left:88px;top:1215px;}
+#t68_2{left:88px;top:1230px;}
+
+.s1_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: WHIWKP-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+.s2_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: WHIWKP-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s3_2{
+	FONT-SIZE: 24px;
+	FONT-FAMILY: WHIWKP-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: WHIWKP-HelveticaNeueLTStd-Bd2;
+	src: url("2/fonts/WHIWKP-HelveticaNeueLTStd-Bd.eot");
+	src: url("2/fonts/WHIWKP-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/WHIWKP-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: WHIWKP-HelveticaNeueLTStd-Lt2;
+	src: url("2/fonts/WHIWKP-HelveticaNeueLTStd-Lt.eot");
+	src: url("2/fonts/WHIWKP-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/WHIWKP-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_2" class="t s1_2">8.	</div>
+<div id="t2_2" class="t s1_2">Gewasbeskadiging	 	 mag	 voorkom	 onder	 uitermatige	 weer-</div>
+<div id="t3_2" class="t s1_2">stoestande	 of	 wanneer	 die	 gewas	 onder	 stremmingstoe-</div>
+<div id="t4_2" class="t s1_2">stande	 verkeer	 a.g.v.	 onvoldoende	 of	 abnormale	 hoë	 vog-</div>
+<div id="t5_2" class="t s1_2">toestande	of	uitermatige	temperature	of	uitermatige	tempera-</div>
+<div id="t6_2" class="t s1_2">tuur	 wisselings.	 Langdurige	 bewolkte	 toestande	 kan	 lei	 tot	</div>
+<div id="t7_2" class="t s1_2">tydelike	gewas	beskadiging.</div>
+<div id="t8_2" class="t s1_2">9.	</div>
+<div id="t9_2" class="t s1_2">Indien	‘n	aktiverings	reën	(10	-	20	mm)	nie	binne	7	-	14	dae	</div>
+<div id="ta_2" class="t s1_2">na	die	na-opkoms	toediening	van	</div>
+<div id="tb_2" class="t s2_2">HALEX GT</div>
+<div id="tc_2" class="t s1_2">geval	het	nie	</div>
+<div id="td_2" class="t s1_2">sal	die	nawerking	van	</div>
+<div id="te_2" class="t s2_2">HALEX GT</div>
+<div id="tf_2" class="t s1_2">beperk	word.</div>
+<div id="tg_2" class="t s1_2">10.		Verhoed	 die	 wegdrywing	 van	</div>
+<div id="th_2" class="t s2_2">HALEX GT </div>
+<div id="ti_2" class="t s1_2">na	 aangrensende	</div>
+<div id="tj_2" class="t s1_2">nie	 GT	 gewasse.	 Ernstige	 skade	 en	 ook	 vernietiging	 van	</div>
+<div id="tk_2" class="t s1_2">gewasse	kan	plaasvind	indien	</div>
+<div id="tl_2" class="t s2_2">HALEX GT</div>
+<div id="tm_2" class="t s1_2">in	kontak	kom	met	</div>
+<div id="tn_2" class="t s1_2">enige	 plantmaterial	 insluitende	 blare,	 groen	 stamme,	 bloot-</div>
+<div id="to_2" class="t s1_2">gestelde	wortels	of	vrugte	van	gewasse,	bome	en	enige	ander	</div>
+<div id="tp_2" class="t s1_2">plante	of	gewasse	wat	nie	bespuit	moes	word	nie.</div>
+<div id="tq_2" class="t s1_2">11.		Ernstige	skade	aan	mielies	kan	verwag	word	indien	</div>
+<div id="tr_2" class="t s2_2">HALEX </div>
+<div id="ts_2" class="t s2_2">GT </div>
+<div id="tt_2" class="t s1_2">toegedien	word</div>
+<div id="tu_2" class="t s1_2">a)	</div>
+<div id="tv_2" class="t s1_2">na-opkoms	in	tenkmengsels	met	grasdoders	wat	emulsi-</div>
+<div id="tw_2" class="t s1_2">fiseerde	konsentrate	(EC’s)	is.</div>
+<div id="tx_2" class="t s1_2">b)	</div>
+<div id="ty_2" class="t s1_2">na-opkoms	van	mielies	wat	tydens	plant	behandel	is	met	</div>
+<div id="tz_2" class="t s1_2">organofosfaat	 insekdoders	 soos	 terbufos	 of	 chlorpirifos	</div>
+<div id="t10_2" class="t s1_2">(sien	11a	&	b	hieronder)</div>
+<div id="t11_2" class="t s1_2">c)	</div>
+<div id="t12_2" class="t s1_2">na-opkoms	 in	 tenkmengsels	 met	 organofosfate	 of	 kar-</div>
+<div id="t13_2" class="t s1_2">bamaat	insekdoders</div>
+<div id="t14_2" class="t s1_2">12.	Moenie	</div>
+<div id="t15_2" class="t s2_2">HALEX GT</div>
+<div id="t16_2" class="t s1_2">toedien	</div>
+<div id="t17_2" class="t s1_2">a)	</div>
+<div id="t18_2" class="t s1_2">binne	28	dae	na	‘n	grondtoediening	van	‘n	organofosfaat	</div>
+<div id="t19_2" class="t s1_2">(bv.	terbufos)	of	‘n	karbamaat	(bv.	aldicarb)	tydens	plant-</div>
+<div id="t1a_2" class="t s1_2">tyd</div>
+<div id="t1b_2" class="t s1_2">b)	</div>
+<div id="t1c_2" class="t s1_2">in	‘n	tenkmengsels	met	organofosfate	(bv.	chlorpirifos)	of	</div>
+<div id="t1d_2" class="t s1_2">karbamaat	 (bv.	 methomil)	 insekdodders	 vir	 blaartoedie-</div>
+<div id="t1e_2" class="t s1_2">nings	nie.	</div>
+<div id="t1f_2" class="t s1_2">c)	</div>
+<div id="t1g_2" class="t s1_2">binne	7	dae	voor	of	7	dae	na	die	toediening	van	organo-</div>
+<div id="t1h_2" class="t s1_2">fosfate	 (bv.	 chlorpirifos)	 of	 karbamaat	 (bv.	 methomil)	</div>
+<div id="t1i_2" class="t s1_2">insekdodders	vir	blaartoedienings	nie.</div>
+<div id="t1j_2" class="t s1_2">13.		Moenie	 die	 grond	 bewerk	 binne	 7	 dae	 voor	 of	 na	 die	 ‘n	</div>
+<div id="t1k_2" class="t s2_2">HALEX GT</div>
+<div id="t1l_2" class="t s1_2">bespuiting	nie	aangesien	die	onkruidbeheer	van	</div>
+<div id="t1m_2" class="t s2_2">HALEX GT</div>
+<div id="t1n_2" class="t s1_2">benadeel	mag	word.</div>
+<div id="t1o_2" class="t s1_2">14.		Moenie	</div>
+<div id="t1p_2" class="t s2_2">HALEX GT</div>
+<div id="t1q_2" class="t s1_2">toedien	in	tenkmengsels	met	suspensie	</div>
+<div id="t1r_2" class="t s1_2">kunsmismiddels	of	ureum	ammonium	nitraat	(UAN)	as	basis	</div>
+<div id="t1s_2" class="t s1_2">nie.</div>
+<div id="t1t_2" class="t s1_2">15.		Om	 kontaminasie	 te	 verhoed	 moet	 die	 spuittoestel	 met	</div>
+<div id="t1u_2" class="t s1_2">skoon	 water	 en	 ‘n	 kommersiële	 tenk	 skoonmaakmiddel	</div>
+<div id="t1v_2" class="t s1_2">gewas	word	voor	en	na	elke	bespuiting	van	</div>
+<div id="t1w_2" class="t s2_2">HALEX GT.</div>
+<div id="t1x_2" class="t s2_2">4.2 </div>
+<div id="t1y_2" class="t s2_2">Opvolggewasse:</div>
+<div id="t1z_2" class="t s1_2">1.	</div>
+<div id="t20_2" class="t s1_2">Indien	die	gewas	vernietig	is	nadat	‘n	</div>
+<div id="t21_2" class="t s2_2">HALEX GT</div>
+<div id="t22_2" class="t s1_2">toediening	</div>
+<div id="t23_2" class="t s1_2">gedoen	is	volg	die	riglyne	soos	hieronder.</div>
+<div id="t24_2" class="t s1_2">2.	</div>
+<div id="t25_2" class="t s1_2">Indien	</div>
+<div id="t26_2" class="t s2_2">Halex GT</div>
+<div id="t27_2" class="t s1_2">in	 kombinasie	 met	 ander	 onkruiddoders	</div>
+<div id="t28_2" class="t s1_2">toegedien	word	moet	die	wisselbou	instruksies	wat	die	mees	</div>
+<div id="t29_2" class="t s1_2">beperkendste	is	gevolg	word.</div>
+<div id="t2a_2" class="t s1_2">3.	</div>
+<div id="t2b_2" class="t s1_2">Die	volgende	wagperiodes	moet	nagekom	word:</div>
+<div id="t2c_2" class="t s1_2">Koring	en	gars	</div>
+<div id="t2d_2" class="t s1_2">1	maand</div>
+<div id="t2e_2" class="t s1_2">Graansorghum	</div>
+<div id="t2f_2" class="t s1_2">2	maande	</div>
+<div id="t2g_2" class="t s1_2">Aartappels	</div>
+<div id="t2h_2" class="t s1_2">6	maande	</div>
+<div id="t2i_2" class="t s1_2">Sojabone,	droëbone,	grondbone,	</div>
+<div id="t2j_2" class="t s1_2">9	maande	</div>
+<div id="t2k_2" class="t s1_2">sonneblom	en	katoen</div>
+<div id="t2l_2" class="t s1_2">Alle	ander	gewasse	</div>
+<div id="t2m_2" class="t s1_2">24	maande</div>
+<div id="t2n_2" class="t s1_2">4.	</div>
+<div id="t2o_2" class="t s1_2">Alle	 wisselbougewasse	 moet	 slegs	 na	 ‘n	 deeglike	 grondbe-</div>
+<div id="t2p_2" class="t s1_2">werking	geplant	word.	Aangesien	die	produk	gemetaboliseer	</div>
+<div id="t2q_2" class="t s1_2">word	deur	mikrobiese	aktiwiteit,	mag	periodes	van	lae	mikro-</div>
+<div id="t2r_2" class="t s1_2">biale	aktiwiteit	die	residuele	werking	van	</div>
+<div id="t2s_2" class="t s2_2">HALEX GT </div>
+<div id="t2t_2" class="t s1_2">verleng.</div>
+<div id="t2u_2" class="t s2_2">Kontak u plaaslike SYNGENTA verteenwoordiger voordat </div>
+<div id="t2v_2" class="t s2_2">op enige bekalkings program besluit word om gewas </div>
+<div id="t2w_2" class="t s2_2">keuses en gewas beskermings programme te bespreek.</div>
+<div id="t2x_2" class="t s2_2">4.3 Sproeinewel wegdrywing</div>
+<div id="t2y_2" class="t s1_2">1.	</div>
+<div id="t2z_2" class="t s1_2">Verhoed	wegdrywing	te	alle	tye	na	aangrensende	gewasse	en	</div>
+<div id="t30_2" class="t s1_2">veral	na	aangrensende	gewase	wat	nie	glifosaat	weerstand-</div>
+<div id="t31_2" class="t s1_2">biedend	is	nie.</div>
+<div id="t32_2" class="t s1_2">2.	</div>
+<div id="t33_2" class="t s1_2">Die	 interaksie	 tussen	 toedieningsapparaat	 en	 omgewings	</div>
+<div id="t34_2" class="t s1_2">faktore	bepaal	die	potensiaal	vir	wegdrywing.	Die	toediener	is	</div>
+<div id="t35_2" class="t s1_2">verantwoordelik	om	al	hierdie	faktore	in	ag	te	neem	wanneer	</div>
+<div id="t36_2" class="t s1_2">besluit	word	om	‘n	toediening	te	maak.</div>
+<div id="t37_2" class="t s2_2">HALEX GT </div>
+<div id="t38_2" class="t s1_2">/	2</div>
+<div id="t39_2" class="t s1_2">dat	 weerstandbiedende	 populasies	 sal	 ontwikkel.	 Geintegreerde	</div>
+<div id="t3a_2" class="t s1_2">onkruidbeheer	stelsels	dra	dus	by	tot	die	bestuur	van	weerstand-</div>
+<div id="t3b_2" class="t s1_2">biedende	 onkruid	 populasies.	 Glifosaat	 is	 een	 van	 die	 aktiewe	</div>
+<div id="t3c_2" class="t s1_2">bestanddele	van	</div>
+<div id="t3d_2" class="t s2_2">HALEX GT </div>
+<div id="t3e_2" class="t s1_2">en	daarom	is	die	bestuur	van	glifo-</div>
+<div id="t3f_2" class="t s1_2">saat	weerstand	krities.	</div>
+<div id="t3g_2" class="t s2_2">HALEX GT</div>
+<div id="t3h_2" class="t s1_2">sal	breëblaar	onkruide	wat	natuurlike	toleransie	asook	</div>
+<div id="t3i_2" class="t s1_2">moontlike	weerstand	teen	glifosaat	het	beheer.</div>
+<div id="t3j_2" class="t s2_2">HALEX GT</div>
+<div id="t3k_2" class="t s1_2">sal	 nie	 grasse	 wat	 glifosaat	 weerstand	 vertoon	</div>
+<div id="t3l_2" class="t s1_2">genoegsaam	beheer	nie.</div>
+<div id="t3m_2" class="t s1_2">Vir	 die	 beheer	 van	 glifosaat	 weerstandbiedende	 grasse	 moet	 ‘n	</div>
+<div id="t3n_2" class="t s1_2">onkruiddoderprogram	 gevolg	 word	 wat	 vooropkoms	 onkruid-</div>
+<div id="t3o_2" class="t s1_2">doders	 insluit	 soos	 DUAL	 GOLD	 (L5749),	 GARDOMIL	 GOLD	</div>
+<div id="t3p_2" class="t s1_2">(L6246),	 GESAPRIM	 SUPER	 (L3914),	 PRIMAGRAM	 GOLD	</div>
+<div id="t3q_2" class="t s1_2">(L7308),	CALLISTO	(L6795),	CAMIX	(L8089),	LEXAR	(L8326)	en	</div>
+<div id="t3r_2" class="t s1_2">CAMIX	PLUS	(L8327)	om	die	glifosaat	afhanklikheid	te	verminder.</div>
+<div id="t3s_2" class="t s1_2">Die	beste	onkruidbeheer	bestuur	stelsel	sluit	die	afwisseling	van	</div>
+<div id="t3t_2" class="t s1_2">glifosaat	 onkruidbeheer	 programme	 met	 onkruidbeheer	 pro-</div>
+<div id="t3u_2" class="t s1_2">gramme	wat	produkte	bevat	wat	alternatiewe	wyse	van	werkings	</div>
+<div id="t3v_2" class="t s1_2">het	asook	verskillende	bewerkings	praktyke	insluit.</div>
+<div id="t3w_2" class="t s1_2">1.	</div>
+<div id="t3x_2" class="t s1_2">In	 glifosaat	 verdraagsame	 mielies	 (GT)	 mag	 nie	 meer	 as	 2	</div>
+<div id="t3y_2" class="t s1_2">toedienings	van	‘n	glifosaat	bevattendende	onkruiddoders	in	</div>
+<div id="t3z_2" class="t s1_2">een	 seisoen	 gespuit	 word	 nie.	 Alterneer	 met	 produkte	 met	</div>
+<div id="t40_2" class="t s1_2">verskillende	werkingswyses	en/of	bewerkingspraktyke.</div>
+<div id="t41_2" class="t s1_2">2.	</div>
+<div id="t42_2" class="t s1_2">Gebruik	 alternatiewe	 (nie-glifosaat	 bevattende	 produkte)	 vir	</div>
+<div id="t43_2" class="t s1_2">saadbed	 voorbereiding	 en	 residuele	 onkruiddoders	 in	 GT	</div>
+<div id="t44_2" class="t s1_2">gewasse	soos	mielies	en	sojabone	indien	meer	as	een	glifo-</div>
+<div id="t45_2" class="t s1_2">saat	bevattende	onkruiddoder	gebruik	moet	word.</div>
+<div id="t46_2" class="t s1_2">3.	</div>
+<div id="t47_2" class="t s1_2">Om	 GT	 mielie	 en	 GT	 sojaboon	 opslag	 te	 beheer	 moet	 GT	</div>
+<div id="t48_2" class="t s1_2">gewasse	 en	 konvensionele	 gewasse	 met	 mekaar	 alterneer	</div>
+<div id="t49_2" class="t s1_2">word.</div>
+<div id="t4a_2" class="t s1_2">4.	</div>
+<div id="t4b_2" class="t s1_2">Gebruik	altyd	die	geregistreerde	vol	dosisse.	Strewe	na	100%	</div>
+<div id="t4c_2" class="t s1_2">beheer	om	weerstand	te	voorkom.</div>
+<div id="t4d_2" class="t s1_2">5.	</div>
+<div id="t4e_2" class="t s1_2">Monitor	lande	wat	gespuit	is	vir	enige	verlies	aan	effektiwiteit.</div>
+<div id="t4f_2" class="t s1_2">6.	</div>
+<div id="t4g_2" class="t s1_2">Kontak	 die	 naaste	 voorligtingsbeampte,	 gewasadviseur	</div>
+<div id="t4h_2" class="t s1_2">of	 die	 Syngenta	 verteenwoordiger	 vir	 onkruiddoder	 weer-</div>
+<div id="t4i_2" class="t s1_2">standsbestuur	maatreëls	asook	geïntegreerde	onkruidbeheer	</div>
+<div id="t4j_2" class="t s1_2">be	stuur	startegie	aanbevelings.</div>
+<div id="t4k_2" class="t s1_2">Aangesien	die	grootte	en	omvang	van	hierdie	weerstandbiedende	</div>
+<div id="t4l_2" class="t s1_2">populasies	moeilik	is	om	te	bepaal,	is	dit	noodsaaklik,	dat	lande	</div>
+<div id="t4m_2" class="t s1_2">jaarliks	 ondersoek	 moet	 word	 om	 moontlike	 weerstand	 vroeg	</div>
+<div id="t4n_2" class="t s1_2">te	 identifiseer.	 Indien	 bostaande	 noodmaatreëls	 nie	 nougeset	</div>
+<div id="t4o_2" class="t s1_2">nagekom	 word	 nie	 kan	</div>
+<div id="t4p_2" class="t s2_2">SYNGENTA</div>
+<div id="t4q_2" class="t s1_2">nie	 verantwoordelik	 gehou	</div>
+<div id="t4r_2" class="t s1_2">word	as	</div>
+<div id="t4s_2" class="t s2_2">HALEX GT </div>
+<div id="t4t_2" class="t s1_2">nie	weerstandbiedende	onkruide	beheer	nie.	</div>
+<div id="t4u_2" class="t s2_2">Vir spesifieke inligting oor weerstandsbestuur kontak die </div>
+<div id="t4v_2" class="t s2_2">registrasiehouer van hierdie produk.</div>
+<div id="t4w_2" class="t s2_2">4. GEBRUIKSBEPERKINGS:</div>
+<div id="t4x_2" class="t s2_2">4.1 Algemeen:</div>
+<div id="t4y_2" class="t s1_2">1.	</div>
+<div id="t4z_2" class="t s1_2">Moet	 nie	</div>
+<div id="t50_2" class="t s2_2">HALEX GT </div>
+<div id="t51_2" class="t s1_2">toedien	 op	 ingeteelde	 ouerplante	 van	</div>
+<div id="t52_2" class="t s1_2">moederlyne	of	nuutvrygestelde	mieliekultivars	sonder	om	eers	</div>
+<div id="t53_2" class="t s1_2">u	verskaffer	of	saadfirma	vooraf	te	raadpleeg	nie.</div>
+<div id="t54_2" class="t s1_2">2.</div>
+<div id="t55_2" class="t s2_2">HALEX GT</div>
+<div id="t56_2" class="t s1_2">kan	 slegs	 na-opkoms	 op	 alle	 glifosaat	</div>
+<div id="t57_2" class="t s2_2">ver-</div>
+<div id="t58_2" class="t s2_2">draagsame</div>
+<div id="t59_2" class="t s1_2">mielies	 (bv.	 Roundup	 Ready</div>
+<div id="t5a_2" class="t s3_2">®</div>
+<div id="t5b_2" class="t s1_2">en	 Agrisure</div>
+<div id="t5c_2" class="t s3_2">®</div>
+<div id="t5d_2" class="t s1_2">GT)	</div>
+<div id="t5e_2" class="t s1_2">gespuit	word.</div>
+<div id="t5f_2" class="t s1_2">3.	</div>
+<div id="t5g_2" class="t s1_2">‘n	Toediening	van	</div>
+<div id="t5h_2" class="t s2_2">HALEX GT</div>
+<div id="t5i_2" class="t s1_2">op	‘n	mielie	wat	nie	glifosaat	</div>
+<div id="t5j_2" class="t s1_2">weerstandbiedend	is	nie	sal	die	gewas	laat	afsterf.</div>
+<div id="t5k_2" class="t s1_2">4.	</div>
+<div id="t5l_2" class="t s1_2">Moet	 nie	</div>
+<div id="t5m_2" class="t s2_2">HALEX GT</div>
+<div id="t5n_2" class="t s1_2">deur	 enige	 besproeiingstelsel	 toedien	</div>
+<div id="t5o_2" class="t s1_2">nie.</div>
+<div id="t5p_2" class="t s1_2">5.	 Moenie	</div>
+<div id="t5q_2" class="t s2_2">HALEX GT</div>
+<div id="t5r_2" class="t s1_2">met	lugbespuiting	toedien	nie.</div>
+<div id="t5s_2" class="t s1_2">6.	</div>
+<div id="t5t_2" class="t s1_2">Grondversteuring	na	beide	voor-	en	/of	na-opkomsbehande-</div>
+<div id="t5u_2" class="t s1_2">lings	kan	lei	tot	die	ontkieming	van	nuwe	onkruide	wat	swak	</div>
+<div id="t5v_2" class="t s1_2">beheer	tot	gevolg	sal	hê.</div>
+<div id="t5w_2" class="t s1_2">7.	</div>
+<div id="t5x_2" class="t s1_2">Wanneer	onkruide	onder	stremmingstoestande	verkeer	a.g.v.	</div>
+<div id="t5y_2" class="t s1_2">droogte,	hitte,	gebrek	aan	vrugbaarheid,	vloede	of	lang	koue	</div>
+<div id="t5z_2" class="t s1_2">temperature,	 kan	 die	 beheer	 verminder	 of	 vertraag	 word	</div>
+<div id="t60_2" class="t s1_2">aangesien	die	onkruide	nie	aktief	groei	nie.	Ontsnapping	van	</div>
+<div id="t61_2" class="t s1_2">onkruide	 mag	 voorkom	 wanneer	 toediening	 gemaak	 word	</div>
+<div id="t62_2" class="t s1_2">onder	lang	stremmingstoestande.	Optimale	onkruidbeheer	sal	</div>
+<div id="t63_2" class="t s1_2">verkry	word	indien	toediening	van	</div>
+<div id="t64_2" class="t s2_2">HALEX GT </div>
+<div id="t65_2" class="t s1_2">uitgestel	word	</div>
+<div id="t66_2" class="t s1_2">totdat	die	stremmingstoestande	verby	is	en	die	onkruide	weer	</div>
+<div id="t67_2" class="t s1_2">aktief	groei.	Maak	seker	dat	die	teikenonkruide	nog	binne	die	</div>
+<div id="t68_2" class="t s1_2">voorgestelde	groeistadiums	is	soos	aangedui.</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg2Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg2"><img src="2/2.png" id="pdf2" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f2 = [['t2_2',1286],['t3_2',1286],['t4_2',1286],['t6_2',1300],['tb_2',249],['te_2',244],['tg_2',725],['th_2',249],['ti_2',383],['tj_2',1300],['tl_2',243],['tn_2',1286],['tz_2',1213],['t12_2',1200],['t15_2',244],['t1d_2',1200],['t1h_2',1213],['t1j_2',1387],['t1k_2',248],['t1m_2',244],['t1p_2',248],['t1t_2',1387],['t1u_2',1300],['t1w_2',258],['t21_2',246],['t26_2',224],['t27_2',897],['t2o_2',1286],['t2s_2',244],['t2u_2',1373],['t2v_2',1373],['t2w_2',1314],['t2x_2',673],['t33_2',1300],['t37_2',244],['t39_2',1387],['t3b_2',1387],['t3d_2',246],['t3g_2',242],['t3j_2',261],['t3k_2',1093],['t3m_2',1387],['t3n_2',1373],['t3o_2',1387],['t3p_2',1387],['t3t_2',1373],['t3x_2',1300],['t3z_2',1300],['t42_2',1300],['t43_2',1300],['t47_2',1300],['t48_2',1300],['t4g_2',1300],['t4h_2',1286],['t4m_2',1387],['t4n_2',1387],['t4o_2',513],['t4q_2',578],['t4s_2',243],['t4u_2',1373],['t4v_2',847],['t4w_2',676],['t4x_2',333],['t4z_2',202],['t50_2',250],['t51_2',819],['t55_2',260],['t56_2',887],['t59_2',606],['t5b_2',244],['t5h_2',248],['t5l_2',203],['t5m_2',251],['t5n_2',816],['t5p_2',254],['t5q_2',244],['t5z_2',1300],['t61_2',1300],['t64_2',245]];
+var c2 = 0;
+function fontAdjustments2(){;
+	if (c2<f2.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f2[c2][0],f2[c2][1]);
+		c2++;
+		if (c2%10 == 0) {
+			setTimeout(function(){fontAdjustments2()},0);
+		} else {
+			fontAdjustments2();
+		}
+	}
+};
+function load2(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments2,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 225;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_2");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(4,2,909,1286,0);
+</script>
+</body>
+</html>

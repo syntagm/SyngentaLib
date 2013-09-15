@@ -1,0 +1,927 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>CALLISTO___Afr_2012_05_08 Page8</title>
+</head>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load8();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_8{left:394px;top:42px;}
+#t2_8{left:459px;top:42px;}
+#t3_8{left:72px;top:73px;}
+#t4_8{left:72px;top:88px;}
+#t5_8{left:72px;top:115px;}
+#t6_8{left:72px;top:130px;}
+#t7_8{left:72px;top:144px;}
+#t8_8{left:72px;top:159px;}
+#t9_8{left:72px;top:173px;}
+#ta_8{left:465px;top:276px;}
+#tb_8{left:523px;top:278px;}
+#tc_8{left:527px;top:276px;}
+#td_8{left:591px;top:278px;}
+#te_8{left:596px;top:276px;}
+#tf_8{left:684px;top:278px;}
+#tg_8{left:689px;top:276px;}
+#th_8{left:729px;top:278px;}
+#ti_8{left:733px;top:276px;}
+#tj_8{left:784px;top:278px;}
+#tk_8{left:788px;top:276px;}
+#tl_8{left:465px;top:291px;letter-spacing:1px;}
+#tm_8{left:526px;top:293px;}
+#tn_8{left:547px;top:291px;letter-spacing:1px;}
+#to_8{left:607px;top:293px;}
+#tp_8{left:612px;top:291px;}
+#tq_8{left:632px;top:291px;letter-spacing:1px;}
+#tr_8{left:688px;top:293px;}
+#ts_8{left:693px;top:291px;}
+#tt_8{left:712px;top:291px;letter-spacing:1px;}
+#tu_8{left:784px;top:293px;}
+#tv_8{left:788px;top:291px;}
+#tw_8{left:465px;top:305px;}
+#tx_8{left:538px;top:307px;}
+#ty_8{left:545px;top:305px;}
+#tz_8{left:605px;top:307px;}
+#t10_8{left:612px;top:305px;}
+#t11_8{left:465px;top:318px;}
+#t12_8{left:465px;top:358px;}
+#t13_8{left:506px;top:360px;}
+#t14_8{left:514px;top:358px;}
+#t15_8{left:465px;top:371px;}
+#t16_8{left:513px;top:371px;}
+#t17_8{left:465px;top:384px;}
+#t18_8{left:465px;top:399px;}
+#t19_8{left:522px;top:400px;}
+#t1a_8{left:532px;top:399px;}
+#t1b_8{left:555px;top:399px;}
+#t1c_8{left:612px;top:400px;}
+#t1d_8{left:622px;top:399px;}
+#t1e_8{left:465px;top:411px;}
+#t1f_8{left:465px;top:424px;}
+#t1g_8{left:562px;top:424px;}
+#t1h_8{left:465px;top:437px;}
+#t1i_8{left:465px;top:450px;}
+#t1j_8{left:523px;top:450px;}
+#t1k_8{left:465px;top:463px;}
+#t1l_8{left:465px;top:477px;}
+#t1m_8{left:522px;top:477px;}
+#t1n_8{left:465px;top:529px;}
+#t1o_8{left:594px;top:529px;}
+#t1p_8{left:465px;top:544px;}
+#t1q_8{left:703px;top:588px;}
+#t1r_8{left:75px;top:233px;}
+#t1s_8{left:77px;top:252px;}
+#t1t_8{left:112px;top:252px;}
+#t1u_8{left:117px;top:252px;}
+#t1v_8{left:181px;top:218px;}
+#t1w_8{left:149px;top:232px;}
+#t1x_8{left:173px;top:247px;}
+#t1y_8{left:162px;top:261px;}
+#t1z_8{left:203px;top:261px;}
+#t20_8{left:208px;top:261px;}
+#t21_8{left:277px;top:218px;}
+#t22_8{left:265px;top:233px;}
+#t23_8{left:269px;top:247px;}
+#t24_8{left:261px;top:262px;}
+#t25_8{left:296px;top:262px;}
+#t26_8{left:301px;top:262px;}
+#t27_8{left:353px;top:227px;}
+#t28_8{left:344px;top:242px;}
+#t29_8{left:347px;top:256px;}
+#t2a_8{left:71px;top:288px;}
+#t2b_8{left:289px;top:288px;}
+#t2c_8{left:71px;top:313px;}
+#t2d_8{left:70px;top:340px;}
+#t2e_8{left:70px;top:354px;}
+#t2f_8{left:70px;top:369px;}
+#t2g_8{left:257px;top:340px;}
+#t2h_8{left:257px;top:354px;}
+#t2i_8{left:257px;top:369px;}
+#t2j_8{left:67px;top:863px;}
+#t2k_8{left:85px;top:863px;}
+#t2l_8{left:85px;top:878px;}
+#t2m_8{left:85px;top:892px;}
+#t2n_8{left:85px;top:907px;}
+#t2o_8{left:72px;top:714px;}
+#t2p_8{left:72px;top:729px;}
+#t2q_8{left:72px;top:758px;}
+#t2r_8{left:72px;top:772px;}
+#t2s_8{left:72px;top:787px;}
+#t2t_8{left:72px;top:801px;}
+#t2u_8{left:167px;top:801px;}
+#t2v_8{left:72px;top:816px;}
+#t2w_8{left:72px;top:396px;}
+#t2x_8{left:72px;top:410px;}
+#t2y_8{left:72px;top:439px;}
+#t2z_8{left:72px;top:454px;}
+#t30_8{left:72px;top:468px;}
+#t31_8{left:72px;top:483px;}
+#t32_8{left:167px;top:483px;}
+#t33_8{left:72px;top:497px;}
+#t34_8{left:75px;top:549px;}
+#t35_8{left:79px;top:568px;}
+#t36_8{left:89px;top:582px;}
+#t37_8{left:99px;top:582px;}
+#t38_8{left:105px;top:582px;}
+#t39_8{left:181px;top:540px;}
+#t3a_8{left:149px;top:555px;}
+#t3b_8{left:173px;top:569px;}
+#t3c_8{left:162px;top:584px;}
+#t3d_8{left:203px;top:584px;}
+#t3e_8{left:208px;top:584px;}
+#t3f_8{left:277px;top:540px;}
+#t3g_8{left:265px;top:555px;}
+#t3h_8{left:269px;top:569px;}
+#t3i_8{left:261px;top:584px;}
+#t3j_8{left:296px;top:584px;}
+#t3k_8{left:301px;top:584px;}
+#t3l_8{left:353px;top:550px;}
+#t3m_8{left:344px;top:564px;}
+#t3n_8{left:347px;top:579px;}
+#t3o_8{left:71px;top:610px;}
+#t3p_8{left:289px;top:610px;}
+#t3q_8{left:71px;top:636px;}
+#t3r_8{left:70px;top:662px;}
+#t3s_8{left:70px;top:677px;}
+#t3t_8{left:70px;top:691px;}
+#t3u_8{left:257px;top:662px;}
+#t3v_8{left:257px;top:677px;}
+#t3w_8{left:257px;top:691px;}
+
+.s5_8{
+	FONT-SIZE: 21px;
+	FONT-FAMILY: ACNDZH-HelveticaNeueLTStd-Bd8;
+	color: rgb(0,0,0);
+}
+
+.s1_8{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ACNDZH-HelveticaNeueLTStd-Bd8;
+	color: rgb(0,0,0);
+}
+
+.s3_8{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: YMTRXL-HelveticaNeueLTStd-It8;
+	color: rgb(0,0,0);
+}
+
+.s2_8{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ZUDXLJ-HelveticaNeueLTStd-Lt8;
+	color: rgb(0,0,0);
+}
+
+.s4_8{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: ACNDZH-HelveticaNeueLTStd-Bd8;
+	color: rgb(0,0,0);
+}
+
+.s7_8{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ZUDXLJ-MT-Extra8;
+	color: rgb(0,0,0);
+}
+
+.s6_8{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: ZUDXLJ-HelveticaNeueLTStd-Lt8;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: ZUDXLJ-MT-Extra8;
+	src: url("8/fonts/ZUDXLJ-MT-Extra.eot");
+	src: url("8/fonts/ZUDXLJ-MT-Extra.eot?#iefix") format("embedded-opentype"),
+		url("8/fonts/ZUDXLJ-MT-Extra.otf") format("opentype");
+}
+
+@font-face {
+	font-family: ACNDZH-HelveticaNeueLTStd-Bd8;
+	src: url("8/fonts/ACNDZH-HelveticaNeueLTStd-Bd.eot");
+	src: url("8/fonts/ACNDZH-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("8/fonts/ACNDZH-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: YMTRXL-HelveticaNeueLTStd-It8;
+	src: url("8/fonts/YMTRXL-HelveticaNeueLTStd-It.eot");
+	src: url("8/fonts/YMTRXL-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("8/fonts/YMTRXL-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: ZUDXLJ-HelveticaNeueLTStd-Lt8;
+	src: url("8/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.eot");
+	src: url("8/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("8/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_8" class="t s1_8">CALLISTO</div>
+<div id="t2_8" class="t s2_8">/	8</div>
+<div id="t3_8" class="t s1_8">Teen hierdie dosis en toedienings stadium sal die vol-</div>
+<div id="t4_8" class="t s1_8">gende onkruide vooropkoms beheer word</div>
+<div id="t5_8" class="t s3_8">Aizoon glinoides, </div>
+<div id="t6_8" class="t s3_8">Cyperus esculentus, </div>
+<div id="t7_8" class="t s3_8">Panicum maximum, </div>
+<div id="t8_8" class="t s3_8">Panicum schinzii</div>
+<div id="t9_8" class="t s3_8">Setaria pallide-fusca</div>
+<div id="ta_8" class="t s4_8">BATELEUR</div>
+<div id="tb_8" class="t s5_8">®</div>
+<div id="tc_8" class="t s4_8">, CALLISTO</div>
+<div id="td_8" class="t s5_8">®</div>
+<div id="te_8" class="t s4_8">, COMPLEMENT</div>
+<div id="tf_8" class="t s5_8">®</div>
+<div id="tg_8" class="t s4_8">, DUAL</div>
+<div id="th_8" class="t s5_8">®</div>
+<div id="ti_8" class="t s4_8">, GARDO</div>
+<div id="tj_8" class="t s5_8">®</div>
+<div id="tk_8" class="t s4_8">, </div>
+<div id="tl_8" class="t s4_8">GARDOMIL</div>
+<div id="tm_8" class="t s5_8">®</div>
+<div id="tn_8" class="t s4_8">GESAPRIM</div>
+<div id="to_8" class="t s5_8">®</div>
+<div id="tp_8" class="t s4_8">, </div>
+<div id="tq_8" class="t s4_8">METAGAN</div>
+<div id="tr_8" class="t s5_8">®</div>
+<div id="ts_8" class="t s4_8">, </div>
+<div id="tt_8" class="t s4_8">PRIMAGRAM</div>
+<div id="tu_8" class="t s5_8">®</div>
+<div id="tv_8" class="t s4_8">, </div>
+<div id="tw_8" class="t s4_8">TOUCHDOWN</div>
+<div id="tx_8" class="t s5_8">®</div>
+<div id="ty_8" class="t s4_8">en KARATE</div>
+<div id="tz_8" class="t s5_8">®</div>
+<div id="t10_8" class="t s6_8">=	Geregistreerde	Handelsmerke	van	‘n	</div>
+<div id="t11_8" class="t s6_8">Syngenta	Groep	Maatskappy</div>
+<div id="t12_8" class="t s4_8">TRONIC</div>
+<div id="t13_8" class="t s5_8">®</div>
+<div id="t14_8" class="t s6_8">=	Geregistreerde	Handelsmerk	van	PLAASKEM</div>
+<div id="t15_8" class="t s4_8">DIURON </div>
+<div id="t16_8" class="t s6_8">=	 Geregistreerde	 Handelsmerk	 van	 DOW	 AGROSCIENCE	</div>
+<div id="t17_8" class="t s6_8">SOUTHERN	AFRICA</div>
+<div id="t18_8" class="t s4_8">PENETREX</div>
+<div id="t19_8" class="t s5_8">®</div>
+<div id="t1a_8" class="t s6_8">and	</div>
+<div id="t1b_8" class="t s4_8">SOLITAIRE</div>
+<div id="t1c_8" class="t s5_8">®</div>
+<div id="t1d_8" class="t s6_8">=	 Geregistreerde	 Handelsmerk	 van	</div>
+<div id="t1e_8" class="t s6_8">SAFAGRIC</div>
+<div id="t1f_8" class="t s4_8">VELOCITY GLYFO</div>
+<div id="t1g_8" class="t s6_8">=	Geregistreerde	Handelsmerk	van	VILLA	CROP	</div>
+<div id="t1h_8" class="t s6_8">CHEMICALS</div>
+<div id="t1i_8" class="t s4_8">ACCENT = </div>
+<div id="t1j_8" class="t s6_8">Geregistreerde	handelsmerk	van	DUPONT	DE	NEMOURS	</div>
+<div id="t1k_8" class="t s6_8">INT	S.A.</div>
+<div id="t1l_8" class="t s4_8">BIODEW = </div>
+<div id="t1m_8" class="t s6_8">Geregistreerde	handelsmerk	van	PLAASKEM	(PTY)	LTD</div>
+<div id="t1n_8" class="t s4_8">© SYNGENTA AG, 2000. </div>
+<div id="t1o_8" class="t s6_8">Kopiereg	van	die	dokument	is	voorbehou.	</div>
+<div id="t1p_8" class="t s6_8">Alle	ongemagtigde	vermeerdering	word	verbied.</div>
+<div id="t1q_8" class="t s6_8">SA	Reg.	2012-05-08</div>
+<div id="t1r_8" class="t s1_8">CALLISTO</div>
+<div id="t1s_8" class="t s2_8">312	m</div>
+<div id="t1t_8" class="t s7_8">l</div>
+<div id="t1u_8" class="t s2_8">/ha</div>
+<div id="t1v_8" class="t s1_8">plus</div>
+<div id="t1w_8" class="t s1_8">FALCON GOLD </div>
+<div id="t1x_8" class="t s1_8">960 EC</div>
+<div id="t1y_8" class="t s2_8">1562	m</div>
+<div id="t1z_8" class="t s7_8">l</div>
+<div id="t20_8" class="t s2_8">/ha</div>
+<div id="t21_8" class="t s1_8">plus </div>
+<div id="t22_8" class="t s1_8">DIURON </div>
+<div id="t23_8" class="t s1_8">800 SC</div>
+<div id="t24_8" class="t s2_8">500	m</div>
+<div id="t25_8" class="t s7_8">l</div>
+<div id="t26_8" class="t s2_8">/ha</div>
+<div id="t27_8" class="t s2_8">plus	die</div>
+<div id="t28_8" class="t s1_8">aanbevole </div>
+<div id="t29_8" class="t s1_8">benatter*</div>
+<div id="t2a_8" class="t s1_8">Botaniese naam </div>
+<div id="t2b_8" class="t s1_8">Gewone naam </div>
+<div id="t2c_8" class="t s1_8">Al bogenoemde onkruide sal beheer word plus</div>
+<div id="t2d_8" class="t s3_8">Cyperus esculentus</div>
+<div id="t2e_8" class="t s3_8">Panicum maximum </div>
+<div id="t2f_8" class="t s3_8">Panicum schinzii</div>
+<div id="t2g_8" class="t s2_8">geeluintjies</div>
+<div id="t2h_8" class="t s2_8">gewone	buffelsgras</div>
+<div id="t2i_8" class="t s2_8">soet	buffelsgras</div>
+<div id="t2j_8" class="t s2_8">•	</div>
+<div id="t2k_8" class="t s2_8">Raadpleeg	 die	 FALCON	 GOLD,	 DIURON,	 GRAMOXONE,	</div>
+<div id="t2l_8" class="t s2_8">COMPLEMENT	SUPER,	PENETREX,	SOLITAIRE	en	TRONIC	</div>
+<div id="t2m_8" class="t s2_8">etikette	vir	waarskuwings,	voorsorgmaatreëls	en	gebruiksaan-</div>
+<div id="t2n_8" class="t s2_8">wysings.</div>
+<div id="t2o_8" class="t s1_8">Teen hierdie dosis en toedienings stadium sal die vol-</div>
+<div id="t2p_8" class="t s1_8">gende onkruide vooropkoms beheer word.</div>
+<div id="t2q_8" class="t s3_8">Aizoon glinoides,</div>
+<div id="t2r_8" class="t s3_8">Cyperus esculentus, </div>
+<div id="t2s_8" class="t s3_8">Panicum maximum, </div>
+<div id="t2t_8" class="t s3_8">Panicum schinzii </div>
+<div id="t2u_8" class="t s2_8">en	</div>
+<div id="t2v_8" class="t s3_8">Setaria pallide-fusca</div>
+<div id="t2w_8" class="t s1_8">Teen hierdie dosis en toedienings stadium sal die vol-</div>
+<div id="t2x_8" class="t s1_8">gende onkruide vooropkoms beheer word.</div>
+<div id="t2y_8" class="t s3_8">Aizoon glinoides,</div>
+<div id="t2z_8" class="t s3_8">Cyperus esculentus, </div>
+<div id="t30_8" class="t s3_8">Panicum maximum, </div>
+<div id="t31_8" class="t s3_8">Panicum schinzii </div>
+<div id="t32_8" class="t s2_8">en	</div>
+<div id="t33_8" class="t s3_8">Setaria pallide-fusca</div>
+<div id="t34_8" class="t s1_8">CALLISTO</div>
+<div id="t35_8" class="t s2_8">469	-	520	</div>
+<div id="t36_8" class="t s2_8">m</div>
+<div id="t37_8" class="t s7_8">l</div>
+<div id="t38_8" class="t s2_8">/ha</div>
+<div id="t39_8" class="t s1_8">plus</div>
+<div id="t3a_8" class="t s1_8">FALCON GOLD </div>
+<div id="t3b_8" class="t s1_8">960 EC</div>
+<div id="t3c_8" class="t s2_8">1041	m</div>
+<div id="t3d_8" class="t s7_8">l</div>
+<div id="t3e_8" class="t s2_8">/ha</div>
+<div id="t3f_8" class="t s1_8">plus </div>
+<div id="t3g_8" class="t s1_8">DIURON </div>
+<div id="t3h_8" class="t s1_8">800 SC</div>
+<div id="t3i_8" class="t s2_8">500	m</div>
+<div id="t3j_8" class="t s7_8">l</div>
+<div id="t3k_8" class="t s2_8">/ha</div>
+<div id="t3l_8" class="t s2_8">plus	die</div>
+<div id="t3m_8" class="t s1_8">aanbevole </div>
+<div id="t3n_8" class="t s1_8">benatter*</div>
+<div id="t3o_8" class="t s1_8">Botaniese naam </div>
+<div id="t3p_8" class="t s1_8">Gewone naam </div>
+<div id="t3q_8" class="t s1_8">Al bogenoemde onkruide sal beheer word plus</div>
+<div id="t3r_8" class="t s3_8">Cyperus esculentus</div>
+<div id="t3s_8" class="t s3_8">Panicum maximum</div>
+<div id="t3t_8" class="t s3_8">Panicum schinzii</div>
+<div id="t3u_8" class="t s2_8">geeluintjies</div>
+<div id="t3v_8" class="t s2_8">gewone	buffelsgras</div>
+<div id="t3w_8" class="t s2_8">soet	buffelsgras</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg8Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg8"><img src="8/8.png" id="pdf8" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f8 = [['t3_8',1332],['t4_8',983],['t5_8',371],['t6_8',443],['t7_8',430],['t8_8',363],['t9_8',444],['tc_8',255],['te_8',354],['tg_8',161],['ti_8',201],['ty_8',237],['t16_8',1122],['t1d_8',687],['t1f_8',373],['t1i_8',217],['t1l_8',214],['t1n_8',498],['t1w_8',357],['t1x_8',164],['t23_8',164],['t2a_8',377],['t2b_8',336],['t2c_8',1093],['t2d_8',429],['t2e_8',417],['t2f_8',363],['t2k_8',1315],['t2o_8',1336],['t2p_8',996],['t2q_8',371],['t2r_8',443],['t2s_8',430],['t2t_8',363],['t2v_8',444],['t2w_8',1336],['t2x_8',996],['t2y_8',371],['t2z_8',443],['t30_8',430],['t31_8',363],['t33_8',444],['t3a_8',357],['t3b_8',164],['t3h_8',164],['t3o_8',377],['t3p_8',336],['t3q_8',1093],['t3r_8',429],['t3s_8',417],['t3t_8',363]];
+var c8 = 0;
+function fontAdjustments8(){;
+	if (c8<f8.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f8[c8][0],f8[c8][1]);
+		c8++;
+		if (c8%10 == 0) {
+			setTimeout(function(){fontAdjustments8()},0);
+		} else {
+			fontAdjustments8();
+		}
+	}
+};
+function load8(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments8,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 141;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_8");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(8,8,909,1286,0);
+</script>
+</body>
+</html>

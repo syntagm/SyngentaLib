@@ -1,0 +1,1050 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>CALLISTO___Afr_2012_05_08 Page2</title>
+</head>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load2();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_2{left:66px;top:76px;}
+#t2_2{left:92px;top:76px;}
+#t3_2{left:66px;top:99px;}
+#t4_2{left:84px;top:127px;}
+#t5_2{left:322px;top:127px;}
+#t6_2{left:84px;top:150px;}
+#t7_2{left:322px;top:150px;}
+#t8_2{left:84px;top:173px;}
+#t9_2{left:322px;top:173px;}
+#ta_2{left:84px;top:196px;}
+#tb_2{left:322px;top:196px;}
+#tc_2{left:84px;top:211px;}
+#td_2{left:84px;top:234px;}
+#te_2{left:322px;top:234px;}
+#tf_2{left:66px;top:263px;}
+#tg_2{left:66px;top:278px;}
+#th_2{left:66px;top:293px;}
+#ti_2{left:66px;top:307px;}
+#tj_2{left:203px;top:307px;}
+#tk_2{left:268px;top:307px;}
+#tl_2{left:66px;top:331px;}
+#tm_2{left:66px;top:345px;}
+#tn_2{left:66px;top:369px;}
+#to_2{left:84px;top:369px;}
+#tp_2{left:84px;top:383px;}
+#tq_2{left:84px;top:398px;}
+#tr_2{left:84px;top:413px;}
+#ts_2{left:84px;top:427px;}
+#tt_2{left:84px;top:442px;}
+#tu_2{left:66px;top:457px;}
+#tv_2{left:84px;top:457px;}
+#tw_2{left:84px;top:471px;}
+#tx_2{left:84px;top:486px;}
+#ty_2{left:84px;top:501px;}
+#tz_2{left:66px;top:515px;}
+#t10_2{left:84px;top:515px;}
+#t11_2{left:84px;top:530px;}
+#t12_2{left:84px;top:545px;}
+#t13_2{left:66px;top:559px;}
+#t14_2{left:84px;top:559px;}
+#t15_2{left:84px;top:574px;}
+#t16_2{left:84px;top:589px;}
+#t17_2{left:84px;top:603px;}
+#t18_2{left:84px;top:618px;}
+#t19_2{left:66px;top:641px;}
+#t1a_2{left:222px;top:641px;}
+#t1b_2{left:66px;top:656px;}
+#t1c_2{left:70px;top:679px;}
+#t1d_2{left:84px;top:694px;}
+#t1e_2{left:84px;top:709px;}
+#t1f_2{left:84px;top:723px;}
+#t1g_2{left:84px;top:738px;}
+#t1h_2{left:66px;top:753px;}
+#t1i_2{left:84px;top:753px;}
+#t1j_2{left:84px;top:767px;}
+#t1k_2{left:84px;top:782px;}
+#t1l_2{left:84px;top:797px;}
+#t1m_2{left:66px;top:820px;}
+#t1n_2{left:66px;top:835px;}
+#t1o_2{left:66px;top:849px;}
+#t1p_2{left:66px;top:873px;}
+#t1q_2{left:92px;top:873px;}
+#t1r_2{left:66px;top:896px;}
+#t1s_2{left:66px;top:919px;}
+#t1t_2{left:84px;top:919px;}
+#t1u_2{left:84px;top:934px;}
+#t1v_2{left:66px;top:949px;}
+#t1w_2{left:84px;top:949px;}
+#t1x_2{left:309px;top:949px;}
+#t1y_2{left:389px;top:949px;}
+#t1z_2{left:84px;top:963px;}
+#t20_2{left:84px;top:978px;}
+#t21_2{left:66px;top:993px;}
+#t22_2{left:84px;top:993px;}
+#t23_2{left:84px;top:1007px;}
+#t24_2{left:84px;top:1022px;}
+#t25_2{left:349px;top:1022px;}
+#t26_2{left:84px;top:1037px;}
+#t27_2{left:66px;top:1051px;}
+#t28_2{left:84px;top:1051px;}
+#t29_2{left:134px;top:1051px;}
+#t2a_2{left:199px;top:1051px;}
+#t2b_2{left:84px;top:1066px;}
+#t2c_2{left:84px;top:1081px;}
+#t2d_2{left:66px;top:1095px;}
+#t2e_2{left:84px;top:1095px;}
+#t2f_2{left:184px;top:1095px;}
+#t2g_2{left:247px;top:1095px;}
+#t2h_2{left:84px;top:1110px;}
+#t2i_2{left:66px;top:1125px;}
+#t2j_2{left:84px;top:1125px;}
+#t2k_2{left:132px;top:1125px;}
+#t2l_2{left:84px;top:1139px;}
+#t2m_2{left:84px;top:1154px;}
+#t2n_2{left:66px;top:1169px;}
+#t2o_2{left:84px;top:1169px;}
+#t2p_2{left:147px;top:1169px;}
+#t2q_2{left:84px;top:1183px;}
+#t2r_2{left:66px;top:1207px;}
+#t2s_2{left:239px;top:1207px;}
+#t2t_2{left:66px;top:1230px;}
+#t2u_2{left:84px;top:1230px;}
+#t2v_2{left:474px;top:69px;}
+#t2w_2{left:456px;top:83px;}
+#t2x_2{left:474px;top:83px;}
+#t2y_2{left:474px;top:98px;}
+#t2z_2{left:537px;top:98px;}
+#t30_2{left:474px;top:113px;}
+#t31_2{left:474px;top:127px;}
+#t32_2{left:456px;top:142px;}
+#t33_2{left:474px;top:142px;}
+#t34_2{left:456px;top:157px;}
+#t35_2{left:474px;top:157px;}
+#t36_2{left:474px;top:171px;}
+#t37_2{left:474px;top:186px;}
+#t38_2{left:474px;top:201px;}
+#t39_2{left:474px;top:215px;}
+#t3a_2{left:474px;top:230px;}
+#t3b_2{left:474px;top:245px;}
+#t3c_2{left:659px;top:245px;}
+#t3d_2{left:725px;top:245px;}
+#t3e_2{left:474px;top:259px;}
+#t3f_2{left:474px;top:274px;}
+#t3g_2{left:474px;top:289px;}
+#t3h_2{left:456px;top:303px;}
+#t3i_2{left:474px;top:303px;}
+#t3j_2{left:529px;top:303px;}
+#t3k_2{left:642px;top:303px;}
+#t3l_2{left:717px;top:303px;}
+#t3m_2{left:752px;top:303px;}
+#t3n_2{left:474px;top:318px;}
+#t3o_2{left:474px;top:333px;}
+#t3p_2{left:474px;top:347px;}
+#t3q_2{left:474px;top:362px;}
+#t3r_2{left:474px;top:377px;}
+#t3s_2{left:456px;top:391px;}
+#t3t_2{left:474px;top:391px;}
+#t3u_2{left:501px;top:391px;}
+#t3v_2{left:565px;top:391px;}
+#t3w_2{left:474px;top:406px;}
+#t3x_2{left:474px;top:421px;}
+#t3y_2{left:456px;top:435px;}
+#t3z_2{left:474px;top:435px;}
+#t40_2{left:522px;top:435px;}
+#t41_2{left:586px;top:435px;}
+#t42_2{left:474px;top:450px;}
+#t43_2{left:456px;top:465px;}
+#t44_2{left:474px;top:465px;}
+#t45_2{left:516px;top:465px;}
+#t46_2{left:581px;top:465px;}
+#t47_2{left:474px;top:479px;}
+#t48_2{left:474px;top:494px;}
+#t49_2{left:456px;top:523px;}
+#t4a_2{left:645px;top:523px;}
+#t4b_2{left:456px;top:553px;}
+#t4c_2{left:482px;top:553px;}
+#t4d_2{left:456px;top:580px;}
+#t4e_2{left:524px;top:580px;}
+#t4f_2{left:456px;top:595px;}
+#t4g_2{left:501px;top:595px;}
+#t4h_2{left:557px;top:595px;}
+#t4i_2{left:616px;top:595px;}
+#t4j_2{left:671px;top:595px;}
+#t4k_2{left:755px;top:595px;}
+#t4l_2{left:456px;top:610px;}
+#t4m_2{left:552px;top:610px;}
+#t4n_2{left:608px;top:610px;}
+#t4o_2{left:704px;top:610px;}
+#t4p_2{left:755px;top:610px;}
+#t4q_2{left:456px;top:624px;}
+#t4r_2{left:456px;top:639px;}
+#t4s_2{left:456px;top:654px;}
+#t4t_2{left:456px;top:668px;}
+#t4u_2{left:456px;top:683px;}
+#t4v_2{left:456px;top:712px;}
+#t4w_2{left:482px;top:712px;}
+#t4x_2{left:456px;top:738px;}
+#t4y_2{left:456px;top:767px;}
+#t4z_2{left:482px;top:767px;}
+#t50_2{left:456px;top:793px;}
+#t51_2{left:456px;top:807px;}
+#t52_2{left:456px;top:822px;}
+#t53_2{left:456px;top:837px;}
+#t54_2{left:456px;top:851px;}
+#t55_2{left:648px;top:851px;}
+#t56_2{left:712px;top:851px;}
+#t57_2{left:456px;top:866px;}
+#t58_2{left:456px;top:895px;}
+#t59_2{left:739px;top:895px;}
+#t5a_2{left:456px;top:910px;}
+#t5b_2{left:456px;top:925px;}
+#t5c_2{left:456px;top:939px;}
+#t5d_2{left:456px;top:954px;}
+#t5e_2{left:456px;top:969px;}
+#t5f_2{left:456px;top:983px;}
+#t5g_2{left:456px;top:1013px;}
+#t5h_2{left:482px;top:1013px;}
+#t5i_2{left:456px;top:1036px;}
+#t5j_2{left:521px;top:1036px;}
+#t5k_2{left:456px;top:1051px;}
+#t5l_2{left:456px;top:1074px;}
+#t5m_2{left:456px;top:1089px;}
+#t5n_2{left:456px;top:1103px;}
+#t5o_2{left:514px;top:1103px;}
+#t5p_2{left:523px;top:1103px;}
+#t5q_2{left:456px;top:1118px;}
+#t5r_2{left:456px;top:1141px;}
+#t5s_2{left:456px;top:1156px;}
+#t5t_2{left:456px;top:1171px;}
+#t5u_2{left:682px;top:1171px;}
+#t5v_2{left:693px;top:1171px;}
+#t5w_2{left:456px;top:1185px;}
+#t5x_2{left:456px;top:1200px;}
+#t5y_2{left:456px;top:1215px;}
+#t5z_2{left:456px;top:1229px;}
+#t60_2{left:394px;top:41px;}
+#t61_2{left:458px;top:41px;}
+
+.s1_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ACNDZH-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s3_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ZUDXLJ-MT-Extra2;
+	color: rgb(0,0,0);
+}
+
+.s2_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ZUDXLJ-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: ZUDXLJ-MT-Extra2;
+	src: url("2/fonts/ZUDXLJ-MT-Extra.eot");
+	src: url("2/fonts/ZUDXLJ-MT-Extra.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/ZUDXLJ-MT-Extra.otf") format("opentype");
+}
+
+@font-face {
+	font-family: ACNDZH-HelveticaNeueLTStd-Bd2;
+	src: url("2/fonts/ACNDZH-HelveticaNeueLTStd-Bd.eot");
+	src: url("2/fonts/ACNDZH-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/ACNDZH-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: ZUDXLJ-HelveticaNeueLTStd-Lt2;
+	src: url("2/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.eot");
+	src: url("2/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_2" class="t s1_2">4.2 </div>
+<div id="t2_2" class="t s1_2">Opvolggewasse:</div>
+<div id="t3_2" class="t s2_2">Die	volgende	wagperiodes	moet	nagekom	word:</div>
+<div id="t4_2" class="t s2_2">Koring	en	gars	</div>
+<div id="t5_2" class="t s2_2">1	maand</div>
+<div id="t6_2" class="t s2_2">Graansorghum	</div>
+<div id="t7_2" class="t s2_2">2	maande</div>
+<div id="t8_2" class="t s2_2">Aartappels	</div>
+<div id="t9_2" class="t s2_2">6	maande</div>
+<div id="ta_2" class="t s2_2">Sojabone,	droëbone,	grondbone,		</div>
+<div id="tb_2" class="t s2_2">9	maande</div>
+<div id="tc_2" class="t s2_2">sonneblom	en	katoen	</div>
+<div id="td_2" class="t s2_2">Alle	ander	gewasse	</div>
+<div id="te_2" class="t s2_2">24	maande</div>
+<div id="tf_2" class="t s2_2">Alle	wisselbougewasse	moet	slegs	na	‘n	deeglike	grondbewerking	</div>
+<div id="tg_2" class="t s2_2">geplant	 word.	 Aangesien	 die	 produk	 gemetaboliseer	 word	 deur	</div>
+<div id="th_2" class="t s2_2">mikrobiese	 aktiwiteit,	 mag	 periodes	 van	 lae	 mikrobiale	 aktiwiteit	</div>
+<div id="ti_2" class="t s2_2">die	residuele	werking	van	</div>
+<div id="tj_2" class="t s1_2">CALLISTO </div>
+<div id="tk_2" class="t s2_2">verleng.</div>
+<div id="tl_2" class="t s1_2">Waarskuwing: Moontlike beskadiging van triasien sensi-</div>
+<div id="tm_2" class="t s1_2">tiewe gewasse</div>
+<div id="tn_2" class="t s2_2">•	</div>
+<div id="to_2" class="t s2_2">Waar	gronde	met	kalk	behandel	is	om	die	pH	te	verhoog	mag	</div>
+<div id="tp_2" class="t s2_2">die	 moontlikheid	 van	 gewas	 beskadiging	 dramaties	 verhoog	</div>
+<div id="tq_2" class="t s2_2">in	 gronde	 waar	 triasienes	 voorheen	 toegedien	 is.	 Dit	 gebeur	</div>
+<div id="tr_2" class="t s2_2">as	gevolg	van	die	triasien	molekule	wat	op	die	klei	kompleks	</div>
+<div id="ts_2" class="t s2_2">vervang	 word	 met	 kalsium	 katione	 en	 die	 triasien	 dus	 meer	</div>
+<div id="tt_2" class="t s2_2">beskikbaar	word	in	die	grondwater	kompleks.</div>
+<div id="tu_2" class="t s2_2">•	</div>
+<div id="tv_2" class="t s2_2">Geen	 triasien	 sensitiewe	 gewasse	 moet	 na	 kalk	 toedienings	</div>
+<div id="tw_2" class="t s2_2">geplant	 word	 nie.	 Dit	 is	 selfs	 van	 toepassing	 indien	 triasiene	</div>
+<div id="tx_2" class="t s2_2">teen	wisselbou	dosisse	gespuit	is	in	vorige	jare.	Slegs	mielies	</div>
+<div id="ty_2" class="t s2_2">moet	geplant	word	direk	na	kalk	toedienings</div>
+<div id="tz_2" class="t s2_2">•	</div>
+<div id="t10_2" class="t s2_2">Triasien	 sensitiewe	 gewasse	 sluit	 in	 alle	 breëblaargewasse	</div>
+<div id="t11_2" class="t s2_2">soos	 die	 boon	 gewasse	 en	 sonneblomme	 asook	 alle	 klein-</div>
+<div id="t12_2" class="t s2_2">graangewasse	soos	koring.</div>
+<div id="t13_2" class="t s2_2">•	</div>
+<div id="t14_2" class="t s2_2">Hierdie	waarskuwing	waarborg	egter	nie	dat	geen	skade	aan	</div>
+<div id="t15_2" class="t s2_2">selfs	 mielies	 in	 die	 daaropvolgende	 aanplanting	 sal	 voorkom	</div>
+<div id="t16_2" class="t s2_2">nie	 aangesien	 groot	 volumes	 triasiene	 beskikbaar	 mag	 raak	</div>
+<div id="t17_2" class="t s2_2">afhangende	 van	 die	 volume	 kalk	 wat	 toegedien	 word	 en	 die	</div>
+<div id="t18_2" class="t s2_2">reënval	wat	kan	voorkom.</div>
+<div id="t19_2" class="t s1_2">Waarskuwing: Moontlike </div>
+<div id="t1a_2" class="t s1_2">verhoogde effektiwiteit, fitotok-</div>
+<div id="t1b_2" class="t s1_2">sisiteit en verlengde nawerking</div>
+<div id="t1c_2" class="t s2_2">•	 	‘n	 Verhoging	 in	 die	 grond	 pH	 na	 vlakke	 bokant	 7	 skep	 toe-</div>
+<div id="t1d_2" class="t s2_2">stande	waar	verhoogde	effektiwiteit	en	gepaardgaande	verla-</div>
+<div id="t1e_2" class="t s2_2">ging	in	selektiwiteit	kan	voorkom.	Hierdie	verhoogde	pH	vlakke	</div>
+<div id="t1f_2" class="t s2_2">kan	 ook	 verlengde	 grondnawerking	 tot	 gevolg	 hê	 wat	 veral	</div>
+<div id="t1g_2" class="t s2_2">onder	besproeiing	die	opvolg	gewaskeuse	mag	beïnvloed.</div>
+<div id="t1h_2" class="t s2_2">•	</div>
+<div id="t1i_2" class="t s2_2">Waar	grond	pH	verstellings	gedoen	is,	moet	gelet	word	op	die	</div>
+<div id="t1j_2" class="t s2_2">gebruik	 van	 sulfoniel	 ureum	 onkruiddoders,	 triazolopirimidien	</div>
+<div id="t1k_2" class="t s2_2">sulfonanilied	 onkruiddoders	 en	 imidasolinoon	 onkruiddoders	</div>
+<div id="t1l_2" class="t s2_2">wat	almal	baie	sensitief	is	vir	grond	pH	fluktuasies.</div>
+<div id="t1m_2" class="t s1_2">Kontak u plaaslike SYNGENTA verteenwoordiger voordat </div>
+<div id="t1n_2" class="t s1_2">op enige bekalkingsprogram besluit word om gewas keuses </div>
+<div id="t1o_2" class="t s1_2">en gewas beskermingsprogramme te bespreek.</div>
+<div id="t1p_2" class="t s1_2">4.3 </div>
+<div id="t1q_2" class="t s1_2">Faktore wat onkruidbeheer beïnvloed:</div>
+<div id="t1r_2" class="t s1_2">4.3.1 Vooropkoms toediening:</div>
+<div id="t1s_2" class="t s2_2">•	</div>
+<div id="t1t_2" class="t s2_2">Goeie	saadbed	voorbereiding	sonder	kluite	en	onkruide	is	‘n	</div>
+<div id="t1u_2" class="t s2_2">voorvereiste	vir	goeie	vooropkoms	onkruidbeheer.</div>
+<div id="t1v_2" class="t s2_2">•	</div>
+<div id="t1w_2" class="t s2_2">Verlengde	 droë	 grond	 toestande	 na	 ‘n	</div>
+<div id="t1x_2" class="t s1_2">vooropkoms</div>
+<div id="t1y_2" class="t s2_2">toe-</div>
+<div id="t1z_2" class="t s2_2">diening	mag	verlaagde	beheer	van	ontkiemende	onkruide	tot	</div>
+<div id="t20_2" class="t s2_2">gevolg	hê.</div>
+<div id="t21_2" class="t s2_2">•	</div>
+<div id="t22_2" class="t s2_2">In	 gronde	 met	 abnormale	 hoë	 organiese	 materiaal	 inhoud	 of	</div>
+<div id="t23_2" class="t s2_2">gronde	met	organiese	residue	op	die	grond	oppervlakte	soos	</div>
+<div id="t24_2" class="t s2_2">bv.	gebrande	organiese	materiaal	of	stoppels	sal	</div>
+<div id="t25_2" class="t s1_2">CALLISTO </div>
+<div id="t26_2" class="t s2_2">‘n	verkorte	nawerking	hê.	</div>
+<div id="t27_2" class="t s2_2">•	</div>
+<div id="t28_2" class="t s2_2">Moet	nie	</div>
+<div id="t29_2" class="t s1_2">CALLISTO </div>
+<div id="t2a_2" class="t s2_2">toedien	onder	stremmingstoestande	nie	</div>
+<div id="t2b_2" class="t s2_2">bv.	 versuiptoestande,	 baie	 koue	 toestande,	 oormatige	 reën,	</div>
+<div id="t2c_2" class="t s2_2">swak	kunsmistoediening,	lae	pH,	ens.	</div>
+<div id="t2d_2" class="t s2_2">•	</div>
+<div id="t2e_2" class="t s2_2">Tenkmengsels	van	</div>
+<div id="t2f_2" class="t s1_2">CALLISTO </div>
+<div id="t2g_2" class="t s2_2">met	organofosfate	bv.	chlorpiri-</div>
+<div id="t2h_2" class="t s2_2">fos	moet	vermy	word	aangesien	dit	kan	lei	tot	gewas	skade.</div>
+<div id="t2i_2" class="t s2_2">•	</div>
+<div id="t2j_2" class="t s1_2">Callisto</div>
+<div id="t2k_2" class="t s2_2">kan	wel	vooropkoms	van	mielies	gebruik	word	waar	</div>
+<div id="t2l_2" class="t s2_2">karbamate	 of	 organofosfaat	 insekdoders	 soos	 aldicarb	 en	</div>
+<div id="t2m_2" class="t s2_2">terbufos	as	‘n	grondtoediening	gebruik	is.</div>
+<div id="t2n_2" class="t s2_2">•	</div>
+<div id="t2o_2" class="t s1_2">CALLISTO</div>
+<div id="t2p_2" class="t s2_2">moet	nie	vooropkoms	toegedien	word	waar	vloed-</div>
+<div id="t2q_2" class="t s2_2">besproeing	gebruik	word.</div>
+<div id="t2r_2" class="t s1_2">4.3.2 Na-opkoms toediening</div>
+<div id="t2s_2" class="t s2_2">:	</div>
+<div id="t2t_2" class="t s2_2">•	</div>
+<div id="t2u_2" class="t s2_2">Maak	 seker	 die	 toediening	 word	 op	 die	 ware	 blare	 van	 die	</div>
+<div id="t2v_2" class="t s2_2">onkruid	toegedien	–	saadlobbe	is	nie	ware	blare	nie.</div>
+<div id="t2w_2" class="t s2_2">•	</div>
+<div id="t2x_2" class="t s2_2">Toedienings	moet	op	onkruide	wat	aktief	groei	gedoen	word.	</div>
+<div id="t2y_2" class="t s1_2">CALLISTO</div>
+<div id="t2z_2" class="t s2_2">is	‘n	sistemiese	middel	wat	opgeneem	en	getrans-</div>
+<div id="t30_2" class="t s2_2">lokeer	moet	word	vir	effektiewe	werking,	dit	is	net	moontlik	in	</div>
+<div id="t31_2" class="t s2_2">aktief	groeiende	plante.</div>
+<div id="t32_2" class="t s2_2">•	</div>
+<div id="t33_2" class="t s2_2">Voorkom	spuitstofwegdrywing	na	aangrensende	gewasse.</div>
+<div id="t34_2" class="t s2_2">•	</div>
+<div id="t35_2" class="t s2_2">Wanneer	onkruide	onder	stremmingstoestande	verkeer	a.g.v.	</div>
+<div id="t36_2" class="t s2_2">droogte,	hitte,	gebrek	aan	vrugbaarheid,	vloede	of	lang	koue	</div>
+<div id="t37_2" class="t s2_2">temperature,	 kan	 die	 beheer	 verminder	 of	 vertraag	 word	</div>
+<div id="t38_2" class="t s2_2">aangesien	die	onkruide	nie	aktief	groei	nie.	Ontsnapping	van	</div>
+<div id="t39_2" class="t s2_2">onkruide	 mag	 voorkom	 wanneer	 toediening	 gemaak	 word	</div>
+<div id="t3a_2" class="t s2_2">onder	lang	stremmingstoestande.	Optimale	onkruidbeheer	sal	</div>
+<div id="t3b_2" class="t s2_2">verkry	word	indien	toediening	van	</div>
+<div id="t3c_2" class="t s1_2">CALLISTO </div>
+<div id="t3d_2" class="t s2_2">uitgestel	word	</div>
+<div id="t3e_2" class="t s2_2">totdat	die	stremmingstoestande	verby	is	en	die	onkruide	weer	</div>
+<div id="t3f_2" class="t s2_2">aktief	groei.	Maak	seker	dat	die	teikenonkruide	nog	binne	die	</div>
+<div id="t3g_2" class="t s2_2">voorgestelde	groeistadiums	is	soos	aangedui.</div>
+<div id="t3h_2" class="t s2_2">•	</div>
+<div id="t3i_2" class="t s2_2">Tydelike	</div>
+<div id="t3j_2" class="t s2_2">gewasbeskadiging	</div>
+<div id="t3k_2" class="t s2_2">(verbleiking)	</div>
+<div id="t3l_2" class="t s2_2">mag	</div>
+<div id="t3m_2" class="t s2_2">voorkom	</div>
+<div id="t3n_2" class="t s2_2">onder	 uitermatige	 weerstoestande	 of	 wanneer	 die	 gewas	</div>
+<div id="t3o_2" class="t s2_2">onder	 stremmingstoestande	 verkeer	 a.g.v.	 onvoldoende	 of	</div>
+<div id="t3p_2" class="t s2_2">abnormale	 hoë	 vogtoestande	 of	 uitermatige	 temperature.	</div>
+<div id="t3q_2" class="t s2_2">Langdurige	bewolkte	toestande	kan	ook	lei	tot	tydelike	gewas	</div>
+<div id="t3r_2" class="t s2_2">verbleiking.</div>
+<div id="t3s_2" class="t s2_2">•	</div>
+<div id="t3t_2" class="t s2_2">Dien	</div>
+<div id="t3u_2" class="t s1_2">CALLISTO</div>
+<div id="t3v_2" class="t s2_2">ten	minste	28	dae	na-opkoms	van	die	mielie	</div>
+<div id="t3w_2" class="t s2_2">toe	nadat	‘n	organofosfaat	(bv.	terbufos)	of	karbamaat	insek-</div>
+<div id="t3x_2" class="t s2_2">doder	met	plant	gebruik	is.		</div>
+<div id="t3y_2" class="t s2_2">•	</div>
+<div id="t3z_2" class="t s2_2">Moet	nie	</div>
+<div id="t40_2" class="t s1_2">CALLISTO </div>
+<div id="t41_2" class="t s2_2">in	tenkmengsel	met	organofosfaat	insek-</div>
+<div id="t42_2" class="t s2_2">doders	(bv.	chlorpirifos)	toedien	nie.</div>
+<div id="t43_2" class="t s2_2">•	</div>
+<div id="t44_2" class="t s2_2">Moenie</div>
+<div id="t45_2" class="t s1_2">CALLISTO</div>
+<div id="t46_2" class="t s2_2">toedien	binne	7	dae	voor	of	7	dae	na	die	</div>
+<div id="t47_2" class="t s2_2">toediening	 van	 organofosfate	 (bv.	 chlorpirifos)	 of	 karbamaat	</div>
+<div id="t48_2" class="t s2_2">(bv.	methomil)	insekdodders	vir	blaartoedienings	nie.	</div>
+<div id="t49_2" class="t s1_2">5. GEBRUIKSAANWYSINGS:</div>
+<div id="t4a_2" class="t s2_2">Gebruik	slegs	soos	aangedui.</div>
+<div id="t4b_2" class="t s1_2">5.1 </div>
+<div id="t4c_2" class="t s1_2">Verenigbaarheid:</div>
+<div id="t4d_2" class="t s1_2">CALLISTO </div>
+<div id="t4e_2" class="t s2_2">is	 verenigbaar	 met	 ACCENT	 (L5157),	 BATELEUR	</div>
+<div id="t4f_2" class="t s2_2">GOLD	</div>
+<div id="t4g_2" class="t s2_2">(L6136),	</div>
+<div id="t4h_2" class="t s2_2">BIODEW	</div>
+<div id="t4i_2" class="t s2_2">(L8120),	</div>
+<div id="t4j_2" class="t s2_2">BREAKTHRU	</div>
+<div id="t4k_2" class="t s2_2">(L5895),	</div>
+<div id="t4l_2" class="t s2_2">BROADSTRIKE	</div>
+<div id="t4m_2" class="t s2_2">(L6180),	</div>
+<div id="t4n_2" class="t s2_2">COMPLEMENT	</div>
+<div id="t4o_2" class="t s2_2">SUPER	</div>
+<div id="t4p_2" class="t s2_2">(L8169),	</div>
+<div id="t4q_2" class="t s2_2">DUAL	 GOLD	 (L5749),	 GARDOMIL	 GOLD	 (L6246),	 GESAPRIM	</div>
+<div id="t4r_2" class="t s2_2">SUPER	(L3914),	GRAMOXONE	(L1174),	KARATE	ZEON	(L6330),	</div>
+<div id="t4s_2" class="t s2_2">KARATE	(L3752),	METAGAN	GOLD	(L5748),	PENETREX	(L4914),	</div>
+<div id="t4t_2" class="t s2_2">PRIMAGRAM	 GOLD	 (L7308),	 TRONIC	 (L3685),	 SOLITAIRE	</div>
+<div id="t4u_2" class="t s2_2">(L6962),	DIURON	800	SC	(L3200)	en	FALCON	GOLD	(L5748).</div>
+<div id="t4v_2" class="t s1_2">5.2 </div>
+<div id="t4w_2" class="t s1_2">Verdunningswater:</div>
+<div id="t4x_2" class="t s2_2">Gebruik	slegs	skoon	water	en	buffer	met	‘n	geregistreerde	buffer.</div>
+<div id="t4y_2" class="t s1_2">5.3 </div>
+<div id="t4z_2" class="t s1_2">Menginstruksies:</div>
+<div id="t50_2" class="t s2_2">Vul	 die	 spuit-	 of	 mengtenk	 met	 skoon	 water	 en	 aktiveer	 die	</div>
+<div id="t51_2" class="t s2_2">roerder.	Roer	aanhoudend	gedurende	die	meng-	en	toedienings-</div>
+<div id="t52_2" class="t s2_2">proses.	Indien	die	roer	proses	vir	langer	as	5	min	gestaak	word,	</div>
+<div id="t53_2" class="t s2_2">moet	die	spuitmengsel	hersuspendeer	word.	Sodra	die	spuit-	of	</div>
+<div id="t54_2" class="t s2_2">mengtenk	halfvol	met	water	is,	voeg	</div>
+<div id="t55_2" class="t s1_2">CALLISTO </div>
+<div id="t56_2" class="t s2_2">stadig	by	en	roer	</div>
+<div id="t57_2" class="t s2_2">totdat	dit	volledig	gedispergeer	het.</div>
+<div id="t58_2" class="t s2_2">Wanneer	 in	 ‘n	 tenkmengsel	 gebruik	 word,	 moet	</div>
+<div id="t59_2" class="t s1_2">CALLISTO </div>
+<div id="t5a_2" class="t s2_2">eerste	 by	 die	 water	 gevoeg	 word.	 Voeg	 hierna	 die	 suspensie	</div>
+<div id="t5b_2" class="t s2_2">konsentrate	 (SC)	 soos	 PRIMAGRAM	 GOLD	 by.	 Hierna	 kan	 die	</div>
+<div id="t5c_2" class="t s2_2">emulgeerbare	konsentrate	(EC)	soos	KARATE	EC	of	METAGAN	</div>
+<div id="t5d_2" class="t s2_2">GOLD	of	DUAL	GOLD	bygevoeg	word.	Die	benatter	moet	laaste	</div>
+<div id="t5e_2" class="t s2_2">bygevoeg	word.	Maak	die	tenk	vol	met	water	tot	by	die	verlangde	</div>
+<div id="t5f_2" class="t s2_2">volume	terwyl	aanhoudend	geroer	word.</div>
+<div id="t5g_2" class="t s1_2">5.4 </div>
+<div id="t5h_2" class="t s1_2">Grondtoediening:</div>
+<div id="t5i_2" class="t s1_2">CALLISTO </div>
+<div id="t5j_2" class="t s2_2">moet	op	dieselfde	dag	wat	die	mengsel	aangemaak	</div>
+<div id="t5k_2" class="t s2_2">is,	toegedien	word.</div>
+<div id="t5l_2" class="t s2_2">Dien	 toe	 deur	 middel	 van	 ‘n	 trekkergemonteerde	 spuitbalk	 wat	</div>
+<div id="t5m_2" class="t s2_2">korrek	 gekalibreer	 is	 met	 aanhoudende	 roering	 om	 ten	 minste	</div>
+<div id="t5n_2" class="t s2_2">200	-	300	</div>
+<div id="t5o_2" class="t s3_2">l</div>
+<div id="t5p_2" class="t s2_2">spuitmengsel/ha	te	lewer.	Voorkom	oorvleueling	van	</div>
+<div id="t5q_2" class="t s2_2">spuitwydtes.</div>
+<div id="t5r_2" class="t s2_2">In	die	geval	van	sekere	vooropkoms	bespuitings	met	hidrouliese	</div>
+<div id="t5s_2" class="t s2_2">spuitpunte	en	na-opkoms	bespuitings	met	kousbalk	spuite	mag	</div>
+<div id="t5t_2" class="t s2_2">die	 spuitvolume	 verlaag	 word	 na	 ‘n	 100	</div>
+<div id="t5u_2" class="t s3_2">l</div>
+<div id="t5v_2" class="t s2_2">spuitvolume/ha.	 Die	</div>
+<div id="t5w_2" class="t s2_2">gebruik	 van	 geregistreerde	 benatters	 teen	 die	 korrekte	 dosisse,	</div>
+<div id="t5x_2" class="t s2_2">spuitpunt	 spasiëring	 en	 effektiewe	 bedekking	 asook	 spuitpunt	</div>
+<div id="t5y_2" class="t s2_2">grootte	 word	 baie	 belangrik.	 Die	 nalaat	 van	 hierdie	 faktore	 sal	</div>
+<div id="t5z_2" class="t s2_2">beslis	tot	verswakte	beheer	van	sekere	onkruide	lei.	</div>
+<div id="t60_2" class="t s1_2">CALLISTO</div>
+<div id="t61_2" class="t s2_2">/	2</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg2Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg2"><img src="2/2.png" id="pdf2" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f2 = [['tg_2',1387],['th_2',1387],['tl_2',1373],['tm_2',347],['tp_2',1317],['tq_2',1317],['ts_2',1317],['tv_2',1317],['tw_2',1317],['t10_2',1317],['t11_2',1304],['t15_2',1317],['t16_2',1318],['t17_2',1317],['t19_2',582],['t1a_2',749],['t1b_2',728],['t1c_2',1358],['t1f_2',1318],['t1j_2',1317],['t1k_2',1317],['t1m_2',1373],['t1n_2',1373],['t1o_2',1118],['t1q_2',887],['t1r_2',728],['t1w_2',884],['t22_2',1317],['t2b_2',1317],['t2l_2',1317],['t2r_2',689],['t2u_2',1318],['t37_2',1317],['t39_2',1317],['t3n_2',1317],['t3o_2',1317],['t3p_2',1317],['t47_2',1317],['t49_2',672],['t4e_2',1117],['t4q_2',1387],['t4t_2',1387],['t50_2',1387],['t58_2',1114],['t5a_2',1387],['t5b_2',1387],['t5l_2',1387],['t5m_2',1387],['t5t_2',895],['t5v_2',438],['t5w_2',1387],['t5x_2',1387],['t5y_2',1387]];
+var c2 = 0;
+function fontAdjustments2(){;
+	if (c2<f2.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f2[c2][0],f2[c2][1]);
+		c2++;
+		if (c2%10 == 0) {
+			setTimeout(function(){fontAdjustments2()},0);
+		} else {
+			fontAdjustments2();
+		}
+	}
+};
+function load2(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments2,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 218;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_2");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(8,2,909,1286,0);
+</script>
+</body>
+</html>

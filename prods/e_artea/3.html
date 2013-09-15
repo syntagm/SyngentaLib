@@ -3,24 +3,42 @@
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 <meta charset="utf-8" />
-<title>ARTEA___Eng___2012_07_31_ Page3</title>
+<title>ARTEA___Eng___5_7_2013 Page3</title>
 </head>
 
-<body style="background-color:#919191;">
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
 
 <style type="text/css">
     body {
         margin:0;
     }
 
-    #nav button {
+    #prev, #next {
         width: 100px;
         height: 30px;
         vertical-align: middle;
     }
 
-    #nav select {
+    #goBtn {
         width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
         height: 27px;
         vertical-align: middle;
     }
@@ -35,7 +53,19 @@
     var curPg = 0;
     var pgCount = 0;
 	var jpedal;
+	var container;
 	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
 
     function makeNavBar(pageCount, curPage, w, h, t) {
 	
@@ -97,8 +127,12 @@
         jpedal.style.oTransformOrigin = "top left";
         jpedal.style.margin = "0";
 
-        d("container").style.width = width + "px";
-        d("container").style.height = height + "px";
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
 
         var doc = document.URL;
         var jumper = "?zoom=";
@@ -118,6 +152,101 @@
 			zoomUpdate();
 		}
     }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
 	
 	function getWidth() {
 		var w = 0;
@@ -218,14 +347,15 @@
     }
 	
 	function getMagazinePageHref(page, count) {
-		if(page === 1) return getPageHref(page, count);
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
 		else if(page % 2 === 0) {
 			if(page === count)
 				return getPageHref(page, count);
 			else
 				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
-			}
-				else {
+		} else {
 			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
 		}
 	}
@@ -263,14 +393,20 @@
 
 </script>
 
-<div id="nav" style="background-color:#919191; padding-top: 10px; text-align: center; position: fixed; width: 100%; height: 40px; z-index:999;">
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
     <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
     <select id="goBtn" onchange="goToPage()">
 
     </select>
-    <button onclick="next()" id="next" style="margin-right:30px;">&gt;&gt; Next</button>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
 
-    <button onclick="zoomOut()" id="zoomOut">Zoom Out</button>
+    <button onclick="zoomOut()" id="zoomOut">-</button>
     <select id="zoomBtn" onchange="zoomUpdate()">
         <option value="0">100%</option>
         <option value="1">100% (Reset)</option>
@@ -279,11 +415,12 @@
         <option value="4">Fit Page</option>
 
     </select>
-    <button onclick="zoomIn()" id="zoomIn">Zoom In</button>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
 </div>
-<div style="position:relative; width: 100%; height: 50px;"></div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
 
-<div id="container" style="margin: 0 auto 10px;">
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
 </script>
 
 
@@ -291,7 +428,6 @@
 <div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
 
 <!-- Begin shared CSS values -->
-<!--[if lt IE 9]><style type="text/css">.t div div{zoom: 25%;}</style><![endif]-->
 <style type="text/css" >
 .t {
 	position: absolute;
@@ -304,8 +440,6 @@
 	-o-transform: scale(0.25);
 	-ms-transform: scale(0.25);
 	z-index: 1;
-}
-.t div div {
 	position:absolute;
 	white-space:nowrap;
 	overflow:visible;
@@ -373,267 +507,333 @@ function adjustWordSpacing(divName,actualWidth) {
 <!-- Begin inline CSS -->
 <style type="text/css" >
 
-#t1_3{left:1777px;top:165px;}
-#t2_3{left:1941px;top:174px;}
-#t3_3{left:1975px;top:165px;}
-#t4_3{left:457px;top:339px;}
-#t5_3{left:719px;top:339px;}
-#t6_3{left:457px;top:455px;}
-#t7_3{left:457px;top:573px;}
-#t8_3{left:728px;top:573px;}
-#t9_3{left:749px;top:573px;}
-#ta_3{left:457px;top:631px;}
-#tb_3{left:457px;top:690px;}
-#tc_3{left:457px;top:749px;}
-#td_3{left:1653px;top:749px;}
-#te_3{left:1674px;top:749px;}
-#tf_3{left:457px;top:807px;}
-#tg_3{left:457px;top:866px;}
-#th_3{left:457px;top:983px;}
-#ti_3{left:1706px;top:983px;}
-#tj_3{left:1728px;top:983px;}
-#tk_3{left:457px;top:1042px;}
-#tl_3{left:457px;top:1159px;}
-#tm_3{left:457px;top:1277px;}
-#tn_3{left:457px;top:1335px;}
-#to_3{left:457px;top:1394px;}
-#tp_3{left:457px;top:2265px;}
-#tq_3{left:457px;top:2383px;}
-#tr_3{left:457px;top:2441px;}
-#ts_3{left:497px;top:2441px;}
-#tt_3{left:518px;top:2441px;}
-#tu_3{left:457px;top:2500px;}
-#tv_3{left:457px;top:2559px;}
-#tw_3{left:659px;top:2559px;}
-#tx_3{left:680px;top:2559px;}
-#ty_3{left:457px;top:2617px;}
-#tz_3{left:457px;top:2676px;}
-#t10_3{left:457px;top:2769px;}
-#t11_3{left:1441px;top:2769px;}
-#t12_3{left:1462px;top:2769px;}
-#t13_3{left:457px;top:2828px;}
-#t14_3{left:439px;top:2963px;}
-#t15_3{left:578px;top:2963px;}
-#t16_3{left:574px;top:1501px;}
-#t17_3{left:462px;top:1618px;}
-#t18_3{left:462px;top:1694px;}
-#t19_3{left:462px;top:1753px;}
-#t1a_3{left:474px;top:1753px;}
-#t1b_3{left:1005px;top:1753px;}
-#t1c_3{left:462px;top:1820px;}
-#t1d_3{left:462px;top:1879px;}
-#t1e_3{left:474px;top:1879px;}
-#t1f_3{left:875px;top:1879px;}
-#t1g_3{left:462px;top:1946px;}
-#t1h_3{left:462px;top:2005px;}
-#t1i_3{left:474px;top:2005px;}
-#t1j_3{left:812px;top:2005px;}
-#t1k_3{left:462px;top:2072px;}
-#t1l_3{left:462px;top:2131px;}
-#t1m_3{left:474px;top:2131px;}
-#t1n_3{left:859px;top:2131px;}
-#t1o_3{left:1347px;top:1504px;}
-#t1p_3{left:1241px;top:1620px;}
-#t1q_3{left:1322px;top:1679px;}
-#t1r_3{left:1273px;top:1738px;}
-#t1s_3{left:1540px;top:1738px;}
-#t1t_3{left:1561px;top:1738px;}
-#t1u_3{left:574px;top:3082px;}
-#t1v_3{left:460px;top:3199px;}
-#t1w_3{left:460px;top:3258px;}
-#t1x_3{left:460px;top:3316px;}
-#t1y_3{left:472px;top:3316px;}
-#t1z_3{left:943px;top:3316px;}
-#t20_3{left:460px;top:3375px;}
-#t21_3{left:460px;top:3434px;}
-#t22_3{left:472px;top:3434px;}
-#t23_3{left:806px;top:3434px;}
-#t24_3{left:460px;top:3492px;}
-#t25_3{left:460px;top:3551px;}
-#t26_3{left:472px;top:3551px;}
-#t27_3{left:1014px;top:3551px;}
-#t28_3{left:460px;top:3668px;}
-#t29_3{left:460px;top:3727px;}
-#t2a_3{left:460px;top:3786px;}
-#t2b_3{left:472px;top:3786px;}
-#t2c_3{left:943px;top:3786px;}
-#t2d_3{left:460px;top:3844px;}
-#t2e_3{left:460px;top:3903px;}
-#t2f_3{left:472px;top:3903px;}
-#t2g_3{left:806px;top:3903px;}
-#t2h_3{left:1344px;top:3081px;}
-#t2i_3{left:1239px;top:3198px;}
-#t2j_3{left:1319px;top:3256px;}
-#t2k_3{left:1328px;top:3315px;}
-#t2l_3{left:1480px;top:3315px;}
-#t2m_3{left:1501px;top:3315px;}
-#t2n_3{left:1239px;top:3722px;}
-#t2o_3{left:1319px;top:3781px;}
-#t2p_3{left:1328px;top:3839px;}
-#t2q_3{left:1480px;top:3839px;}
-#t2r_3{left:1501px;top:3839px;}
-#t2s_3{left:2016px;top:1651px;}
-#t2t_3{left:2016px;top:1709px;}
-#t2u_3{left:2068px;top:1768px;}
-#t2v_3{left:2068px;top:1827px;}
-#t2w_3{left:2016px;top:1885px;}
-#t2x_3{left:2068px;top:1885px;}
-#t2y_3{left:3336px;top:1885px;}
-#t2z_3{left:2068px;top:1944px;}
-#t30_3{left:2016px;top:2003px;}
-#t31_3{left:2068px;top:2061px;}
-#t32_3{left:2016px;top:2120px;}
-#t33_3{left:2068px;top:2120px;}
-#t34_3{left:2068px;top:2179px;}
-#t35_3{left:2016px;top:2237px;}
-#t36_3{left:2068px;top:2296px;}
-#t37_3{left:2016px;top:2355px;}
-#t38_3{left:3127px;top:2355px;}
-#t39_3{left:3313px;top:2355px;}
-#t3a_3{left:2068px;top:2413px;}
-#t3b_3{left:2016px;top:2531px;}
-#t3c_3{left:2016px;top:2589px;}
-#t3d_3{left:2068px;top:2589px;}
-#t3e_3{left:2540px;top:2589px;}
-#t3f_3{left:2766px;top:2589px;}
-#t3g_3{left:2802px;top:2589px;}
-#t3h_3{left:2016px;top:2648px;}
-#t3i_3{left:2068px;top:2648px;}
-#t3j_3{left:2503px;top:2648px;}
-#t3k_3{left:2674px;top:2648px;}
-#t3l_3{left:2711px;top:2648px;}
-#t3m_3{left:1998px;top:2817px;}
-#t3n_3{left:2541px;top:2817px;}
-#t3o_3{left:2687px;top:2817px;}
-#t3p_3{left:1998px;top:2875px;}
-#t3q_3{left:3277px;top:2875px;}
-#t3r_3{left:3358px;top:2875px;}
-#t3s_3{left:1998px;top:2934px;}
-#t3t_3{left:2033px;top:3350px;}
-#t3u_3{left:2176px;top:3357px;}
-#t3v_3{left:2206px;top:3350px;}
-#t3w_3{left:2033px;top:3504px;}
-#t3x_3{left:2538px;top:3504px;}
-#t3y_3{left:2033px;top:3556px;}
-#t3z_3{left:2972px;top:3710px;}
-#t40_3{left:2122px;top:1306px;}
-#t41_3{left:2021px;top:1423px;}
-#t42_3{left:2021px;top:1482px;}
-#t43_3{left:2021px;top:1540px;}
-#t44_3{left:2525px;top:1540px;}
-#t45_3{left:2896px;top:1309px;}
-#t46_3{left:2654px;top:1425px;}
-#t47_3{left:2887px;top:1484px;}
-#t48_3{left:3024px;top:1484px;}
-#t49_3{left:3045px;top:1484px;}
-#t4a_3{left:457px;top:4017px;}
-#t4b_3{left:457px;top:4135px;}
-#t4c_3{left:626px;top:4135px;}
-#t4d_3{left:870px;top:4135px;}
-#t4e_3{left:1037px;top:4135px;}
-#t4f_3{left:509px;top:4193px;}
-#t4g_3{left:745px;top:4193px;}
-#t4h_3{left:833px;top:4193px;}
-#t4i_3{left:509px;top:4252px;}
-#t4j_3{left:457px;top:4321px;}
-#t4k_3{left:509px;top:4321px;}
-#t4l_3{left:509px;top:4380px;}
-#t4m_3{left:1772px;top:4380px;}
-#t4n_3{left:509px;top:4438px;}
-#t4o_3{left:457px;top:4507px;}
-#t4p_3{left:509px;top:4566px;}
-#t4q_3{left:457px;top:4635px;}
-#t4r_3{left:509px;top:4694px;}
-#t4s_3{left:509px;top:4752px;}
-#t4t_3{left:509px;top:4811px;}
-#t4u_3{left:509px;top:4870px;}
-#t4v_3{left:2017px;top:329px;}
-#t4w_3{left:2665px;top:329px;}
-#t4x_3{left:2687px;top:329px;}
-#t4y_3{left:2069px;top:388px;}
-#t4z_3{left:2017px;top:457px;}
-#t50_3{left:2069px;top:515px;}
-#t51_3{left:2017px;top:574px;}
-#t52_3{left:3117px;top:574px;}
-#t53_3{left:3301px;top:574px;}
-#t54_3{left:2069px;top:633px;}
-#t55_3{left:2017px;top:749px;}
-#t56_3{left:2017px;top:808px;}
-#t57_3{left:2069px;top:808px;}
-#t58_3{left:2571px;top:808px;}
-#t59_3{left:2797px;top:808px;}
-#t5a_3{left:2848px;top:808px;}
-#t5b_3{left:2017px;top:867px;}
-#t5c_3{left:2069px;top:867px;}
-#t5d_3{left:2929px;top:867px;}
-#t5e_3{left:3157px;top:867px;}
-#t5f_3{left:3210px;top:867px;}
-#t5g_3{left:2069px;top:925px;}
-#t5h_3{left:2017px;top:984px;}
-#t5i_3{left:2069px;top:984px;}
-#t5j_3{left:2534px;top:984px;}
-#t5k_3{left:2705px;top:984px;}
-#t5l_3{left:2757px;top:984px;}
-#t5m_3{left:2017px;top:1043px;}
-#t5n_3{left:2069px;top:1043px;}
-#t5o_3{left:2316px;top:1043px;}
-#t5p_3{left:2823px;top:1043px;}
-#t5q_3{left:2995px;top:1043px;}
-#t5r_3{left:3046px;top:1043px;}
-#t5s_3{left:2017px;top:1177px;}
-#t5t_3{left:2155px;top:1177px;}
-
-.s7_3{
-	FONT-SIZE: 42px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Bd3;
-	color: rgb(0,0,0);
-}
+#t1_3{left:447px;top:41px;}
+#t2_3{left:491px;top:41px;letter-spacing:1px;}
+#t3_3{left:149px;top:79px;}
+#t4_3{left:342px;top:79px;}
+#t5_3{left:118px;top:105px;}
+#t6_3{left:169px;top:105px;}
+#t7_3{left:118px;top:129px;}
+#t8_3{left:118px;top:143px;}
+#t9_3{left:120px;top:143px;}
+#ta_3{left:196px;top:143px;}
+#tb_3{left:118px;top:158px;}
+#tc_3{left:118px;top:173px;}
+#td_3{left:120px;top:173px;}
+#te_3{left:219px;top:173px;}
+#tf_3{left:118px;top:187px;}
+#tg_3{left:118px;top:202px;}
+#th_3{left:120px;top:202px;}
+#ti_3{left:217px;top:202px;}
+#tj_3{left:118px;top:217px;}
+#tk_3{left:118px;top:231px;}
+#tl_3{left:120px;top:231px;}
+#tm_3{left:222px;top:231px;}
+#tn_3{left:118px;top:246px;}
+#to_3{left:118px;top:261px;}
+#tp_3{left:120px;top:261px;}
+#tq_3{left:217px;top:261px;}
+#tr_3{left:118px;top:275px;}
+#ts_3{left:118px;top:290px;}
+#tt_3{left:120px;top:290px;}
+#tu_3{left:224px;top:290px;}
+#tv_3{left:333px;top:164px;}
+#tw_3{left:318px;top:179px;}
+#tx_3{left:323px;top:193px;}
+#ty_3{left:390px;top:193px;}
+#tz_3{left:395px;top:193px;}
+#t10_3{left:118px;top:316px;}
+#t11_3{left:118px;top:331px;}
+#t12_3{left:118px;top:345px;}
+#t13_3{left:135px;top:345px;}
+#t14_3{left:135px;top:360px;}
+#t15_3{left:176px;top:362px;}
+#t16_3{left:186px;top:360px;}
+#t17_3{left:118px;top:374px;}
+#t18_3{left:135px;top:374px;}
+#t19_3{left:118px;top:393px;}
+#t1a_3{left:118px;top:408px;}
+#t1b_3{left:135px;top:408px;}
+#t1c_3{left:205px;top:408px;}
+#t1d_3{left:210px;top:408px;}
+#t1e_3{left:294px;top:410px;}
+#t1f_3{left:305px;top:408px;}
+#t1g_3{left:135px;top:422px;}
+#t1h_3{left:118px;top:437px;}
+#t1i_3{left:135px;top:437px;}
+#t1j_3{left:135px;top:451px;}
+#t1k_3{left:118px;top:466px;}
+#t1l_3{left:135px;top:466px;}
+#t1m_3{left:135px;top:480px;}
+#t1n_3{left:145px;top:480px;}
+#t1o_3{left:150px;top:480px;}
+#t1p_3{left:135px;top:495px;}
+#t1q_3{left:118px;top:509px;}
+#t1r_3{left:135px;top:509px;}
+#t1s_3{left:410px;top:509px;}
+#t1t_3{left:415px;top:509px;}
+#t1u_3{left:135px;top:524px;}
+#t1v_3{left:118px;top:542px;}
+#t1w_3{left:118px;top:557px;}
+#t1x_3{left:135px;top:557px;}
+#t1y_3{left:135px;top:572px;}
+#t1z_3{left:135px;top:586px;}
+#t20_3{left:108px;top:611px;}
+#t21_3{left:145px;top:638px;}
+#t22_3{left:342px;top:638px;}
+#t23_3{left:118px;top:664px;}
+#t24_3{left:118px;top:683px;}
+#t25_3{left:118px;top:698px;}
+#t26_3{left:120px;top:698px;}
+#t27_3{left:238px;top:698px;}
+#t28_3{left:118px;top:712px;}
+#t29_3{left:118px;top:727px;}
+#t2a_3{left:120px;top:727px;}
+#t2b_3{left:194px;top:727px;}
+#t2c_3{left:333px;top:693px;}
+#t2d_3{left:318px;top:708px;}
+#t2e_3{left:338px;top:723px;}
+#t2f_3{left:376px;top:723px;}
+#t2g_3{left:381px;top:723px;}
+#t2h_3{left:118px;top:753px;}
+#t2i_3{left:118px;top:768px;}
+#t2j_3{left:135px;top:768px;}
+#t2k_3{left:135px;top:782px;}
+#t2l_3{left:135px;top:797px;}
+#t2m_3{left:118px;top:812px;}
+#t2n_3{left:135px;top:812px;}
+#t2o_3{left:135px;top:826px;}
+#t2p_3{left:118px;top:841px;}
+#t2q_3{left:135px;top:841px;}
+#t2r_3{left:135px;top:856px;}
+#t2s_3{left:118px;top:870px;}
+#t2t_3{left:135px;top:870px;}
+#t2u_3{left:390px;top:870px;}
+#t2v_3{left:435px;top:870px;}
+#t2w_3{left:135px;top:885px;}
+#t2x_3{left:118px;top:911px;}
+#t2y_3{left:118px;top:926px;}
+#t2z_3{left:135px;top:926px;}
+#t30_3{left:260px;top:926px;}
+#t31_3{left:317px;top:926px;}
+#t32_3{left:330px;top:926px;}
+#t33_3{left:118px;top:940px;}
+#t34_3{left:135px;top:940px;}
+#t35_3{left:251px;top:940px;}
+#t36_3{left:294px;top:940px;}
+#t37_3{left:307px;top:940px;}
+#t38_3{left:118px;top:955px;}
+#t39_3{left:135px;top:955px;}
+#t3a_3{left:197px;top:955px;}
+#t3b_3{left:323px;top:955px;}
+#t3c_3{left:366px;top:955px;}
+#t3d_3{left:379px;top:955px;}
+#t3e_3{left:108px;top:988px;}
+#t3f_3{left:145px;top:1014px;}
+#t3g_3{left:342px;top:1014px;}
+#t3h_3{left:118px;top:1040px;}
+#t3i_3{left:118px;top:1059px;}
+#t3j_3{left:118px;top:1074px;}
+#t3k_3{left:120px;top:1074px;}
+#t3l_3{left:238px;top:1074px;}
+#t3m_3{left:118px;top:1088px;}
+#t3n_3{left:118px;top:1103px;}
+#t3o_3{left:120px;top:1103px;}
+#t3p_3{left:204px;top:1103px;}
+#t3q_3{left:118px;top:1118px;}
+#t3r_3{left:118px;top:1132px;}
+#t3s_3{left:120px;top:1132px;}
+#t3t_3{left:256px;top:1132px;}
+#t3u_3{left:333px;top:1084px;}
+#t3v_3{left:318px;top:1099px;}
+#t3w_3{left:338px;top:1113px;}
+#t3x_3{left:376px;top:1113px;}
+#t3y_3{left:381px;top:1113px;}
+#t3z_3{left:118px;top:1158px;}
+#t40_3{left:118px;top:1177px;}
+#t41_3{left:118px;top:1192px;}
+#t42_3{left:120px;top:1192px;}
+#t43_3{left:238px;top:1192px;}
+#t44_3{left:118px;top:1207px;}
+#t45_3{left:118px;top:1221px;}
+#t46_3{left:120px;top:1221px;}
+#t47_3{left:204px;top:1221px;}
+#t48_3{left:333px;top:1188px;}
+#t49_3{left:318px;top:1202px;}
+#t4a_3{left:338px;top:1217px;}
+#t4b_3{left:376px;top:1217px;}
+#t4c_3{left:381px;top:1217px;}
+#t4d_3{left:498px;top:491px;}
+#t4e_3{left:535px;top:517px;}
+#t4f_3{left:732px;top:517px;}
+#t4g_3{left:507px;top:543px;}
+#t4h_3{left:507px;top:572px;}
+#t4i_3{left:507px;top:587px;}
+#t4j_3{left:584px;top:587px;}
+#t4k_3{left:507px;top:602px;}
+#t4l_3{left:507px;top:616px;}
+#t4m_3{left:510px;top:616px;}
+#t4n_3{left:607px;top:616px;}
+#t4o_3{left:723px;top:572px;}
+#t4p_3{left:707px;top:587px;}
+#t4q_3{left:713px;top:602px;}
+#t4r_3{left:780px;top:602px;}
+#t4s_3{left:785px;top:602px;}
+#t4t_3{left:507px;top:643px;}
+#t4u_3{left:507px;top:657px;}
+#t4v_3{left:525px;top:657px;}
+#t4w_3{left:525px;top:672px;}
+#t4x_3{left:525px;top:687px;}
+#t4y_3{left:507px;top:701px;}
+#t4z_3{left:525px;top:701px;}
+#t50_3{left:525px;top:716px;}
+#t51_3{left:507px;top:731px;}
+#t52_3{left:525px;top:731px;}
+#t53_3{left:525px;top:745px;}
+#t54_3{left:507px;top:760px;}
+#t55_3{left:525px;top:760px;}
+#t56_3{left:525px;top:775px;}
+#t57_3{left:507px;top:789px;}
+#t58_3{left:525px;top:789px;}
+#t59_3{left:781px;top:789px;}
+#t5a_3{left:826px;top:789px;}
+#t5b_3{left:525px;top:804px;}
+#t5c_3{left:507px;top:830px;}
+#t5d_3{left:507px;top:845px;}
+#t5e_3{left:525px;top:845px;}
+#t5f_3{left:643px;top:845px;}
+#t5g_3{left:699px;top:845px;}
+#t5h_3{left:708px;top:845px;}
+#t5i_3{left:507px;top:859px;}
+#t5j_3{left:525px;top:859px;}
+#t5k_3{left:633px;top:859px;}
+#t5l_3{left:685px;top:859px;}
+#t5m_3{left:711px;top:859px;}
+#t5n_3{left:728px;top:859px;}
+#t5o_3{left:737px;top:859px;}
+#t5p_3{left:498px;top:894px;}
+#t5q_3{left:535px;top:921px;}
+#t5r_3{left:732px;top:921px;}
+#t5s_3{left:507px;top:947px;}
+#t5t_3{left:507px;top:976px;}
+#t5u_3{left:507px;top:991px;}
+#t5v_3{left:633px;top:991px;}
+#t5w_3{left:723px;top:961px;}
+#t5x_3{left:707px;top:976px;}
+#t5y_3{left:729px;top:991px;}
+#t5z_3{left:764px;top:991px;}
+#t60_3{left:769px;top:991px;}
+#t61_3{left:507px;top:1017px;}
+#t62_3{left:507px;top:1031px;}
+#t63_3{left:525px;top:1031px;}
+#t64_3{left:525px;top:1046px;}
+#t65_3{left:525px;top:1061px;}
+#t66_3{left:507px;top:1075px;}
+#t67_3{left:525px;top:1075px;}
+#t68_3{left:525px;top:1090px;}
+#t69_3{left:525px;top:1105px;}
+#t6a_3{left:507px;top:1119px;}
+#t6b_3{left:525px;top:1119px;}
+#t6c_3{left:525px;top:1134px;}
+#t6d_3{left:507px;top:1149px;}
+#t6e_3{left:525px;top:1149px;}
+#t6f_3{left:525px;top:1163px;}
+#t6g_3{left:507px;top:1178px;}
+#t6h_3{left:525px;top:1178px;}
+#t6i_3{left:525px;top:1193px;}
+#t6j_3{left:507px;top:1207px;}
+#t6k_3{left:525px;top:1207px;}
+#t6l_3{left:780px;top:1207px;}
+#t6m_3{left:825px;top:1207px;}
+#t6n_3{left:525px;top:1222px;}
+#t6o_3{left:535px;top:79px;}
+#t6p_3{left:732px;top:79px;}
+#t6q_3{left:507px;top:105px;}
+#t6r_3{left:598px;top:105px;}
+#t6s_3{left:507px;top:124px;}
+#t6t_3{left:507px;top:139px;}
+#t6u_3{left:525px;top:139px;}
+#t6v_3{left:553px;top:139px;}
+#t6w_3{left:613px;top:139px;}
+#t6x_3{left:654px;top:139px;}
+#t6y_3{left:525px;top:154px;}
+#t6z_3{left:585px;top:154px;}
+#t70_3{left:608px;top:154px;}
+#t71_3{left:525px;top:168px;}
+#t72_3{left:507px;top:183px;}
+#t73_3{left:525px;top:183px;}
+#t74_3{left:525px;top:198px;}
+#t75_3{left:525px;top:212px;}
+#t76_3{left:507px;top:227px;}
+#t77_3{left:525px;top:227px;}
+#t78_3{left:525px;top:242px;}
+#t79_3{left:507px;top:256px;}
+#t7a_3{left:525px;top:256px;}
+#t7b_3{left:525px;top:271px;}
+#t7c_3{left:525px;top:286px;}
+#t7d_3{left:507px;top:300px;}
+#t7e_3{left:525px;top:300px;}
+#t7f_3{left:673px;top:300px;}
+#t7g_3{left:679px;top:300px;}
+#t7h_3{left:525px;top:315px;}
+#t7i_3{left:507px;top:330px;}
+#t7j_3{left:525px;top:330px;}
+#t7k_3{left:525px;top:344px;}
+#t7l_3{left:507px;top:359px;}
+#t7m_3{left:525px;top:359px;}
+#t7n_3{left:780px;top:359px;}
+#t7o_3{left:825px;top:359px;}
+#t7p_3{left:525px;top:374px;}
+#t7q_3{left:507px;top:400px;}
+#t7r_3{left:507px;top:414px;}
+#t7s_3{left:525px;top:414px;}
+#t7t_3{left:650px;top:414px;}
+#t7u_3{left:707px;top:414px;}
+#t7v_3{left:719px;top:414px;}
+#t7w_3{left:507px;top:429px;}
+#t7x_3{left:525px;top:429px;}
+#t7y_3{left:727px;top:429px;}
+#t7z_3{left:780px;top:429px;}
+#t80_3{left:791px;top:429px;}
+#t81_3{left:507px;top:444px;}
+#t82_3{left:525px;top:444px;}
+#t83_3{left:641px;top:444px;}
+#t84_3{left:684px;top:444px;}
+#t85_3{left:697px;top:444px;}
+#t86_3{left:507px;top:458px;}
+#t87_3{left:525px;top:458px;}
+#t88_3{left:586px;top:458px;}
+#t89_3{left:713px;top:458px;}
+#t8a_3{left:756px;top:458px;}
+#t8b_3{left:769px;top:458px;}
 
 .s1_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Bd3;
+	FONT-FAMILY: POQTXW-HelveticaNeueLTStd-Bd3;
 	color: rgb(0,0,0);
 }
 
 .s3_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Lt_C0_0_55683;
+	FONT-FAMILY: POQTXW-HelveticaNeueLTStd-It3;
 	color: rgb(0,0,0);
 }
 
-.s6_3{
+.s2_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-It3;
-	color: rgb(0,0,0);
-}
-
-.s5_3{
-	FONT-SIZE: 48px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Lt3;
-	color: rgb(0,0,0);
-}
-
-.s8_3{
-	FONT-SIZE: 21px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Lt3;
-	color: rgb(0,0,0);
-}
-
-.s9_3{
-	FONT-SIZE: 42px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Lt_C0_0_55683;
+	FONT-FAMILY: POQTXW-HelveticaNeueLTStd-Lt3;
 	color: rgb(0,0,0);
 }
 
 .s4_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: Mt-ExtraPlain3;
+	FONT-FAMILY: POQTXW-MT-Extra3;
 	color: rgb(0,0,0);
 }
 
-.s2_3{
+.s5_3{
 	FONT-SIZE: 24px;
-	FONT-FAMILY: MFWZVJ-HelveticaNeueLTStd-Lt3;
+	FONT-FAMILY: POQTXW-HelveticaNeueLTStd-Lt3;
 	color: rgb(0,0,0);
 }
 
@@ -644,529 +844,353 @@ function adjustWordSpacing(divName,actualWidth) {
 <style type="text/css" >
 
 @font-face {
-	font-family: MFWZVJ-HelveticaNeueLTStd-Lt_C0_0_55683;
-	src: url("3/fonts/MFWZVJ-HelveticaNeueLTStd-Lt_C0_0_5568.otf");
+	font-family: POQTXW-HelveticaNeueLTStd-It3;
+	src: url("3/fonts/POQTXW-HelveticaNeueLTStd-It.eot");
+	src: url("3/fonts/POQTXW-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/POQTXW-HelveticaNeueLTStd-It.otf") format("opentype");
 }
 
 @font-face {
-	font-family: Mt-ExtraPlain3;
-	src: url("3/fonts/Mt-ExtraPlain.otf");
+	font-family: POQTXW-MT-Extra3;
+	src: url("3/fonts/POQTXW-MT-Extra.eot");
+	src: url("3/fonts/POQTXW-MT-Extra.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/POQTXW-MT-Extra.otf") format("opentype");
 }
 
 @font-face {
-	font-family: MFWZVJ-HelveticaNeueLTStd-Bd3;
-	src: url("3/fonts/MFWZVJ-HelveticaNeueLTStd-Bd.otf");
+	font-family: POQTXW-HelveticaNeueLTStd-Lt3;
+	src: url("3/fonts/POQTXW-HelveticaNeueLTStd-Lt.eot");
+	src: url("3/fonts/POQTXW-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/POQTXW-HelveticaNeueLTStd-Lt.otf") format("opentype");
 }
 
 @font-face {
-	font-family: MFWZVJ-HelveticaNeueLTStd-It3;
-	src: url("3/fonts/MFWZVJ-HelveticaNeueLTStd-It.otf");
-}
-
-@font-face {
-	font-family: MFWZVJ-HelveticaNeueLTStd-Lt3;
-	src: url("3/fonts/MFWZVJ-HelveticaNeueLTStd-Lt.otf");
+	font-family: POQTXW-HelveticaNeueLTStd-Bd3;
+	src: url("3/fonts/POQTXW-HelveticaNeueLTStd-Bd.eot");
+	src: url("3/fonts/POQTXW-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/POQTXW-HelveticaNeueLTStd-Bd.otf") format("opentype");
 }
 
 </style>
 <!-- End embedded font definitions -->
 
 <!-- Begin text definitions (Positioned/styled in CSS) -->
-<div class="t">
-<div class="s1_3">
-<div id="t1_3">ARTEA</div>
-</div>
-<div class="s2_3">
-<div id="t2_3">®</div>
-</div>
-<div class="s3_3">
-<div id="t3_3">/	3</div>
-</div>
-<div class="s1_3">
-<div id="t4_3">REMARKS </div>
-</div>
-<div class="s3_3">
-<div id="t5_3">(cont):</div>
-</div>
-<div class="s1_3">
-<div id="t6_3">Speckled/glume blotch and powdery mildew:</div>
-</div>
-<div class="s3_3">
-<div id="t7_3">Apply	400	m</div>
-</div>
-<div class="s4_3">
-<div id="t8_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t9_3">/ha	using	the	3rd	leaf	as	indicator	when	not	more	</div>
-<div id="ta_3">than	5	%	of	the	leaf	surface	is	infected.	Optimum	time	for	this	</div>
-<div id="tb_3">application	 is	 at	 the	 6-leaf	 stage	 (37	 -	 51	 BBCH).	 Where	 a	</div>
-<div id="tc_3">second	 application	 is	 justified,	 a	 dosage	 rate	 of	 400	 m</div>
-</div>
-<div class="s4_3">
-<div id="td_3">l</div>
-</div>
-<div class="s3_3">
-<div id="te_3">/ha	 is	</div>
-<div id="tf_3">recommended	for	ground	and	aerial	applications,	usually	around	</div>
-<div id="tg_3">flag	leaf	stage.</div>
-<div id="th_3">For	a	stand	alone	application,	use	the	higher	rate	of	500	m</div>
-</div>
-<div class="s4_3">
-<div id="ti_3">l</div>
-</div>
-<div class="s3_3">
-<div id="tj_3">/ha	</div>
-<div id="tk_3">at	flag	leaf	stage.</div>
-</div>
-<div class="s1_3">
-<div id="tl_3">Leaf rust, stem rust, yellow/stripe rust:</div>
-</div>
-<div class="s3_3">
-<div id="tm_3">Apply	at	first	signs	of	the	disease.	In	the	case	of	yellow/stripe/</div>
-<div id="tn_3">stem	rust,	repeat	application	3	weeks	later	if	conditions	favour	</div>
-<div id="to_3">disease	development.</div>
-</div>
-<div class="s1_3">
-<div id="tp_3">REMARKS:</div>
-</div>
-<div class="s3_3">
-<div id="tq_3">If	 infection	 appears	 early	 in	 the	 season	 apply	 at	 a	 rate	 of	 400	</div>
-</div>
-<div class="s5_3">
-<div id="tr_3">m</div>
-</div>
-<div class="s4_3">
-<div id="ts_3">l</div>
-</div>
-<div class="s3_3">
-<div id="tt_3">/ha.		Do	not	apply	later	than	the	6-leaf	stage	(37	-	51	BBCH).		</div>
-<div id="tu_3">Follow	up	with	a	spray	at	flag	leaf	appearance	at	a	rate	of	400	</div>
-<div id="tv_3">or	500	m</div>
-</div>
-<div class="s4_3">
-<div id="tw_3">l</div>
-</div>
-<div class="s3_3">
-<div id="tx_3">/ha	depending	on	the	prevalent	weather	conditions.		</div>
-<div id="ty_3">Apply	the	 higher	rate	 when	weather	 conditions	 favour	 disease	</div>
-<div id="tz_3">development.</div>
-<div id="t10_3">For	 a	 stand	 alone	 application,	 apply	 500	 m</div>
-</div>
-<div class="s4_3">
-<div id="t11_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t12_3">/ha	 at	 flag	 leaf	</div>
-<div id="t13_3">stage.	</div>
-</div>
-<div class="s1_3">
-<div id="t14_3">6.4.2 </div>
-<div id="t15_3">MAIZE AND SWEETCORN</div>
-<div id="t16_3">CROP/DISEASE</div>
-<div id="t17_3">BARLEY</div>
-<div id="t18_3">Leaf spot</div>
-</div>
-<div class="s5_3">
-<div id="t19_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t1a_3">Rhynchosporium secalis</div>
-</div>
-<div class="s3_3">
-<div id="t1b_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t1c_3">Net blotch</div>
-</div>
-<div class="s5_3">
-<div id="t1d_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t1e_3">Pyrenophora teres</div>
-</div>
-<div class="s3_3">
-<div id="t1f_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t1g_3">Leaf rust</div>
-</div>
-<div class="s5_3">
-<div id="t1h_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t1i_3">Puccinia hordei</div>
-</div>
-<div class="s3_3">
-<div id="t1j_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t1k_3">Powdery Mildew</div>
-</div>
-<div class="s5_3">
-<div id="t1l_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t1m_3">Erysiphe graminis</div>
-</div>
-<div class="s3_3">
-<div id="t1n_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t1o_3">DOSAGE</div>
-<div id="t1p_3">Ground and aerial </div>
-<div id="t1q_3">application</div>
-</div>
-<div class="s3_3">
-<div id="t1r_3">400	-	500	m</div>
-</div>
-<div class="s4_3">
-<div id="t1s_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t1t_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t1u_3">CROP/DISEASE</div>
-<div id="t1v_3">MAIZE </div>
-<div id="t1w_3">Northern corn leaf blight</div>
-</div>
-<div class="s5_3">
-<div id="t1x_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t1y_3">Exserohilum turcicum</div>
-</div>
-<div class="s3_3">
-<div id="t1z_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t20_3">Rust</div>
-</div>
-<div class="s5_3">
-<div id="t21_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t22_3">Puccinia sorghi</div>
-</div>
-<div class="s3_3">
-<div id="t23_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t24_3">Grey leaf spot</div>
-</div>
-<div class="s5_3">
-<div id="t25_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t26_3">Cercospora zeae-maydis</div>
-</div>
-<div class="s3_3">
-<div id="t27_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t28_3">SWEET CORN </div>
-<div id="t29_3">Northern corn leaf blight</div>
-</div>
-<div class="s5_3">
-<div id="t2a_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t2b_3">Exserohilum turcicum</div>
-</div>
-<div class="s3_3">
-<div id="t2c_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t2d_3">Rust</div>
-</div>
-<div class="s5_3">
-<div id="t2e_3">(</div>
-</div>
-<div class="s6_3">
-<div id="t2f_3">Puccinia sorghi</div>
-</div>
-<div class="s3_3">
-<div id="t2g_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t2h_3">DOSAGE</div>
-<div id="t2i_3">Ground and aerial </div>
-<div id="t2j_3">application</div>
-</div>
-<div class="s3_3">
-<div id="t2k_3">500		m</div>
-</div>
-<div class="s4_3">
-<div id="t2l_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t2m_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t2n_3">Ground and aerial </div>
-<div id="t2o_3">application</div>
-</div>
-<div class="s3_3">
-<div id="t2p_3">500		m</div>
-</div>
-<div class="s4_3">
-<div id="t2q_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t2r_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t2s_3">REMARKS:</div>
-</div>
-<div class="s3_3">
-<div id="t2t_3">•	 	Apply	at	first	signs	of	disease	or	at	flowering	if	no	disease	is	</div>
-<div id="t2u_3">present	 and	 repeat	 14	 -	 21	 days	 later.	 	 Do	 not	 extend	 the	</div>
-<div id="t2v_3">spray	interval	beyond	21	days.</div>
-<div id="t2w_3">•	 	</div>
-<div id="t2x_3">If	weather	conditions	favour	disease	development	(tempera</div>
-</div>
-<div class="s5_3">
-<div id="t2y_3">-</div>
-</div>
-<div class="s3_3">
-<div id="t2z_3">tures	of	15	-	28	°C	and	high	humidity)	use	the	shorter	interval.</div>
-<div id="t30_3">•	 	For	season	long	control	of	foliar	diseases,	it	is	important	that	</div>
-<div id="t31_3">a	spray	programme	be	used.</div>
-<div id="t32_3">•	 	</div>
-<div id="t33_3">If	the	disease	appears	before	or	during	flowering,	more	than	</div>
-<div id="t34_3">one	spray	may	be	necessary.</div>
-<div id="t35_3">•	 	Should	 the	 disease	 appear	 late	 in	 the	 growing	 season,	 a	</div>
-<div id="t36_3">single	application	will	probably	suffice.</div>
-<div id="t37_3">•	 	Do	 not	 apply	 more	 than	 two	 (2)	 applications	 of	</div>
-</div>
-<div class="s1_3">
-<div id="t38_3">ARTEA </div>
-</div>
-<div class="s3_3">
-<div id="t39_3">to	</div>
-<div id="t3a_3">soybeans	in	the	same	season.	</div>
-</div>
-<div class="s1_3">
-<div id="t3b_3">Spray volume:</div>
-</div>
-<div class="s3_3">
-<div id="t3c_3">•	</div>
-</div>
-<div class="s1_3">
-<div id="t3d_3">Tractor application: </div>
-</div>
-<div class="s3_3">
-<div id="t3e_3">300	-	400</div>
-</div>
-<div class="s4_3">
-<div id="t3f_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t3g_3">water/ha</div>
-<div id="t3h_3">•	</div>
-</div>
-<div class="s1_3">
-<div id="t3i_3">Aerial application: </div>
-</div>
-<div class="s3_3">
-<div id="t3j_3">30	-	40</div>
-</div>
-<div class="s4_3">
-<div id="t3k_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t3l_3">water/ha</div>
-<div id="t3m_3">BBCH:	 Lancashire,	 P.D.	</div>
-</div>
-<div class="s6_3">
-<div id="t3n_3">et. al.</div>
-</div>
-<div class="s3_3">
-<div id="t3o_3">(1991).	 A	 uniform	 decimal	 code	</div>
-<div id="t3p_3">for	 growth	 stages	 of	 crops	 and	 weeds.	 Ann.	 Appl.	 Biol.	</div>
-</div>
-<div class="s1_3">
-<div id="t3q_3">119</div>
-</div>
-<div class="s3_3">
-<div id="t3r_3">:	</div>
-<div id="t3s_3">561	-	601.</div>
-</div>
-<div class="s7_3">
-<div id="t3t_3">ARTEA</div>
-</div>
-<div class="s8_3">
-<div id="t3u_3">®</div>
-</div>
-<div class="s9_3">
-<div id="t3v_3">=	Registered	Trade	Mark	of	a	Syngenta	Group	Company.</div>
-</div>
-<div class="s7_3">
-<div id="t3w_3">© SYNGENTA AG, 2000. </div>
-</div>
-<div class="s9_3">
-<div id="t3x_3">Copyright	in	this	document	is	reserved.		All	</div>
-<div id="t3y_3">unauthorised	reproduction	is	forbidden.</div>
-<div id="t3z_3">SA	Reg.:	2012-07-31</div>
-</div>
-<div class="s1_3">
-<div id="t40_3">CROP / DISEASE</div>
-<div id="t41_3">SOYBEANS</div>
-<div id="t42_3">Soybean rust</div>
-</div>
-<div class="s6_3">
-<div id="t43_3">(Phakopsora pachyrhizi</div>
-</div>
-<div class="s3_3">
-<div id="t44_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t45_3">DOSAGE</div>
-<div id="t46_3">Ground and aerial application</div>
-</div>
-<div class="s3_3">
-<div id="t47_3">500	m</div>
-</div>
-<div class="s4_3">
-<div id="t48_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t49_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t4a_3">REMARKS:</div>
-</div>
-<div class="s3_3">
-<div id="t4b_3">•	 	Start</div>
-<div id="t4c_3">application	</div>
-</div>
-<div class="s1_3">
-<div id="t4d_3">before</div>
-</div>
-<div class="s3_3">
-<div id="t4e_3">3	%	of	the	total	leaf	shows	disease	</div>
-<div id="t4f_3">symptoms	</div>
-</div>
-<div class="s1_3">
-<div id="t4g_3">OR </div>
-</div>
-<div class="s3_3">
-<div id="t4h_3">when	symptoms	are	present	on	the	basal	3	-	</div>
-<div id="t4i_3">5	leaves.</div>
-<div id="t4j_3">•	 	</div>
-<div id="t4k_3">In	all	cases,	it	is	vitally	important	that	applications	are	purely	</div>
-<div id="t4l_3">preventative,	i.e.	applications	are	made	timeously,	for	effec</div>
-</div>
-<div class="s5_3">
-<div id="t4m_3">-</div>
-</div>
-<div class="s3_3">
-<div id="t4n_3">tive	disease	control.	</div>
-<div id="t4o_3">•	 	Applications	must	be	made	at	21	-	28	day	intervals.	Use	the	</div>
-<div id="t4p_3">shorter	application	interval	if	disease	pressure	is	high.	</div>
-<div id="t4q_3">•	 	With	 short	 season	 hybrids	 when	 the	 first	 spray	 is	 applied	</div>
-<div id="t4r_3">after	 pollination,	 it	 will	 probably	 be	 sufficient	 to	 control	 the	</div>
-<div id="t4s_3">disease	and	further	sprays	may	not	be	necessary.	If	disease	</div>
-<div id="t4t_3">symptoms	appear	prior	to	pollination,	more	applications	may	</div>
-<div id="t4u_3">be	necessary.</div>
-<div id="t4v_3">•	 	For	improved	control,	500	m</div>
-</div>
-<div class="s4_3">
-<div id="t4w_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t4x_3">/ha	mineral	oil,	e.g.	BP	Crop	Oil	</div>
-<div id="t4y_3">may	be	added	to	the	tank	mix.	</div>
-<div id="t4z_3">•	 	For	season	long	control	of	foliar	diseases,	it	is	important	that	</div>
-<div id="t50_3">a	spray	programme	be	used.</div>
-<div id="t51_3">•	 	Do	 not	 apply	 more	 than	 two	 (2)	 applications	 of</div>
-</div>
-<div class="s1_3">
-<div id="t52_3">ARTEA </div>
-</div>
-<div class="s3_3">
-<div id="t53_3">to	</div>
-<div id="t54_3">maize	or	sweetcorn	in	the	same	season.</div>
-</div>
-<div class="s1_3">
-<div id="t55_3">Spray volumes:</div>
-</div>
-<div class="s3_3">
-<div id="t56_3">•	</div>
-</div>
-<div class="s1_3">
-<div id="t57_3">Tractor application: </div>
-</div>
-<div class="s3_3">
-<div id="t58_3">250	-	450	</div>
-</div>
-<div class="s4_3">
-<div id="t59_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t5a_3">water/ha</div>
-<div id="t5b_3">•	 	</div>
-</div>
-<div class="s1_3">
-<div id="t5c_3">High clearance tractor application: </div>
-</div>
-<div class="s3_3">
-<div id="t5d_3">150	-	300	</div>
-</div>
-<div class="s4_3">
-<div id="t5e_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t5f_3">water/</div>
-<div id="t5g_3">ha</div>
-<div id="t5h_3">•	</div>
-</div>
-<div class="s1_3">
-<div id="t5i_3">Aerial application: </div>
-</div>
-<div class="s3_3">
-<div id="t5j_3">30	-	40	</div>
-</div>
-<div class="s4_3">
-<div id="t5k_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t5l_3">water/ha</div>
-<div id="t5m_3">•	</div>
-</div>
-<div class="s1_3">
-<div id="t5n_3">Knapsack</div>
-<div id="t5o_3">sprayer application: </div>
-</div>
-<div class="s3_3">
-<div id="t5p_3">60	-	70	</div>
-</div>
-<div class="s4_3">
-<div id="t5q_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t5r_3">water/ha</div>
-</div>
-<div class="s1_3">
-<div id="t5s_3">6.4.3 </div>
-<div id="t5t_3">SOYBEANS</div>
-</div>
-</div>
+<div id="t1_3" class="t s1_3">ARTEA</div>
+<div id="t2_3" class="t s2_3">/	3</div>
+<div id="t3_3" class="t s1_3">CROP/DISEASE</div>
+<div id="t4_3" class="t s1_3">DOSAGE</div>
+<div id="t5_3" class="t s1_3">WHEAT </div>
+<div id="t6_3" class="t s2_3">(cont.)</div>
+<div id="t7_3" class="t s1_3">Speckled	leaf	blotch</div>
+<div id="t8_3" class="t s2_3">(</div>
+<div id="t9_3" class="t s3_3">Septoria tritici</div>
+<div id="ta_3" class="t s2_3">)</div>
+<div id="tb_3" class="t s1_3">Glume	blotch</div>
+<div id="tc_3" class="t s2_3">(</div>
+<div id="td_3" class="t s3_3">Septoria nodorum</div>
+<div id="te_3" class="t s2_3">)</div>
+<div id="tf_3" class="t s1_3">Powdery	mildew</div>
+<div id="tg_3" class="t s2_3">(</div>
+<div id="th_3" class="t s3_3">Erysiphe graminis</div>
+<div id="ti_3" class="t s2_3">)</div>
+<div id="tj_3" class="t s1_3">Leaf	rust</div>
+<div id="tk_3" class="t s2_3">(</div>
+<div id="tl_3" class="t s3_3">Puccinia recondita</div>
+<div id="tm_3" class="t s2_3">)</div>
+<div id="tn_3" class="t s1_3">Stem	rust</div>
+<div id="to_3" class="t s2_3">(</div>
+<div id="tp_3" class="t s3_3">Puccinia graminis</div>
+<div id="tq_3" class="t s2_3">)</div>
+<div id="tr_3" class="t s1_3">Yellow/stripe	rust</div>
+<div id="ts_3" class="t s2_3">(</div>
+<div id="tt_3" class="t s3_3">Puccinia striiformis</div>
+<div id="tu_3" class="t s2_3">)</div>
+<div id="tv_3" class="t s1_3">Ground	and	</div>
+<div id="tw_3" class="t s1_3">aerial	application</div>
+<div id="tx_3" class="t s2_3">400	-	500	m</div>
+<div id="ty_3" class="t s4_3">l</div>
+<div id="tz_3" class="t s2_3">/ha	</div>
+<div id="t10_3" class="t s1_3">REMARKS:</div>
+<div id="t11_3" class="t s1_3">Eyespot:</div>
+<div id="t12_3" class="t s2_3">•	</div>
+<div id="t13_3" class="t s2_3">Apply	during	the	stem	elongation	stages	up	to	the	formation	</div>
+<div id="t14_3" class="t s2_3">of	the	2</div>
+<div id="t15_3" class="t s5_3">nd</div>
+<div id="t16_3" class="t s2_3">node	(BBCH	29	-	32).		</div>
+<div id="t17_3" class="t s2_3">•	</div>
+<div id="t18_3" class="t s2_3">Do	not	apply	after	BBCH	32.</div>
+<div id="t19_3" class="t s1_3">Speckled/glume	blotch	and	powdery	mildew:</div>
+<div id="t1a_3" class="t s2_3">•	</div>
+<div id="t1b_3" class="t s2_3">Apply	 400	 m</div>
+<div id="t1c_3" class="t s4_3">l</div>
+<div id="t1d_3" class="t s2_3">/ha	 using	 the	 3</div>
+<div id="t1e_3" class="t s5_3">rd</div>
+<div id="t1f_3" class="t s2_3">leaf as indicator when not </div>
+<div id="t1g_3" class="t s2_3">more	than	5	%	of	the	leaf	surface	is	infected.	</div>
+<div id="t1h_3" class="t s2_3">•	</div>
+<div id="t1i_3" class="t s2_3">Optimum	 time	 for	 this	 application	 is	 at	 the	 6-leaf	 stage	</div>
+<div id="t1j_3" class="t s2_3">(BBCH	37	-	51).	</div>
+<div id="t1k_3" class="t s2_3">•	</div>
+<div id="t1l_3" class="t s2_3">Where	a	second	application	is	justified	a	dosage	rate	of	400	</div>
+<div id="t1m_3" class="t s2_3">m</div>
+<div id="t1n_3" class="t s4_3">l</div>
+<div id="t1o_3" class="t s2_3">/ha	is	recommended	for	ground	and	aerial	applications,	</div>
+<div id="t1p_3" class="t s2_3">usually around flag leaf stage. </div>
+<div id="t1q_3" class="t s2_3">•	</div>
+<div id="t1r_3" class="t s2_3">For	a	single	application,	use	the	higher	rate	of	500	m</div>
+<div id="t1s_3" class="t s4_3">l</div>
+<div id="t1t_3" class="t s2_3">/ha	at	</div>
+<div id="t1u_3" class="t s2_3">flag leaf stage. </div>
+<div id="t1v_3" class="t s1_3">Leaf	rust,	stem	rust,	yellow/stripe	rust:</div>
+<div id="t1w_3" class="t s2_3">•	</div>
+<div id="t1x_3" class="t s2_3">Apply	 at	 first	 signs	 of	 the	 disease.	 In	 the	 case	 of	 yellow/</div>
+<div id="t1y_3" class="t s2_3">stripe/stem	rust,	repeat	application	3	weeks	later	if	condi-</div>
+<div id="t1z_3" class="t s2_3">tions favour disease development.</div>
+<div id="t20_3" class="t s1_3">7.2  GRAIN SORGHUM</div>
+<div id="t21_3" class="t s1_3">CROP	/	DISEASE</div>
+<div id="t22_3" class="t s1_3">DOSAGE </div>
+<div id="t23_3" class="t s1_3">GRAIN SORGHUM </div>
+<div id="t24_3" class="t s1_3">Northern	Corn	Leaf	blight</div>
+<div id="t25_3" class="t s2_3">(</div>
+<div id="t26_3" class="t s3_3">Exserohilum turcicum</div>
+<div id="t27_3" class="t s2_3">)</div>
+<div id="t28_3" class="t s1_3">Rust</div>
+<div id="t29_3" class="t s2_3">(</div>
+<div id="t2a_3" class="t s3_3">Puccinia spp.</div>
+<div id="t2b_3" class="t s2_3">)</div>
+<div id="t2c_3" class="t s1_3">Ground	and	</div>
+<div id="t2d_3" class="t s1_3">aerial	application</div>
+<div id="t2e_3" class="t s2_3">500		m</div>
+<div id="t2f_3" class="t s4_3">l</div>
+<div id="t2g_3" class="t s2_3">/ha</div>
+<div id="t2h_3" class="t s1_3">REMARKS:</div>
+<div id="t2i_3" class="t s2_3">•	</div>
+<div id="t2j_3" class="t s2_3">Apply	 preventatively	 or	 at	 the	 first	 signs	 of	 disease	 and	</div>
+<div id="t2k_3" class="t s2_3">repeat	 21	 days	 later.	 	 Do	 not	 extend	 the	 spray	 interval	</div>
+<div id="t2l_3" class="t s2_3">beyond	28	days.</div>
+<div id="t2m_3" class="t s2_3">•	</div>
+<div id="t2n_3" class="t s2_3">A	silicone-based	adjuvant	or	wetter	could	be	added	at	the	</div>
+<div id="t2o_3" class="t s2_3">recommended rate to increase product effectiveness.</div>
+<div id="t2p_3" class="t s2_3">•	</div>
+<div id="t2q_3" class="t s2_3">For	 season	 long	 control	 of	 foliar	 diseases,	 it	 is	 important	</div>
+<div id="t2r_3" class="t s2_3">that a spray programme be used.</div>
+<div id="t2s_3" class="t s2_3">•	</div>
+<div id="t2t_3" class="t s2_3">Do	not	apply	more	than	two	(2)	applications	of</div>
+<div id="t2u_3" class="t s1_3">ARTEA </div>
+<div id="t2v_3" class="t s2_3">to </div>
+<div id="t2w_3" class="t s2_3">grain sorghum in the same season.</div>
+<div id="t2x_3" class="t s1_3">Spray	volumes:</div>
+<div id="t2y_3" class="t s1_3">•	</div>
+<div id="t2z_3" class="t s1_3">Tractor	application:	</div>
+<div id="t30_3" class="t s2_3">250	-	450	</div>
+<div id="t31_3" class="t s4_3">l</div>
+<div id="t32_3" class="t s2_3">water/ha</div>
+<div id="t33_3" class="t s1_3">•	</div>
+<div id="t34_3" class="t s1_3">Aerial	application:	</div>
+<div id="t35_3" class="t s2_3">30	-	40	</div>
+<div id="t36_3" class="t s4_3">l</div>
+<div id="t37_3" class="t s2_3">water/ha</div>
+<div id="t38_3" class="t s1_3">•	</div>
+<div id="t39_3" class="t s1_3">Knapsack</div>
+<div id="t3a_3" class="t s1_3">sprayer	application:	</div>
+<div id="t3b_3" class="t s2_3">60	-	70	</div>
+<div id="t3c_3" class="t s4_3">l</div>
+<div id="t3d_3" class="t s2_3">water/ha</div>
+<div id="t3e_3" class="t s1_3">7.3  MAIZE AND SWEETCORN</div>
+<div id="t3f_3" class="t s1_3">CROP	/	DISEASE</div>
+<div id="t3g_3" class="t s1_3">DOSAGE </div>
+<div id="t3h_3" class="t s1_3">MAIZE </div>
+<div id="t3i_3" class="t s1_3">Northern	corn	leaf	blight</div>
+<div id="t3j_3" class="t s2_3">(</div>
+<div id="t3k_3" class="t s3_3">Exserohilum turcicum</div>
+<div id="t3l_3" class="t s2_3">)</div>
+<div id="t3m_3" class="t s1_3">Rust</div>
+<div id="t3n_3" class="t s2_3">(</div>
+<div id="t3o_3" class="t s3_3">Puccinia sorghi</div>
+<div id="t3p_3" class="t s2_3">)</div>
+<div id="t3q_3" class="t s1_3">Grey	leaf	spot</div>
+<div id="t3r_3" class="t s2_3">(</div>
+<div id="t3s_3" class="t s3_3">Cercospora zeae-maydis</div>
+<div id="t3t_3" class="t s2_3">)</div>
+<div id="t3u_3" class="t s1_3">Ground	and	</div>
+<div id="t3v_3" class="t s1_3">aerial	application</div>
+<div id="t3w_3" class="t s2_3">500		m</div>
+<div id="t3x_3" class="t s4_3">l</div>
+<div id="t3y_3" class="t s2_3">/ha</div>
+<div id="t3z_3" class="t s1_3">SWEET CORN </div>
+<div id="t40_3" class="t s1_3">Northern	corn	leaf	blight</div>
+<div id="t41_3" class="t s2_3">(</div>
+<div id="t42_3" class="t s3_3">Exserohilum turcicum</div>
+<div id="t43_3" class="t s2_3">)</div>
+<div id="t44_3" class="t s1_3">Rust</div>
+<div id="t45_3" class="t s2_3">(</div>
+<div id="t46_3" class="t s3_3">Puccinia sorghi</div>
+<div id="t47_3" class="t s2_3">)</div>
+<div id="t48_3" class="t s1_3">Ground	and	</div>
+<div id="t49_3" class="t s1_3">aerial	application</div>
+<div id="t4a_3" class="t s2_3">500		m</div>
+<div id="t4b_3" class="t s4_3">l</div>
+<div id="t4c_3" class="t s2_3">/ha</div>
+<div id="t4d_3" class="t s1_3">7.4  OATS</div>
+<div id="t4e_3" class="t s1_3">CROP	/	DISEASE</div>
+<div id="t4f_3" class="t s1_3">DOSAGE</div>
+<div id="t4g_3" class="t s1_3">OATS</div>
+<div id="t4h_3" class="t s1_3">Rust</div>
+<div id="t4i_3" class="t s3_3">(Puccinia spp.</div>
+<div id="t4j_3" class="t s2_3">)</div>
+<div id="t4k_3" class="t s1_3">Powdery	mildew</div>
+<div id="t4l_3" class="t s2_3">(</div>
+<div id="t4m_3" class="t s3_3">Erysiphe graminis</div>
+<div id="t4n_3" class="t s2_3">)</div>
+<div id="t4o_3" class="t s1_3">Ground	and	</div>
+<div id="t4p_3" class="t s1_3">aerial	application</div>
+<div id="t4q_3" class="t s2_3">400	-	500	m</div>
+<div id="t4r_3" class="t s4_3">l</div>
+<div id="t4s_3" class="t s2_3">/ha</div>
+<div id="t4t_3" class="t s1_3">REMARKS:</div>
+<div id="t4u_3" class="t s2_3">•	</div>
+<div id="t4v_3" class="t s2_3">Apply	 preventatively	 or	 at	 the	 first	 signs	 of	 disease	 and	</div>
+<div id="t4w_3" class="t s2_3">repeat	 21	 days	 later.	 	 Do	 not	 extend	 the	 spray	 interval	</div>
+<div id="t4x_3" class="t s2_3">beyond	28	days.</div>
+<div id="t4y_3" class="t s2_3">•	</div>
+<div id="t4z_3" class="t s2_3">If	weather	conditions	favour	disease	development	(tempera-</div>
+<div id="t50_3" class="t s2_3">tures	of	15	-	28	°C	and	high	humidity)	use	the	shorter	interval.</div>
+<div id="t51_3" class="t s2_3">•	</div>
+<div id="t52_3" class="t s2_3">For	 season	 long	 control	 of	 foliar	 diseases,	 it	 is	 important	</div>
+<div id="t53_3" class="t s2_3">that a spray programme be used.</div>
+<div id="t54_3" class="t s2_3">•	</div>
+<div id="t55_3" class="t s2_3">Use	an	appropriate	water	volume	to	ensure	complete	cove-</div>
+<div id="t56_3" class="t s2_3">rage.</div>
+<div id="t57_3" class="t s2_3">•	</div>
+<div id="t58_3" class="t s2_3">Do	not	apply	more	than	two	(2)	applications	of	</div>
+<div id="t59_3" class="t s1_3">ARTEA </div>
+<div id="t5a_3" class="t s2_3">in </div>
+<div id="t5b_3" class="t s2_3">the same season.</div>
+<div id="t5c_3" class="t s1_3">Spray	volume:</div>
+<div id="t5d_3" class="t s1_3">•	</div>
+<div id="t5e_3" class="t s1_3">Tractor	application:	</div>
+<div id="t5f_3" class="t s2_3">200	-	400</div>
+<div id="t5g_3" class="t s4_3">l</div>
+<div id="t5h_3" class="t s2_3">water/ha</div>
+<div id="t5i_3" class="t s1_3">•	</div>
+<div id="t5j_3" class="t s1_3">Aerial	application:	</div>
+<div id="t5k_3" class="t s2_3">Minimum</div>
+<div id="t5l_3" class="t s2_3">30 -</div>
+<div id="t5m_3" class="t s2_3">40</div>
+<div id="t5n_3" class="t s4_3">l</div>
+<div id="t5o_3" class="t s2_3">water/ha</div>
+<div id="t5p_3" class="t s1_3">7.5  SOYBEANS</div>
+<div id="t5q_3" class="t s1_3">CROP	/	DISEASE</div>
+<div id="t5r_3" class="t s1_3">DOSAGE</div>
+<div id="t5s_3" class="t s1_3">SOYBEANS</div>
+<div id="t5t_3" class="t s1_3">Soybean	rust</div>
+<div id="t5u_3" class="t s3_3">(Phakopsora pachyrhizi</div>
+<div id="t5v_3" class="t s2_3">)</div>
+<div id="t5w_3" class="t s1_3">Ground	and	</div>
+<div id="t5x_3" class="t s1_3">aerial	application</div>
+<div id="t5y_3" class="t s2_3">500	m</div>
+<div id="t5z_3" class="t s4_3">l</div>
+<div id="t60_3" class="t s2_3">/ha</div>
+<div id="t61_3" class="t s1_3">REMARKS:</div>
+<div id="t62_3" class="t s2_3">•	</div>
+<div id="t63_3" class="t s2_3">Apply	at	first	signs	of	disease	or	at	flowering	if	no	disease	is	</div>
+<div id="t64_3" class="t s2_3">present	and	repeat	14	-	21	days	later.		Do	not	extend	the	</div>
+<div id="t65_3" class="t s2_3">spray	interval	beyond	21	days.</div>
+<div id="t66_3" class="t s2_3">•	</div>
+<div id="t67_3" class="t s2_3">If	 weather	 conditions	 favour	 disease	 development	 (tem-</div>
+<div id="t68_3" class="t s2_3">peratures	of	15	-	28	°C	and	high	humidity)	use	the	shorter	</div>
+<div id="t69_3" class="t s2_3">interval.</div>
+<div id="t6a_3" class="t s2_3">•	</div>
+<div id="t6b_3" class="t s2_3">For	 season	 long	 control	 of	 foliar	 diseases,	 it	 is	 important	</div>
+<div id="t6c_3" class="t s2_3">that a spray programme be used.</div>
+<div id="t6d_3" class="t s2_3">•	</div>
+<div id="t6e_3" class="t s2_3">If	the	disease	appears	before	or	during	flowering,	more	than	</div>
+<div id="t6f_3" class="t s2_3">one spray may be necessary.</div>
+<div id="t6g_3" class="t s2_3">•	</div>
+<div id="t6h_3" class="t s2_3">Should	 the	 disease	 appear	 late	 in	 the	 growing	 season,	 a	</div>
+<div id="t6i_3" class="t s2_3">single application will be sufficient.</div>
+<div id="t6j_3" class="t s2_3">•	</div>
+<div id="t6k_3" class="t s2_3">Do	not	apply	more	than	two	(2)	applications	of	</div>
+<div id="t6l_3" class="t s1_3">ARTEA </div>
+<div id="t6m_3" class="t s2_3">to </div>
+<div id="t6n_3" class="t s2_3">soybeans in the same season.</div>
+<div id="t6o_3" class="t s1_3">CROP	/	DISEASE</div>
+<div id="t6p_3" class="t s1_3">DOSAGE </div>
+<div id="t6q_3" class="t s1_3">SWEET CORN </div>
+<div id="t6r_3" class="t s2_3">(cont.)</div>
+<div id="t6s_3" class="t s1_3">REMARKS:</div>
+<div id="t6t_3" class="t s2_3">•	</div>
+<div id="t6u_3" class="t s2_3">Start</div>
+<div id="t6v_3" class="t s2_3">application </div>
+<div id="t6w_3" class="t s1_3">before</div>
+<div id="t6x_3" class="t s2_3">3	%	of	the	total	leaf	shows	disease	</div>
+<div id="t6y_3" class="t s2_3">symptoms </div>
+<div id="t6z_3" class="t s1_3">OR </div>
+<div id="t70_3" class="t s2_3">when symptoms are present on the basal </div>
+<div id="t71_3" class="t s2_3">3	-	5	leaves.</div>
+<div id="t72_3" class="t s2_3">•	</div>
+<div id="t73_3" class="t s2_3">It	is	vitally	important	that	applications	are	purely	preventative,	</div>
+<div id="t74_3" class="t s2_3">i.e.	 applications	 are	 made	 timeously,	 for	 effective	 disease	</div>
+<div id="t75_3" class="t s2_3">control. </div>
+<div id="t76_3" class="t s2_3">•	</div>
+<div id="t77_3" class="t s2_3">Applications	must	be	made	at	21	-	28	day	intervals.	Use	the	</div>
+<div id="t78_3" class="t s2_3">shorter application interval if disease pressure is high. </div>
+<div id="t79_3" class="t s2_3">•	</div>
+<div id="t7a_3" class="t s2_3">With	 short	 season	 hybrids	 when	 the	 first	 spray	 is	 applied	</div>
+<div id="t7b_3" class="t s2_3">after	pollination,	it	will	probably	be	sufficient	to	control	the	</div>
+<div id="t7c_3" class="t s2_3">disease (further sprays may not be necessary).</div>
+<div id="t7d_3" class="t s2_3">•	</div>
+<div id="t7e_3" class="t s2_3">For	improved	control,	500	m</div>
+<div id="t7f_3" class="t s4_3">l</div>
+<div id="t7g_3" class="t s2_3">/ha	mineral	oil,	eg	BP	Crop	Oil	</div>
+<div id="t7h_3" class="t s2_3">may	be	added	to	the	tank	mix.	</div>
+<div id="t7i_3" class="t s2_3">•	</div>
+<div id="t7j_3" class="t s2_3">For	 season	 long	 control	 of	 foliar	 diseases,	 it	 is	 important	</div>
+<div id="t7k_3" class="t s2_3">that a spray programme be used.</div>
+<div id="t7l_3" class="t s2_3">•	</div>
+<div id="t7m_3" class="t s2_3">Do	not	apply	more	than	two	(2)	applications	of</div>
+<div id="t7n_3" class="t s1_3">ARTEA </div>
+<div id="t7o_3" class="t s2_3">to </div>
+<div id="t7p_3" class="t s2_3">maize or sweetcorn in the same season.</div>
+<div id="t7q_3" class="t s1_3">Spray	volumes:</div>
+<div id="t7r_3" class="t s1_3">•	</div>
+<div id="t7s_3" class="t s1_3">Tractor	application:	</div>
+<div id="t7t_3" class="t s2_3">250	-	450	</div>
+<div id="t7u_3" class="t s4_3">l</div>
+<div id="t7v_3" class="t s2_3">water/ha</div>
+<div id="t7w_3" class="t s1_3">•	</div>
+<div id="t7x_3" class="t s1_3">High	clearance	tractor	application:	</div>
+<div id="t7y_3" class="t s2_3">150	-	300	</div>
+<div id="t7z_3" class="t s4_3">l</div>
+<div id="t80_3" class="t s2_3">water/ha</div>
+<div id="t81_3" class="t s1_3">•	</div>
+<div id="t82_3" class="t s1_3">Aerial	application:	</div>
+<div id="t83_3" class="t s2_3">30	-	40	</div>
+<div id="t84_3" class="t s4_3">l</div>
+<div id="t85_3" class="t s2_3">water/ha</div>
+<div id="t86_3" class="t s1_3">•	</div>
+<div id="t87_3" class="t s1_3">Knapsack</div>
+<div id="t88_3" class="t s1_3">sprayer	application:	</div>
+<div id="t89_3" class="t s2_3">60	-	70	</div>
+<div id="t8a_3" class="t s4_3">l</div>
+<div id="t8b_3" class="t s2_3">water/ha</div>
+
 <!-- End text definitions -->
 
 <!-- Begin page background -->
-<div id="pg3Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0);"></div>
+<div id="pg3Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
 <div id="pg3"><img src="3/3.png" id="pdf3" style="width:909px; height:1286px; background-color:white;"/></div>
 
 <!-- End page background -->
 
 <!-- Begin page loading JS -->
 <script type="text/javascript">
-var f3 = [['t6_3',1054],['tb_3',1352],['tc_3',1196],['te_3',134],['tl_3',906],['tq_3',1352],['ty_3',1352],['t10_3',984],['t12_3',346],['t15_3',608],['t18_3',219],['t1a_3',530],['t1c_3',243],['t1e_3',401],['t1g_3',207],['t1i_3',338],['t1k_3',386],['t1m_3',385],['t1p_3',419],['t1w_3',574],['t1y_3',471],['t22_3',334],['t24_3',327],['t26_3',541],['t28_3',331],['t29_3',574],['t2b_3',471],['t2f_3',334],['t2i_3',419],['t2n_3',419],['t2t_3',1352],['t2u_3',1300],['t2w_3',65],['t30_3',1352],['t32_3',65],['t35_3',1352],['t37_3',1103],['t3b_3',331],['t3d_3',457],['t3i_3',420],['t3m_3',535],['t3n_3',125],['t3o_3',698],['t3p_3',1267],['t3w_3',491],['t40_3',401],['t42_3',308],['t43_3',503],['t46_3',691],['t4b_3',152],['t4j_3',65],['t4o_3',1346],['t4q_3',1346],['t4r_3',1294],['t4v_3',648],['t4z_3',1339],['t51_3',1079],['t55_3',358],['t57_3',457],['t5b_3',65],['t5c_3',813],['t5i_3',420],['t5o_3',462]];
+var isIE = false;
+var f3 = [['t9_3',303],['td_3',395],['th_3',385],['tl_3',405],['tp_3',384],['tt_3',412],['t1b_3',281],['t1d_3',334],['t1f_3',564],['t1i_3',1257],['t1p_3',626],['t1u_3',306],['t1x_3',1243],['t1z_3',721],['t20_3',551],['t23_3',430],['t26_3',471],['t2a_3',295],['t2j_3',1256],['t2k_3',1256],['t2o_3',1130],['t2q_3',1256],['t2r_3',711],['t2w_3',745],['t3e_3',729],['t3k_3',471],['t3o_3',334],['t3s_3',541],['t3z_3',331],['t42_3',471],['t46_3',334],['t4d_3',254],['t4i_3',308],['t4m_3',385],['t4v_3',1256],['t4w_3',1256],['t52_3',1256],['t53_3',711],['t5b_3',375],['t5l_3',87],['t5p_3',391],['t5u_3',503],['t67_3',1242],['t6b_3',1256],['t6c_3',711],['t6f_3',622],['t6h_3',1256],['t6i_3',722],['t6n_3',642],['t6q_3',331],['t70_3',908],['t74_3',1256],['t78_3',1126],['t7a_3',1256],['t7c_3',984],['t7j_3',1256],['t7k_3',711],['t7p_3',855]];
 var c3 = 0;
 function fontAdjustments3(){;
 	if (c3<f3.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
 		adjustWordSpacing(f3[c3][0],f3[c3][1]);
 		c3++;
 		if (c3%10 == 0) {
@@ -1182,6 +1206,16 @@ function load3(){
 	setTimeout(fontAdjustments3,timeout);
 }
 </script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 300;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_3");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
 <!-- End page loading JS -->
 
 </div>
@@ -1193,7 +1227,7 @@ function load3(){
 </a>
 </div>
 <script type="text/javascript">
-	makeNavBar(3,3,909,1286,0);
+	makeNavBar(4,3,909,1286,0);
 </script>
 </body>
 </html>

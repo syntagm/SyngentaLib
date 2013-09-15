@@ -1,0 +1,1249 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>PRIMAGRAM_GOLD___Afr_2009_07_16 Page6</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" />
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" />
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); z-index:-2;"></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load6();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_6{left:456px;top:1099px;}
+#t2_6{left:598px;top:1099px;}
+#t3_6{left:608px;top:1099px;}
+#t4_6{left:456px;top:1114px;}
+#t5_6{left:456px;top:1128px;}
+#t6_6{left:456px;top:1143px;}
+#t7_6{left:456px;top:1172px;}
+#t8_6{left:456px;top:1201px;}
+#t9_6{left:579px;top:1201px;}
+#ta_6{left:456px;top:1215px;}
+#tb_6{left:669px;top:1217px;}
+#tc_6{left:680px;top:1215px;}
+#td_6{left:456px;top:1230px;}
+#te_6{left:471px;top:81px;}
+#tf_6{left:470px;top:110px;}
+#tg_6{left:504px;top:110px;}
+#th_6{left:510px;top:110px;}
+#ti_6{left:460px;top:139px;}
+#tj_6{left:495px;top:197px;}
+#tk_6{left:495px;top:226px;}
+#tl_6{left:495px;top:240px;}
+#tm_6{left:495px;top:269px;}
+#tn_6{left:495px;top:284px;}
+#to_6{left:601px;top:81px;}
+#tp_6{left:554px;top:95px;}
+#tq_6{left:564px;top:110px;}
+#tr_6{left:637px;top:110px;}
+#ts_6{left:643px;top:110px;}
+#tt_6{left:565px;top:139px;}
+#tu_6{left:545px;top:197px;}
+#tv_6{left:545px;top:226px;}
+#tw_6{left:545px;top:240px;}
+#tx_6{left:545px;top:269px;}
+#ty_6{left:545px;top:284px;}
+#tz_6{left:731px;top:81px;}
+#t10_6{left:705px;top:95px;}
+#t11_6{left:718px;top:110px;}
+#t12_6{left:700px;top:139px;}
+#t13_6{left:688px;top:197px;}
+#t14_6{left:688px;top:211px;}
+#t15_6{left:688px;top:226px;}
+#t16_6{left:688px;top:240px;}
+#t17_6{left:688px;top:269px;}
+#t18_6{left:688px;top:284px;}
+#t19_6{left:462px;top:165px;}
+#t1a_6{left:471px;top:332px;}
+#t1b_6{left:470px;top:361px;}
+#t1c_6{left:505px;top:361px;}
+#t1d_6{left:510px;top:361px;}
+#t1e_6{left:460px;top:390px;}
+#t1f_6{left:495px;top:448px;}
+#t1g_6{left:495px;top:462px;}
+#t1h_6{left:495px;top:491px;}
+#t1i_6{left:495px;top:506px;}
+#t1j_6{left:495px;top:535px;}
+#t1k_6{left:495px;top:549px;}
+#t1l_6{left:601px;top:332px;}
+#t1m_6{left:554px;top:346px;}
+#t1n_6{left:561px;top:361px;}
+#t1o_6{left:641px;top:361px;}
+#t1p_6{left:646px;top:361px;}
+#t1q_6{left:565px;top:390px;}
+#t1r_6{left:545px;top:448px;}
+#t1s_6{left:545px;top:462px;}
+#t1t_6{left:545px;top:491px;}
+#t1u_6{left:545px;top:506px;}
+#t1v_6{left:545px;top:535px;}
+#t1w_6{left:545px;top:549px;}
+#t1x_6{left:731px;top:332px;}
+#t1y_6{left:705px;top:346px;}
+#t1z_6{left:718px;top:361px;}
+#t20_6{left:700px;top:390px;}
+#t21_6{left:689px;top:448px;}
+#t22_6{left:689px;top:462px;}
+#t23_6{left:689px;top:491px;}
+#t24_6{left:689px;top:506px;}
+#t25_6{left:689px;top:520px;}
+#t26_6{left:689px;top:535px;}
+#t27_6{left:689px;top:549px;}
+#t28_6{left:462px;top:416px;}
+#t29_6{left:469px;top:595px;}
+#t2a_6{left:469px;top:624px;}
+#t2b_6{left:503px;top:624px;}
+#t2c_6{left:508px;top:624px;}
+#t2d_6{left:459px;top:653px;}
+#t2e_6{left:494px;top:711px;}
+#t2f_6{left:494px;top:740px;}
+#t2g_6{left:494px;top:755px;}
+#t2h_6{left:494px;top:769px;}
+#t2i_6{left:599px;top:595px;}
+#t2j_6{left:552px;top:610px;}
+#t2k_6{left:559px;top:624px;}
+#t2l_6{left:640px;top:624px;}
+#t2m_6{left:645px;top:624px;}
+#t2n_6{left:563px;top:653px;}
+#t2o_6{left:544px;top:711px;}
+#t2p_6{left:544px;top:740px;}
+#t2q_6{left:544px;top:755px;}
+#t2r_6{left:544px;top:769px;}
+#t2s_6{left:730px;top:595px;}
+#t2t_6{left:704px;top:610px;}
+#t2u_6{left:716px;top:624px;}
+#t2v_6{left:698px;top:653px;}
+#t2w_6{left:687px;top:711px;}
+#t2x_6{left:687px;top:740px;}
+#t2y_6{left:687px;top:755px;}
+#t2z_6{left:687px;top:769px;}
+#t30_6{left:461px;top:680px;}
+#t31_6{left:470px;top:820px;}
+#t32_6{left:469px;top:849px;}
+#t33_6{left:503px;top:849px;}
+#t34_6{left:509px;top:849px;}
+#t35_6{left:459px;top:878px;}
+#t36_6{left:494px;top:936px;}
+#t37_6{left:494px;top:1009px;}
+#t38_6{left:494px;top:1023px;}
+#t39_6{left:494px;top:1038px;}
+#t3a_6{left:494px;top:1052px;}
+#t3b_6{left:494px;top:1067px;}
+#t3c_6{left:600px;top:820px;}
+#t3d_6{left:553px;top:835px;}
+#t3e_6{left:579px;top:849px;}
+#t3f_6{left:620px;top:849px;}
+#t3g_6{left:626px;top:849px;}
+#t3h_6{left:564px;top:878px;}
+#t3i_6{left:544px;top:936px;}
+#t3j_6{left:544px;top:1009px;}
+#t3k_6{left:544px;top:1023px;}
+#t3l_6{left:544px;top:1038px;}
+#t3m_6{left:544px;top:1052px;}
+#t3n_6{left:544px;top:1067px;}
+#t3o_6{left:730px;top:820px;}
+#t3p_6{left:704px;top:835px;}
+#t3q_6{left:717px;top:849px;}
+#t3r_6{left:699px;top:878px;}
+#t3s_6{left:687px;top:936px;}
+#t3t_6{left:687px;top:1009px;}
+#t3u_6{left:687px;top:1023px;}
+#t3v_6{left:687px;top:1038px;}
+#t3w_6{left:687px;top:1052px;}
+#t3x_6{left:687px;top:1067px;}
+#t3y_6{left:461px;top:905px;}
+#t3z_6{left:461px;top:963px;}
+#t40_6{left:461px;top:977px;}
+#t41_6{left:366px;top:41px;}
+#t42_6{left:486px;top:41px;}
+#t43_6{left:67px;top:66px;}
+#t44_6{left:134px;top:66px;}
+#t45_6{left:199px;top:66px;}
+#t46_6{left:219px;top:66px;}
+#t47_6{left:247px;top:66px;}
+#t48_6{left:319px;top:66px;}
+#t49_6{left:391px;top:66px;}
+#t4a_6{left:67px;top:80px;}
+#t4b_6{left:186px;top:80px;}
+#t4c_6{left:67px;top:95px;}
+#t4d_6{left:67px;top:124px;}
+#t4e_6{left:84px;top:124px;}
+#t4f_6{left:176px;top:124px;}
+#t4g_6{left:181px;top:124px;}
+#t4h_6{left:209px;top:124px;}
+#t4i_6{left:218px;top:124px;}
+#t4j_6{left:67px;top:145px;}
+#t4k_6{left:84px;top:145px;}
+#t4l_6{left:193px;top:145px;}
+#t4m_6{left:199px;top:145px;}
+#t4n_6{left:227px;top:145px;}
+#t4o_6{left:236px;top:145px;}
+#t4p_6{left:67px;top:166px;}
+#t4q_6{left:84px;top:166px;}
+#t4r_6{left:225px;top:166px;}
+#t4s_6{left:231px;top:166px;}
+#t4t_6{left:67px;top:187px;}
+#t4u_6{left:84px;top:187px;}
+#t4v_6{left:195px;top:187px;}
+#t4w_6{left:201px;top:187px;}
+#t4x_6{left:229px;top:187px;}
+#t4y_6{left:238px;top:187px;}
+#t4z_6{left:67px;top:208px;}
+#t50_6{left:84px;top:208px;}
+#t51_6{left:190px;top:208px;}
+#t52_6{left:196px;top:208px;}
+#t53_6{left:224px;top:208px;}
+#t54_6{left:233px;top:208px;}
+#t55_6{left:67px;top:229px;}
+#t56_6{left:84px;top:229px;}
+#t57_6{left:181px;top:229px;}
+#t58_6{left:187px;top:229px;}
+#t59_6{left:67px;top:262px;}
+#t5a_6{left:67px;top:277px;}
+#t5b_6{left:124px;top:277px;}
+#t5c_6{left:132px;top:277px;}
+#t5d_6{left:67px;top:291px;}
+#t5e_6{left:67px;top:306px;}
+#t5f_6{left:67px;top:339px;}
+#t5g_6{left:67px;top:354px;}
+#t5h_6{left:67px;top:368px;}
+#t5i_6{left:273px;top:368px;}
+#t5j_6{left:67px;top:383px;}
+#t5k_6{left:81px;top:424px;}
+#t5l_6{left:80px;top:453px;}
+#t5m_6{left:115px;top:453px;}
+#t5n_6{left:120px;top:453px;}
+#t5o_6{left:70px;top:482px;}
+#t5p_6{left:105px;top:511px;}
+#t5q_6{left:105px;top:526px;}
+#t5r_6{left:105px;top:540px;}
+#t5s_6{left:105px;top:555px;}
+#t5t_6{left:105px;top:569px;}
+#t5u_6{left:105px;top:584px;}
+#t5v_6{left:211px;top:424px;}
+#t5w_6{left:164px;top:439px;}
+#t5x_6{left:174px;top:453px;}
+#t5y_6{left:247px;top:453px;}
+#t5z_6{left:253px;top:453px;}
+#t60_6{left:155px;top:482px;}
+#t61_6{left:155px;top:511px;}
+#t62_6{left:155px;top:526px;}
+#t63_6{left:155px;top:540px;}
+#t64_6{left:155px;top:555px;}
+#t65_6{left:155px;top:569px;}
+#t66_6{left:155px;top:584px;}
+#t67_6{left:341px;top:424px;}
+#t68_6{left:316px;top:439px;}
+#t69_6{left:328px;top:453px;}
+#t6a_6{left:298px;top:482px;}
+#t6b_6{left:298px;top:511px;}
+#t6c_6{left:298px;top:526px;}
+#t6d_6{left:298px;top:540px;}
+#t6e_6{left:298px;top:555px;}
+#t6f_6{left:298px;top:569px;}
+#t6g_6{left:298px;top:584px;}
+#t6h_6{left:81px;top:648px;}
+#t6i_6{left:80px;top:677px;}
+#t6j_6{left:115px;top:677px;}
+#t6k_6{left:120px;top:677px;}
+#t6l_6{left:70px;top:706px;}
+#t6m_6{left:105px;top:764px;}
+#t6n_6{left:105px;top:779px;}
+#t6o_6{left:105px;top:793px;}
+#t6p_6{left:211px;top:648px;}
+#t6q_6{left:164px;top:663px;}
+#t6r_6{left:174px;top:677px;}
+#t6s_6{left:247px;top:677px;}
+#t6t_6{left:253px;top:677px;}
+#t6u_6{left:175px;top:706px;}
+#t6v_6{left:155px;top:764px;}
+#t6w_6{left:155px;top:779px;}
+#t6x_6{left:155px;top:793px;}
+#t6y_6{left:341px;top:648px;}
+#t6z_6{left:315px;top:663px;}
+#t70_6{left:328px;top:677px;}
+#t71_6{left:294px;top:706px;}
+#t72_6{left:298px;top:764px;}
+#t73_6{left:298px;top:779px;}
+#t74_6{left:298px;top:793px;}
+#t75_6{left:72px;top:733px;}
+#t76_6{left:81px;top:856px;}
+#t77_6{left:80px;top:885px;}
+#t78_6{left:115px;top:885px;}
+#t79_6{left:120px;top:885px;}
+#t7a_6{left:70px;top:914px;}
+#t7b_6{left:105px;top:972px;}
+#t7c_6{left:105px;top:1001px;}
+#t7d_6{left:105px;top:1016px;}
+#t7e_6{left:105px;top:1030px;}
+#t7f_6{left:105px;top:1045px;}
+#t7g_6{left:211px;top:856px;}
+#t7h_6{left:164px;top:870px;}
+#t7i_6{left:174px;top:885px;}
+#t7j_6{left:247px;top:885px;}
+#t7k_6{left:253px;top:885px;}
+#t7l_6{left:175px;top:914px;}
+#t7m_6{left:155px;top:972px;}
+#t7n_6{left:155px;top:1001px;}
+#t7o_6{left:155px;top:1016px;}
+#t7p_6{left:155px;top:1030px;}
+#t7q_6{left:155px;top:1045px;}
+#t7r_6{left:341px;top:856px;}
+#t7s_6{left:315px;top:870px;}
+#t7t_6{left:328px;top:885px;}
+#t7u_6{left:310px;top:914px;}
+#t7v_6{left:298px;top:972px;}
+#t7w_6{left:298px;top:987px;}
+#t7x_6{left:298px;top:1001px;}
+#t7y_6{left:298px;top:1016px;}
+#t7z_6{left:298px;top:1030px;}
+#t80_6{left:298px;top:1045px;}
+#t81_6{left:72px;top:940px;}
+#t82_6{left:81px;top:1105px;}
+#t83_6{left:80px;top:1134px;}
+#t84_6{left:115px;top:1134px;}
+#t85_6{left:120px;top:1134px;}
+#t86_6{left:70px;top:1163px;}
+#t87_6{left:105px;top:1221px;}
+#t88_6{left:211px;top:1105px;}
+#t89_6{left:164px;top:1120px;}
+#t8a_6{left:171px;top:1134px;}
+#t8b_6{left:251px;top:1134px;}
+#t8c_6{left:256px;top:1134px;}
+#t8d_6{left:175px;top:1163px;}
+#t8e_6{left:155px;top:1221px;}
+#t8f_6{left:341px;top:1105px;}
+#t8g_6{left:315px;top:1120px;}
+#t8h_6{left:328px;top:1134px;}
+#t8i_6{left:310px;top:1163px;}
+#t8j_6{left:298px;top:1221px;}
+#t8k_6{left:72px;top:1189px;}
+
+.s1_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: QOHVUB-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+.s4_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: QOHVUB-Mt-ExtraPlain6;
+	color: rgb(0,0,0);
+}
+
+.s2_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: QOHVUB-HelveticaNeueLTStd-Bd6;
+	color: rgb(0,0,0);
+}
+
+.s3_6{
+	FONT-SIZE: 24px;
+	FONT-FAMILY: QOHVUB-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+.s5_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: QOHVUB-HelveticaNeueLTStd-It6;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: QOHVUB-HelveticaNeueLTStd-Lt6;
+	src: url("6/fonts/QOHVUB-HelveticaNeueLTStd-Lt.eot");
+	src: url("6/fonts/QOHVUB-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/QOHVUB-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+@font-face {
+	font-family: QOHVUB-HelveticaNeueLTStd-Bd6;
+	src: url("6/fonts/QOHVUB-HelveticaNeueLTStd-Bd.eot");
+	src: url("6/fonts/QOHVUB-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/QOHVUB-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: QOHVUB-HelveticaNeueLTStd-It6;
+	src: url("6/fonts/QOHVUB-HelveticaNeueLTStd-It.eot");
+	src: url("6/fonts/QOHVUB-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/QOHVUB-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: QOHVUB-Mt-ExtraPlain6;
+	src: url("6/fonts/QOHVUB-Mt-ExtraPlain.eot");
+	src: url("6/fonts/QOHVUB-Mt-ExtraPlain.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/QOHVUB-Mt-ExtraPlain.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_6" class="t s1_6">Raadpleeg	 die	 CALLISTO</div>
+<div id="t2_6" class="t s2_6">,</div>
+<div id="t3_6" class="t s1_6">GESAPRIM	 SUPER,	 BREAKTHRU,	</div>
+<div id="t4_6" class="t s1_6">COMPLEMENT	 SUPER,	 PENETREX,	 SOLITAIRE,	 TRONIC	 en	</div>
+<div id="t5_6" class="t s1_6">AGRAL	 90	 etikette	 vir	 waarskuwings,	 voorsorgmaatreëls	 en	</div>
+<div id="t6_6" class="t s1_6">gebruiksaanwysings</div>
+<div id="t7_6" class="t s1_6">6.4.3	GRAANSORGHUM</div>
+<div id="t8_6" class="t s2_6">PRIMAGRAM GOLD </div>
+<div id="t9_6" class="t s1_6">kan	slegs	toegedien	word	indien	die	sorg-</div>
+<div id="ta_6" class="t s1_6">humsaad	 vooraf	 deeglik	 met	 CONCEP</div>
+<div id="tb_6" class="t s3_6">®</div>
+<div id="tc_6" class="t s1_6">960	 EC	 (L5051)	 soos	</div>
+<div id="td_6" class="t s1_6">voorgeskryf,		behandel	is.</div>
+<div id="te_6" class="t s1_6">CALLISTO</div>
+<div id="tf_6" class="t s1_6">208	m</div>
+<div id="tg_6" class="t s4_6">l</div>
+<div id="th_6" class="t s1_6">/ha</div>
+<div id="ti_6" class="t s2_6">Weke beheer</div>
+<div id="tj_6" class="t s1_6">4</div>
+<div id="tk_6" class="t s1_6">4</div>
+<div id="tl_6" class="t s1_6">4</div>
+<div id="tm_6" class="t s1_6">8</div>
+<div id="tn_6" class="t s1_6">8</div>
+<div id="to_6" class="t s1_6">Plus</div>
+<div id="tp_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="tq_6" class="t s1_6">897	-	1682	m</div>
+<div id="tr_6" class="t s4_6">l</div>
+<div id="ts_6" class="t s1_6">/ha</div>
+<div id="tt_6" class="t s2_6">Botaniese naam</div>
+<div id="tu_6" class="t s5_6">Commelina benghalensis</div>
+<div id="tv_6" class="t s5_6">Ipomoea purpurea</div>
+<div id="tw_6" class="t s5_6">Tribulus terrestris</div>
+<div id="tx_6" class="t s5_6">Cleome monophylla</div>
+<div id="ty_6" class="t s5_6">Hibiscus trionum</div>
+<div id="tz_6" class="t s1_6">plus	</div>
+<div id="t10_6" class="t s1_6">die	aanbevole</div>
+<div id="t11_6" class="t s1_6">benatter*</div>
+<div id="t12_6" class="t s2_6">Gewone naam</div>
+<div id="t13_6" class="t s2_6">Bengaalse</div>
+<div id="t14_6" class="t s2_6">wandelende Jood</div>
+<div id="t15_6" class="t s2_6">purperwinde</div>
+<div id="t16_6" class="t s2_6">dubbeltjie</div>
+<div id="t17_6" class="t s2_6">rusperbossie </div>
+<div id="t18_6" class="t s2_6">Terblansbossie</div>
+<div id="t19_6" class="t s2_6">Bogenoemde onkruide plus</div>
+<div id="t1a_6" class="t s1_6">CALLISTO</div>
+<div id="t1b_6" class="t s1_6">208	m</div>
+<div id="t1c_6" class="t s4_6">l</div>
+<div id="t1d_6" class="t s1_6">/ha</div>
+<div id="t1e_6" class="t s2_6">Weke beheer</div>
+<div id="t1f_6" class="t s1_6">4</div>
+<div id="t1g_6" class="t s1_6">4</div>
+<div id="t1h_6" class="t s1_6">8</div>
+<div id="t1i_6" class="t s1_6">8</div>
+<div id="t1j_6" class="t s1_6">8</div>
+<div id="t1k_6" class="t s1_6">8</div>
+<div id="t1l_6" class="t s1_6">Plus</div>
+<div id="t1m_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t1n_6" class="t s1_6">1344	-	1682	m</div>
+<div id="t1o_6" class="t s4_6">l</div>
+<div id="t1p_6" class="t s1_6">/ha</div>
+<div id="t1q_6" class="t s2_6">Botaniese naam</div>
+<div id="t1r_6" class="t s5_6">Digitaria sanguinalis</div>
+<div id="t1s_6" class="t s5_6">Eleusine indica</div>
+<div id="t1t_6" class="t s5_6">Amaranthus hybridus</div>
+<div id="t1u_6" class="t s5_6">Commelina benghalensis</div>
+<div id="t1v_6" class="t s5_6">Ipomoea purpurea</div>
+<div id="t1w_6" class="t s5_6">Tribulus terrestris</div>
+<div id="t1x_6" class="t s1_6">plus	</div>
+<div id="t1y_6" class="t s1_6">die	aanbevole</div>
+<div id="t1z_6" class="t s1_6">benatter*</div>
+<div id="t20_6" class="t s2_6">Gewone naam</div>
+<div id="t21_6" class="t s2_6">kruisvingergras</div>
+<div id="t22_6" class="t s2_6">jongosgras</div>
+<div id="t23_6" class="t s2_6">gewone misbredie</div>
+<div id="t24_6" class="t s2_6">Bengaalse</div>
+<div id="t25_6" class="t s2_6">wandelende Jood</div>
+<div id="t26_6" class="t s2_6">purperwinde</div>
+<div id="t27_6" class="t s2_6">dubbeltjie</div>
+<div id="t28_6" class="t s2_6">Bogenoemde onkruide plus</div>
+<div id="t29_6" class="t s1_6">CALLISTO</div>
+<div id="t2a_6" class="t s1_6">260	m</div>
+<div id="t2b_6" class="t s4_6">l</div>
+<div id="t2c_6" class="t s1_6">/ha</div>
+<div id="t2d_6" class="t s2_6">Weke beheer</div>
+<div id="t2e_6" class="t s1_6">4</div>
+<div id="t2f_6" class="t s1_6">8</div>
+<div id="t2g_6" class="t s1_6">8</div>
+<div id="t2h_6" class="t s1_6">8</div>
+<div id="t2i_6" class="t s1_6">Plus</div>
+<div id="t2j_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t2k_6" class="t s1_6">1122	-	1682	m</div>
+<div id="t2l_6" class="t s4_6">l</div>
+<div id="t2m_6" class="t s1_6">/ha</div>
+<div id="t2n_6" class="t s2_6">Botaniese naam</div>
+<div id="t2o_6" class="t s5_6">Hibiscus cannabinus</div>
+<div id="t2p_6" class="t s5_6">Citrullus lanatus</div>
+<div id="t2q_6" class="t s5_6">Digitaria sanguinalis</div>
+<div id="t2r_6" class="t s5_6">Eleusine indica</div>
+<div id="t2s_6" class="t s1_6">plus	</div>
+<div id="t2t_6" class="t s1_6">die	aanbevole</div>
+<div id="t2u_6" class="t s1_6">benatter*</div>
+<div id="t2v_6" class="t s2_6">Gewone naam</div>
+<div id="t2w_6" class="t s2_6">wildestokroos </div>
+<div id="t2x_6" class="t s2_6">karkoer</div>
+<div id="t2y_6" class="t s2_6">kruisvingergras</div>
+<div id="t2z_6" class="t s2_6">jongosgras</div>
+<div id="t30_6" class="t s2_6">Bogenoemde onkruide plus</div>
+<div id="t31_6" class="t s1_6">CALLISTO</div>
+<div id="t32_6" class="t s1_6">260	m</div>
+<div id="t33_6" class="t s4_6">l</div>
+<div id="t34_6" class="t s1_6">/ha</div>
+<div id="t35_6" class="t s2_6">Weke beheer</div>
+<div id="t36_6" class="t s1_6">8</div>
+<div id="t37_6" class="t s1_6">8</div>
+<div id="t38_6" class="t s1_6">8</div>
+<div id="t39_6" class="t s1_6">8</div>
+<div id="t3a_6" class="t s1_6">8</div>
+<div id="t3b_6" class="t s1_6">8</div>
+<div id="t3c_6" class="t s1_6">Plus</div>
+<div id="t3d_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t3e_6" class="t s1_6">1682	m</div>
+<div id="t3f_6" class="t s4_6">l</div>
+<div id="t3g_6" class="t s1_6">/ha</div>
+<div id="t3h_6" class="t s2_6">Botaniese naam</div>
+<div id="t3i_6" class="t s5_6">Crotalaria sphaerocarpa</div>
+<div id="t3j_6" class="t s5_6">Chloris virgata</div>
+<div id="t3k_6" class="t s5_6">Cyperus esculentus</div>
+<div id="t3l_6" class="t s5_6">Hibiscus cannabinus</div>
+<div id="t3m_6" class="t s5_6">Urochloa panicoides</div>
+<div id="t3n_6" class="t s5_6">Xanthium strumarium</div>
+<div id="t3o_6" class="t s1_6">plus	</div>
+<div id="t3p_6" class="t s1_6">die	aanbevole</div>
+<div id="t3q_6" class="t s1_6">benatter*</div>
+<div id="t3r_6" class="t s2_6">Gewone naam</div>
+<div id="t3s_6" class="t s2_6">mielie Crotalaria</div>
+<div id="t3t_6" class="t s2_6">Witpluimchloris</div>
+<div id="t3u_6" class="t s2_6">Geeluintjie</div>
+<div id="t3v_6" class="t s2_6">Wildestokroos</div>
+<div id="t3w_6" class="t s2_6">Beesgras</div>
+<div id="t3x_6" class="t s2_6">Kankerroos</div>
+<div id="t3y_6" class="t s2_6">Bogenoemde onkruide plus</div>
+<div id="t3z_6" class="t s2_6">Tot en met 80 % onderdrukking van die volgende </div>
+<div id="t40_6" class="t s2_6">on kruide:</div>
+<div id="t41_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t42_6" class="t s1_6">/	6</div>
+<div id="t43_6" class="t s1_6">Aanbevole	</div>
+<div id="t44_6" class="t s1_6">benatters:</div>
+<div id="t45_6" class="t s1_6">In	</div>
+<div id="t46_6" class="t s1_6">alle	</div>
+<div id="t47_6" class="t s1_6">na-opkoms	</div>
+<div id="t48_6" class="t s1_6">toedienings	</div>
+<div id="t49_6" class="t s1_6">van	</div>
+<div id="t4a_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t4b_6" class="t s1_6">plus	CALLISTO	moet	een	van	die	volgende	</div>
+<div id="t4c_6" class="t s1_6">benatters	gebruik	word:</div>
+<div id="t4d_6" class="t s1_6">•	</div>
+<div id="t4e_6" class="t s1_6">Agral	teen	200	m</div>
+<div id="t4f_6" class="t s4_6">l</div>
+<div id="t4g_6" class="t s1_6">/100	</div>
+<div id="t4h_6" class="t s4_6">l</div>
+<div id="t4i_6" class="t s1_6">spuitvolume	</div>
+<div id="t4j_6" class="t s1_6">•	</div>
+<div id="t4k_6" class="t s1_6">Breakthru	teen	50	m</div>
+<div id="t4l_6" class="t s4_6">l</div>
+<div id="t4m_6" class="t s1_6">/100	</div>
+<div id="t4n_6" class="t s4_6">l</div>
+<div id="t4o_6" class="t s1_6">spuitvolume</div>
+<div id="t4p_6" class="t s1_6">•	</div>
+<div id="t4q_6" class="t s1_6">Complement	Super	100	m</div>
+<div id="t4r_6" class="t s4_6">l</div>
+<div id="t4s_6" class="t s1_6">/ha</div>
+<div id="t4t_6" class="t s1_6">•	</div>
+<div id="t4u_6" class="t s1_6">Penetrex	teen	500	m</div>
+<div id="t4v_6" class="t s4_6">l</div>
+<div id="t4w_6" class="t s1_6">/100	</div>
+<div id="t4x_6" class="t s4_6">l</div>
+<div id="t4y_6" class="t s1_6">spuitvolume</div>
+<div id="t4z_6" class="t s1_6">•	</div>
+<div id="t50_6" class="t s1_6">Solitaire	teen	100	m</div>
+<div id="t51_6" class="t s4_6">l</div>
+<div id="t52_6" class="t s1_6">/100	</div>
+<div id="t53_6" class="t s4_6">l</div>
+<div id="t54_6" class="t s1_6">spuitvolume</div>
+<div id="t55_6" class="t s1_6">•	</div>
+<div id="t56_6" class="t s1_6">Tronic	teen	500	m</div>
+<div id="t57_6" class="t s4_6">l</div>
+<div id="t58_6" class="t s1_6">/ha	</div>
+<div id="t59_6" class="t s1_6">Om	die	doeltreffendheid	in	groter	breëblaaronkruide	te	verbeter,	</div>
+<div id="t5a_6" class="t s1_6">kan	250	m</div>
+<div id="t5b_6" class="t s4_6">l</div>
+<div id="t5c_6" class="t s1_6">2,4	D	by	die	tenkmengsels	soos	hieronder	aangedui,	</div>
+<div id="t5d_6" class="t s1_6">gevoeg	 word.	 Die	 byvoeging	 van	 2,4	 D	 word	 aanbeveel	 vir	 die	</div>
+<div id="t5e_6" class="t s1_6">beheer	van	purperwinde	en	ander	probleem	onkruide.</div>
+<div id="t5f_6" class="t s1_6">Hierdie	na-opkoms	toediening	moet	voorafgegaan	word	deur	‘n	</div>
+<div id="t5g_6" class="t s1_6">vooropkoms	bespuiting	van	CALLISTO,	DUAL	GOLD,	GARDOMIL	</div>
+<div id="t5h_6" class="t s1_6">GOLD	 of	 GESAPRIM	 SUPER	 soos</div>
+<div id="t5i_6" class="t s1_6">aangedui	 op	 die	 geregi-</div>
+<div id="t5j_6" class="t s1_6">streerde	etikette.</div>
+<div id="t5k_6" class="t s1_6">CALLISTO</div>
+<div id="t5l_6" class="t s1_6">104	m</div>
+<div id="t5m_6" class="t s4_6">l</div>
+<div id="t5n_6" class="t s1_6">/ha</div>
+<div id="t5o_6" class="t s2_6">Weke beheer</div>
+<div id="t5p_6" class="t s1_6">4</div>
+<div id="t5q_6" class="t s1_6">4</div>
+<div id="t5r_6" class="t s1_6">4</div>
+<div id="t5s_6" class="t s1_6">4</div>
+<div id="t5t_6" class="t s1_6">4</div>
+<div id="t5u_6" class="t s1_6">4</div>
+<div id="t5v_6" class="t s1_6">Plus</div>
+<div id="t5w_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t5x_6" class="t s1_6">447	-	1682	m</div>
+<div id="t5y_6" class="t s4_6">l</div>
+<div id="t5z_6" class="t s1_6">/ha</div>
+<div id="t60_6" class="t s2_6">Botaniese naam</div>
+<div id="t61_6" class="t s5_6">Amaranthus hybridus</div>
+<div id="t62_6" class="t s5_6">Crotalaria sphaerocarpa</div>
+<div id="t63_6" class="t s5_6">Galinsoga parviflora</div>
+<div id="t64_6" class="t s5_6">Hibiscus trionum</div>
+<div id="t65_6" class="t s5_6">Tagetes minuta</div>
+<div id="t66_6" class="t s5_6">Xanthium strumarium</div>
+<div id="t67_6" class="t s1_6">plus	</div>
+<div id="t68_6" class="t s1_6">die	aanbevole	</div>
+<div id="t69_6" class="t s1_6">benatter*</div>
+<div id="t6a_6" class="t s1_6">Gewone	naam	</div>
+<div id="t6b_6" class="t s2_6">gewone misbredie</div>
+<div id="t6c_6" class="t s2_6">mielie Crotalaria</div>
+<div id="t6d_6" class="t s2_6">knopkruid</div>
+<div id="t6e_6" class="t s2_6">Terblansbossie</div>
+<div id="t6f_6" class="t s2_6">kakiebos</div>
+<div id="t6g_6" class="t s2_6">kankerroos</div>
+<div id="t6h_6" class="t s1_6">CALLISTO</div>
+<div id="t6i_6" class="t s1_6">104	m</div>
+<div id="t6j_6" class="t s4_6">l</div>
+<div id="t6k_6" class="t s1_6">/ha</div>
+<div id="t6l_6" class="t s2_6">Weke beheer</div>
+<div id="t6m_6" class="t s1_6">4</div>
+<div id="t6n_6" class="t s1_6">4</div>
+<div id="t6o_6" class="t s1_6">4</div>
+<div id="t6p_6" class="t s1_6">Plus</div>
+<div id="t6q_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t6r_6" class="t s1_6">672	-	1682	m</div>
+<div id="t6s_6" class="t s4_6">l</div>
+<div id="t6t_6" class="t s1_6">/ha</div>
+<div id="t6u_6" class="t s2_6">Botaniese naam</div>
+<div id="t6v_6" class="t s5_6">Cleome monophylla</div>
+<div id="t6w_6" class="t s5_6">Datura ferox</div>
+<div id="t6x_6" class="t s5_6">Datura stramonium</div>
+<div id="t6y_6" class="t s1_6">plus	</div>
+<div id="t6z_6" class="t s1_6">die	aanbevole</div>
+<div id="t70_6" class="t s1_6">benatter*</div>
+<div id="t71_6" class="t s2_6">Gewone naam </div>
+<div id="t72_6" class="t s2_6">rusperbossie</div>
+<div id="t73_6" class="t s2_6">grootstinkblaar</div>
+<div id="t74_6" class="t s2_6">stinkblaar</div>
+<div id="t75_6" class="t s2_6">Bogenoemde onkruide plus</div>
+<div id="t76_6" class="t s1_6">CALLISTO</div>
+<div id="t77_6" class="t s1_6">156	m</div>
+<div id="t78_6" class="t s4_6">l</div>
+<div id="t79_6" class="t s1_6">/ha</div>
+<div id="t7a_6" class="t s2_6">Weke beheer</div>
+<div id="t7b_6" class="t s1_6">8</div>
+<div id="t7c_6" class="t s1_6">8</div>
+<div id="t7d_6" class="t s1_6">8</div>
+<div id="t7e_6" class="t s1_6">8</div>
+<div id="t7f_6" class="t s1_6">8</div>
+<div id="t7g_6" class="t s1_6">Plus</div>
+<div id="t7h_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t7i_6" class="t s1_6">672	-	1682	m</div>
+<div id="t7j_6" class="t s4_6">l</div>
+<div id="t7k_6" class="t s1_6">/ha</div>
+<div id="t7l_6" class="t s2_6">Botaniese naam</div>
+<div id="t7m_6" class="t s5_6">Bidens bipinnata </div>
+<div id="t7n_6" class="t s5_6">Bidens pilosa</div>
+<div id="t7o_6" class="t s5_6">Datura ferox</div>
+<div id="t7p_6" class="t s5_6">Galinsoga parviflora</div>
+<div id="t7q_6" class="t s5_6">Tagetes minuta</div>
+<div id="t7r_6" class="t s1_6">plus	</div>
+<div id="t7s_6" class="t s1_6">die	aanbevole</div>
+<div id="t7t_6" class="t s1_6">benatter*</div>
+<div id="t7u_6" class="t s2_6">Gewone naam</div>
+<div id="t7v_6" class="t s2_6">Spaanse</div>
+<div id="t7w_6" class="t s2_6">knapse kêrel</div>
+<div id="t7x_6" class="t s2_6">knapsekêrel</div>
+<div id="t7y_6" class="t s2_6">grootstinkblaar</div>
+<div id="t7z_6" class="t s2_6">knopkruid</div>
+<div id="t80_6" class="t s2_6">kakiebos</div>
+<div id="t81_6" class="t s2_6">Bogenoemde onkruide plus</div>
+<div id="t82_6" class="t s1_6">CALLISTO</div>
+<div id="t83_6" class="t s1_6">156	m</div>
+<div id="t84_6" class="t s4_6">l</div>
+<div id="t85_6" class="t s1_6">/ha</div>
+<div id="t86_6" class="t s2_6">Weke beheer</div>
+<div id="t87_6" class="t s1_6">4</div>
+<div id="t88_6" class="t s1_6">Plus</div>
+<div id="t89_6" class="t s2_6">PRIMAGRAM GOLD</div>
+<div id="t8a_6" class="t s1_6">1010	-	1682	m</div>
+<div id="t8b_6" class="t s4_6">l</div>
+<div id="t8c_6" class="t s1_6">/ha</div>
+<div id="t8d_6" class="t s2_6">Botaniese naam</div>
+<div id="t8e_6" class="t s5_6">Citrullus lanatus</div>
+<div id="t8f_6" class="t s1_6">plus	</div>
+<div id="t8g_6" class="t s1_6">die	aanbevole</div>
+<div id="t8h_6" class="t s1_6">benatter*</div>
+<div id="t8i_6" class="t s2_6">Gewone naam</div>
+<div id="t8j_6" class="t s2_6">karkoer</div>
+<div id="t8k_6" class="t s2_6">Bogenoemde onkruide plus</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg6Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg6"><img src="6/6.png" id="pdf6" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f6 = [['t1_6',567],['t3_6',778],['t4_6',1387],['t5_6',1387],['t8_6',464],['ta_6',851],['tc_6',491],['ti_6',307],['tp_6',465],['tt_6',377],['tu_6',531],['tv_6',402],['tw_6',377],['tx_6',435],['ty_6',368],['t12_6',336],['t14_6',414],['t19_6',644],['t1e_6',307],['t1m_6',465],['t1q_6',377],['t1r_6',432],['t1s_6',326],['t1t_6',463],['t1u_6',531],['t1v_6',402],['t1w_6',377],['t20_6',336],['t23_6',426],['t25_6',414],['t28_6',644],['t2d_6',307],['t2j_6',465],['t2n_6',377],['t2o_6',450],['t2p_6',347],['t2q_6',432],['t2r_6',326],['t2v_6',336],['t30_6',644],['t35_6',307],['t3d_6',465],['t3h_6',377],['t3i_6',522],['t3j_6',311],['t3k_6',429],['t3l_6',450],['t3m_6',448],['t3n_6',465],['t3r_6',336],['t3s_6',383],['t3y_6',644],['t3z_6',1327],['t40_6',219],['t41_6',465],['t4a_6',463],['t5d_6',1387],['t5h_6',793],['t5i_6',549],['t5o_6',307],['t5w_6',465],['t60_6',377],['t61_6',463],['t62_6',522],['t63_6',431],['t64_6',368],['t65_6',335],['t66_6',465],['t6b_6',428],['t6c_6',383],['t6l_6',307],['t6q_6',465],['t6u_6',377],['t6v_6',435],['t6w_6',267],['t6x_6',416],['t71_6',336],['t75_6',644],['t7a_6',307],['t7h_6',465],['t7l_6',377],['t7m_6',365],['t7n_6',292],['t7o_6',267],['t7p_6',431],['t7q_6',335],['t7u_6',336],['t7w_6',285],['t81_6',644],['t86_6',307],['t89_6',465],['t8d_6',377],['t8e_6',347],['t8i_6',336],['t8k_6',644]];
+var c6 = 0;
+function fontAdjustments6(){;
+	if (c6<f6.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f6[c6][0],f6[c6][1]);
+		c6++;
+		if (c6%10 == 0) {
+			setTimeout(function(){fontAdjustments6()},0);
+		} else {
+			fontAdjustments6();
+		}
+	}
+};
+function load6(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments6,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 309;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_6");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(7,6,909,1286,0);
+</script>
+</body>
+</html>

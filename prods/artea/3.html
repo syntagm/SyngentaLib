@@ -3,24 +3,42 @@
 <head>
 <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 <meta charset="utf-8" />
-<title>artea Page3</title>
+<title>ARTEA___Afr___5_7_2013 Page3</title>
 </head>
 
-<body style="background-color:#919191;">
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
 
 <style type="text/css">
     body {
         margin:0;
     }
 
-    #nav button {
+    #prev, #next {
         width: 100px;
         height: 30px;
         vertical-align: middle;
     }
 
-    #nav select {
+    #goBtn {
         width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
         height: 27px;
         vertical-align: middle;
     }
@@ -35,7 +53,19 @@
     var curPg = 0;
     var pgCount = 0;
 	var jpedal;
+	var container;
 	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
 
     function makeNavBar(pageCount, curPage, w, h, t) {
 	
@@ -97,8 +127,12 @@
         jpedal.style.oTransformOrigin = "top left";
         jpedal.style.margin = "0";
 
-        d("container").style.width = width + "px";
-        d("container").style.height = height + "px";
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
 
         var doc = document.URL;
         var jumper = "?zoom=";
@@ -118,6 +152,101 @@
 			zoomUpdate();
 		}
     }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
 	
 	function getWidth() {
 		var w = 0;
@@ -218,14 +347,15 @@
     }
 	
 	function getMagazinePageHref(page, count) {
-		if(page === 1) return getPageHref(page, count);
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
 		else if(page % 2 === 0) {
 			if(page === count)
 				return getPageHref(page, count);
 			else
 				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
-			}
-				else {
+		} else {
 			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
 		}
 	}
@@ -263,14 +393,20 @@
 
 </script>
 
-<div id="nav" style="background-color:#919191; padding-top: 10px; text-align: center; position: fixed; width: 100%; height: 40px; z-index:999;">
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
     <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
     <select id="goBtn" onchange="goToPage()">
 
     </select>
-    <button onclick="next()" id="next" style="margin-right:30px;">&gt;&gt; Next</button>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
 
-    <button onclick="zoomOut()" id="zoomOut">Zoom Out</button>
+    <button onclick="zoomOut()" id="zoomOut">-</button>
     <select id="zoomBtn" onchange="zoomUpdate()">
         <option value="0">100%</option>
         <option value="1">100% (Reset)</option>
@@ -279,11 +415,12 @@
         <option value="4">Fit Page</option>
 
     </select>
-    <button onclick="zoomIn()" id="zoomIn">Zoom In</button>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
 </div>
-<div style="position:relative; width: 100%; height: 50px;"></div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
 
-<div id="container" style="margin: 0 auto 10px;">
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
 </script>
 
 
@@ -291,7 +428,6 @@
 <div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
 
 <!-- Begin shared CSS values -->
-<!--[if lt IE 9]><style type="text/css">.t div div{zoom: 25%;}</style><![endif]-->
 <style type="text/css" >
 .t {
 	position: absolute;
@@ -304,8 +440,6 @@
 	-o-transform: scale(0.25);
 	-ms-transform: scale(0.25);
 	z-index: 1;
-}
-.t div div {
 	position:absolute;
 	white-space:nowrap;
 	overflow:visible;
@@ -373,296 +507,322 @@ function adjustWordSpacing(divName,actualWidth) {
 <!-- Begin inline CSS -->
 <style type="text/css" >
 
-#t1_3{left:1777px;top:165px;}
-#t2_3{left:1941px;top:174px;}
-#t3_3{left:1975px;top:165px;}
-#t4_3{left:2022px;top:2637px;}
-#t5_3{left:2022px;top:2753px;}
-#t6_3{left:2074px;top:2753px;}
-#t7_3{left:2074px;top:2811px;}
-#t8_3{left:2074px;top:2870px;}
-#t9_3{left:2022px;top:2936px;}
-#ta_3{left:2074px;top:2936px;}
-#tb_3{left:2074px;top:2994px;}
-#tc_3{left:2074px;top:3052px;}
-#td_3{left:2022px;top:3119px;}
-#te_3{left:2074px;top:3119px;}
-#tf_3{left:2074px;top:3177px;}
-#tg_3{left:2022px;top:3244px;}
-#th_3{left:2074px;top:3244px;}
-#ti_3{left:2255px;top:3244px;}
-#tj_3{left:2074px;top:3302px;}
-#tk_3{left:2022px;top:3369px;}
-#tl_3{left:2074px;top:3369px;}
-#tm_3{left:2074px;top:3427px;}
-#tn_3{left:2022px;top:3493px;}
-#to_3{left:2074px;top:3493px;}
-#tp_3{left:2074px;top:3551px;}
-#tq_3{left:2022px;top:3618px;}
-#tr_3{left:2074px;top:3618px;}
-#ts_3{left:2991px;top:3618px;}
-#tt_3{left:3174px;top:3618px;}
-#tu_3{left:2074px;top:3676px;}
-#tv_3{left:2022px;top:3792px;}
-#tw_3{left:2022px;top:3908px;}
-#tx_3{left:2074px;top:3908px;}
-#ty_3{left:2705px;top:3908px;}
-#tz_3{left:2741px;top:3908px;}
-#t10_3{left:2005px;top:4025px;}
-#t11_3{left:2545px;top:4025px;}
-#t12_3{left:2689px;top:4025px;}
-#t13_3{left:2005px;top:4083px;}
-#t14_3{left:3275px;top:4083px;}
-#t15_3{left:3356px;top:4083px;}
-#t16_3{left:2005px;top:4141px;}
-#t17_3{left:2040px;top:4379px;}
-#t18_3{left:2234px;top:4386px;}
-#t19_3{left:2252px;top:4379px;}
-#t1a_3{left:2272px;top:4379px;}
-#t1b_3{left:2467px;top:4386px;}
-#t1c_3{left:2493px;top:4379px;}
-#t1d_3{left:2581px;top:4379px;}
-#t1e_3{left:2602px;top:4379px;}
-#t1f_3{left:2746px;top:4386px;}
-#t1g_3{left:2772px;top:4379px;}
-#t1h_3{left:2851px;top:4379px;}
-#t1i_3{left:3002px;top:4386px;}
-#t1j_3{left:3028px;top:4379px;}
-#t1k_3{left:2040px;top:4437px;}
-#t1l_3{left:2040px;top:4611px;}
-#t1m_3{left:2550px;top:4611px;}
-#t1n_3{left:2040px;top:4669px;}
-#t1o_3{left:2970px;top:4901px;}
-#t1p_3{left:2123px;top:2299px;}
-#t1q_3{left:2016px;top:2415px;}
-#t1r_3{left:2016px;top:2473px;}
-#t1s_3{left:2016px;top:2531px;}
-#t1t_3{left:2519px;top:2531px;}
-#t1u_3{left:2933px;top:2302px;}
-#t1v_3{left:2806px;top:2418px;}
-#t1w_3{left:2896px;top:2476px;}
-#t1x_3{left:3033px;top:2476px;}
-#t1y_3{left:3054px;top:2476px;}
-#t1z_3{left:2021px;top:320px;}
-#t20_3{left:2021px;top:436px;}
-#t21_3{left:2073px;top:436px;}
-#t22_3{left:2484px;top:436px;}
-#t23_3{left:2687px;top:436px;}
-#t24_3{left:2073px;top:494px;}
-#t25_3{left:2820px;top:494px;}
-#t26_3{left:2921px;top:494px;}
-#t27_3{left:2073px;top:552px;}
-#t28_3{left:2021px;top:610px;}
-#t29_3{left:2073px;top:610px;}
-#t2a_3{left:2073px;top:668px;}
-#t2b_3{left:2073px;top:727px;}
-#t2c_3{left:2073px;top:785px;}
-#t2d_3{left:2021px;top:843px;}
-#t2e_3{left:2073px;top:843px;}
-#t2f_3{left:2073px;top:901px;}
-#t2g_3{left:2021px;top:959px;}
-#t2h_3{left:2073px;top:959px;}
-#t2i_3{left:2073px;top:1017px;}
-#t2j_3{left:2073px;top:1075px;}
-#t2k_3{left:2073px;top:1133px;}
-#t2l_3{left:2021px;top:1191px;}
-#t2m_3{left:2073px;top:1191px;}
-#t2n_3{left:2796px;top:1191px;}
-#t2o_3{left:2817px;top:1191px;}
-#t2p_3{left:2073px;top:1249px;}
-#t2q_3{left:2021px;top:1307px;}
-#t2r_3{left:2073px;top:1307px;}
-#t2s_3{left:2073px;top:1365px;}
-#t2t_3{left:2021px;top:1423px;}
-#t2u_3{left:2073px;top:1423px;}
-#t2v_3{left:2275px;top:1423px;}
-#t2w_3{left:2073px;top:1481px;}
-#t2x_3{left:2021px;top:1539px;}
-#t2y_3{left:2073px;top:1539px;}
-#t2z_3{left:2983px;top:1539px;}
-#t30_3{left:3161px;top:1539px;}
-#t31_3{left:2073px;top:1597px;}
-#t32_3{left:2021px;top:1713px;}
-#t33_3{left:2021px;top:1830px;}
-#t34_3{left:2073px;top:1830px;}
-#t35_3{left:2572px;top:1830px;}
-#t36_3{left:2798px;top:1830px;}
-#t37_3{left:2849px;top:1830px;}
-#t38_3{left:2021px;top:1888px;}
-#t39_3{left:2073px;top:1888px;}
-#t3a_3{left:2787px;top:1888px;}
-#t3b_3{left:3013px;top:1888px;}
-#t3c_3{left:3064px;top:1888px;}
-#t3d_3{left:2021px;top:1946px;}
-#t3e_3{left:2073px;top:1946px;}
-#t3f_3{left:2480px;top:1946px;}
-#t3g_3{left:2652px;top:1946px;}
-#t3h_3{left:2703px;top:1946px;}
-#t3i_3{left:2021px;top:2004px;}
-#t3j_3{left:2073px;top:2004px;}
-#t3k_3{left:2725px;top:2004px;}
-#t3l_3{left:2897px;top:2004px;}
-#t3m_3{left:2948px;top:2004px;}
-#t3n_3{left:2003px;top:2178px;}
-#t3o_3{left:462px;top:1257px;}
-#t3p_3{left:462px;top:1373px;}
-#t3q_3{left:462px;top:1489px;}
-#t3r_3{left:462px;top:1547px;}
-#t3s_3{left:1350px;top:1547px;}
-#t3t_3{left:462px;top:1605px;}
-#t3u_3{left:462px;top:1721px;}
-#t3v_3{left:462px;top:1779px;}
-#t3w_3{left:712px;top:1779px;}
-#t3x_3{left:733px;top:1779px;}
-#t3y_3{left:1119px;top:1787px;}
-#t3z_3{left:1163px;top:1779px;}
-#t40_3{left:462px;top:1837px;}
-#t41_3{left:462px;top:1895px;}
-#t42_3{left:719px;top:1895px;}
-#t43_3{left:462px;top:1953px;}
-#t44_3{left:462px;top:2011px;}
-#t45_3{left:859px;top:2011px;}
-#t46_3{left:880px;top:2011px;}
-#t47_3{left:462px;top:2069px;}
-#t48_3{left:462px;top:2186px;}
-#t49_3{left:1702px;top:2186px;}
-#t4a_3{left:1723px;top:2186px;}
-#t4b_3{left:462px;top:2244px;}
-#t4c_3{left:462px;top:2360px;}
-#t4d_3{left:462px;top:2418px;}
-#t4e_3{left:462px;top:2476px;}
-#t4f_3{left:462px;top:2534px;}
-#t4g_3{left:550px;top:4066px;}
-#t4h_3{left:460px;top:4182px;}
-#t4i_3{left:460px;top:4240px;}
-#t4j_3{left:460px;top:4299px;}
-#t4k_3{left:472px;top:4299px;}
-#t4l_3{left:943px;top:4299px;}
-#t4m_3{left:460px;top:4357px;}
-#t4n_3{left:460px;top:4415px;}
-#t4o_3{left:472px;top:4415px;}
-#t4p_3{left:806px;top:4415px;}
-#t4q_3{left:460px;top:4473px;}
-#t4r_3{left:460px;top:4531px;}
-#t4s_3{left:472px;top:4531px;}
-#t4t_3{left:1014px;top:4531px;}
-#t4u_3{left:460px;top:4647px;}
-#t4v_3{left:460px;top:4705px;}
-#t4w_3{left:460px;top:4763px;}
-#t4x_3{left:472px;top:4763px;}
-#t4y_3{left:943px;top:4763px;}
-#t4z_3{left:460px;top:4821px;}
-#t50_3{left:460px;top:4879px;}
-#t51_3{left:472px;top:4879px;}
-#t52_3{left:806px;top:4879px;}
-#t53_3{left:1366px;top:4065px;}
-#t54_3{left:1151px;top:4181px;}
-#t55_3{left:1322px;top:4239px;}
-#t56_3{left:1433px;top:4239px;}
-#t57_3{left:1474px;top:4239px;}
-#t58_3{left:1495px;top:4239px;}
-#t59_3{left:1151px;top:4645px;}
-#t5a_3{left:1322px;top:4704px;}
-#t5b_3{left:1433px;top:4704px;}
-#t5c_3{left:1474px;top:4704px;}
-#t5d_3{left:1495px;top:4704px;}
-#t5e_3{left:517px;top:331px;}
-#t5f_3{left:462px;top:447px;}
-#t5g_3{left:462px;top:505px;}
-#t5h_3{left:462px;top:563px;}
-#t5i_3{left:462px;top:621px;}
-#t5j_3{left:462px;top:679px;}
-#t5k_3{left:462px;top:737px;}
-#t5l_3{left:462px;top:795px;}
-#t5m_3{left:462px;top:853px;}
-#t5n_3{left:462px;top:911px;}
-#t5o_3{left:462px;top:969px;}
-#t5p_3{left:462px;top:1027px;}
-#t5q_3{left:462px;top:1085px;}
-#t5r_3{left:462px;top:1144px;}
-#t5s_3{left:1337px;top:331px;}
-#t5t_3{left:1129px;top:447px;}
-#t5u_3{left:1236px;top:505px;}
-#t5v_3{left:1502px;top:505px;}
-#t5w_3{left:1524px;top:505px;}
-#t5x_3{left:546px;top:2644px;}
-#t5y_3{left:466px;top:2760px;}
-#t5z_3{left:466px;top:2818px;}
-#t60_3{left:466px;top:2876px;}
-#t61_3{left:466px;top:2934px;}
-#t62_3{left:466px;top:2992px;}
-#t63_3{left:466px;top:3050px;}
-#t64_3{left:466px;top:3108px;}
-#t65_3{left:466px;top:3167px;}
-#t66_3{left:466px;top:3225px;}
-#t67_3{left:1358px;top:2646px;}
-#t68_3{left:1143px;top:2763px;}
-#t69_3{left:1256px;top:2821px;}
-#t6a_3{left:1523px;top:2821px;}
-#t6b_3{left:1544px;top:2821px;}
-#t6c_3{left:461px;top:3339px;}
-#t6d_3{left:461px;top:3397px;}
-#t6e_3{left:461px;top:3455px;}
-#t6f_3{left:598px;top:3455px;}
-#t6g_3{left:619px;top:3455px;}
-#t6h_3{left:461px;top:3513px;}
-#t6i_3{left:461px;top:3571px;}
-#t6j_3{left:596px;top:3571px;}
-#t6k_3{left:617px;top:3571px;}
-#t6l_3{left:461px;top:3629px;}
-#t6m_3{left:461px;top:3687px;}
-#t6n_3{left:461px;top:3780px;}
-#t6o_3{left:1704px;top:3780px;}
-#t6p_3{left:1725px;top:3780px;}
-#t6q_3{left:461px;top:3838px;}
-#t6r_3{left:444px;top:3954px;}
-#t6s_3{left:599px;top:3954px;}
-
-.s6_3{
-	FONT-SIZE: 42px;
-	FONT-FAMILY: PRLUBI-HelveticaNeueLTStd-Bd3;
-	color: rgb(0,0,0);
-}
+#t1_3{left:444px;top:41px;}
+#t2_3{left:485px;top:43px;}
+#t3_3{left:494px;top:41px;letter-spacing:1px;}
+#t4_3{left:118px;top:83px;}
+#t5_3{left:156px;top:83px;}
+#t6_3{left:118px;top:112px;}
+#t7_3{left:118px;top:127px;}
+#t8_3{left:135px;top:127px;}
+#t9_3{left:135px;top:141px;}
+#ta_3{left:194px;top:141px;}
+#tb_3{left:200px;top:141px;}
+#tc_3{left:135px;top:156px;}
+#td_3{left:118px;top:171px;}
+#te_3{left:135px;top:171px;}
+#tf_3{left:135px;top:185px;}
+#tg_3{left:183px;top:185px;}
+#th_3{left:188px;top:185px;}
+#ti_3{left:118px;top:200px;}
+#tj_3{left:135px;top:200px;}
+#tk_3{left:135px;top:215px;}
+#tl_3{left:118px;top:229px;}
+#tm_3{left:135px;top:229px;}
+#tn_3{left:436px;top:229px;}
+#to_3{left:441px;top:229px;}
+#tp_3{left:135px;top:244px;}
+#tq_3{left:118px;top:270px;}
+#tr_3{left:118px;top:299px;}
+#ts_3{left:118px;top:314px;}
+#tt_3{left:120px;top:314px;}
+#tu_3{left:118px;top:329px;}
+#tv_3{left:203px;top:329px;}
+#tw_3{left:297px;top:285px;}
+#tx_3{left:340px;top:299px;}
+#ty_3{left:374px;top:299px;}
+#tz_3{left:380px;top:299px;}
+#t10_3{left:118px;top:355px;}
+#t11_3{left:118px;top:369px;}
+#t12_3{left:120px;top:369px;}
+#t13_3{left:196px;top:369px;}
+#t14_3{left:118px;top:384px;}
+#t15_3{left:118px;top:399px;}
+#t16_3{left:120px;top:399px;}
+#t17_3{left:219px;top:399px;}
+#t18_3{left:118px;top:413px;}
+#t19_3{left:118px;top:428px;}
+#t1a_3{left:120px;top:428px;}
+#t1b_3{left:217px;top:428px;}
+#t1c_3{left:118px;top:443px;}
+#t1d_3{left:118px;top:457px;}
+#t1e_3{left:120px;top:457px;}
+#t1f_3{left:222px;top:457px;}
+#t1g_3{left:118px;top:472px;}
+#t1h_3{left:118px;top:487px;}
+#t1i_3{left:120px;top:487px;}
+#t1j_3{left:217px;top:487px;}
+#t1k_3{left:118px;top:501px;}
+#t1l_3{left:118px;top:516px;}
+#t1m_3{left:120px;top:516px;}
+#t1n_3{left:224px;top:516px;}
+#t1o_3{left:297px;top:428px;}
+#t1p_3{left:324px;top:443px;}
+#t1q_3{left:391px;top:443px;}
+#t1r_3{left:396px;top:443px;}
+#t1s_3{left:118px;top:542px;}
+#t1t_3{left:118px;top:557px;}
+#t1u_3{left:118px;top:571px;}
+#t1v_3{left:135px;top:571px;}
+#t1w_3{left:135px;top:586px;}
+#t1x_3{left:243px;top:588px;}
+#t1y_3{left:253px;top:586px;}
+#t1z_3{left:118px;top:601px;}
+#t20_3{left:135px;top:601px;}
+#t21_3{left:118px;top:624px;}
+#t22_3{left:118px;top:639px;}
+#t23_3{left:135px;top:639px;}
+#t24_3{left:202px;top:639px;}
+#t25_3{left:208px;top:639px;}
+#t26_3{left:314px;top:641px;}
+#t27_3{left:327px;top:639px;}
+#t28_3{left:135px;top:653px;}
+#t29_3{left:135px;top:668px;}
+#t2a_3{left:118px;top:683px;}
+#t2b_3{left:135px;top:683px;}
+#t2c_3{left:135px;top:697px;}
+#t2d_3{left:118px;top:712px;}
+#t2e_3{left:135px;top:712px;}
+#t2f_3{left:423px;top:712px;}
+#t2g_3{left:429px;top:712px;}
+#t2h_3{left:135px;top:727px;}
+#t2i_3{left:135px;top:741px;}
+#t2j_3{left:224px;top:741px;}
+#t2k_3{left:118px;top:756px;}
+#t2l_3{left:135px;top:756px;}
+#t2m_3{left:436px;top:756px;}
+#t2n_3{left:441px;top:756px;}
+#t2o_3{left:135px;top:771px;}
+#t2p_3{left:118px;top:794px;}
+#t2q_3{left:118px;top:809px;}
+#t2r_3{left:135px;top:809px;}
+#t2s_3{left:135px;top:823px;}
+#t2t_3{left:135px;top:838px;}
+#t2u_3{left:145px;top:897px;}
+#t2v_3{left:349px;top:897px;}
+#t2w_3{left:118px;top:919px;}
+#t2x_3{left:118px;top:948px;}
+#t2y_3{left:118px;top:963px;}
+#t2z_3{left:120px;top:963px;}
+#t30_3{left:238px;top:963px;}
+#t31_3{left:118px;top:978px;}
+#t32_3{left:118px;top:992px;}
+#t33_3{left:120px;top:992px;}
+#t34_3{left:194px;top:992px;}
+#t35_3{left:297px;top:948px;}
+#t36_3{left:338px;top:963px;}
+#t37_3{left:376px;top:963px;}
+#t38_3{left:381px;top:963px;}
+#t39_3{left:118px;top:1014px;}
+#t3a_3{left:118px;top:1029px;}
+#t3b_3{left:135px;top:1029px;}
+#t3c_3{left:135px;top:1043px;}
+#t3d_3{left:135px;top:1058px;}
+#t3e_3{left:118px;top:1073px;}
+#t3f_3{left:135px;top:1073px;}
+#t3g_3{left:135px;top:1087px;}
+#t3h_3{left:135px;top:1102px;}
+#t3i_3{left:118px;top:1117px;}
+#t3j_3{left:135px;top:1117px;}
+#t3k_3{left:135px;top:1131px;}
+#t3l_3{left:118px;top:1146px;}
+#t3m_3{left:135px;top:1146px;}
+#t3n_3{left:350px;top:1146px;}
+#t3o_3{left:394px;top:1146px;}
+#t3p_3{left:135px;top:1161px;}
+#t3q_3{left:118px;top:1183px;}
+#t3r_3{left:118px;top:1197px;}
+#t3s_3{left:135px;top:1197px;}
+#t3t_3{left:256px;top:1197px;}
+#t3u_3{left:313px;top:1197px;}
+#t3v_3{left:325px;top:1197px;}
+#t3w_3{left:118px;top:1212px;}
+#t3x_3{left:135px;top:1212px;}
+#t3y_3{left:233px;top:1212px;}
+#t3z_3{left:276px;top:1212px;}
+#t40_3{left:289px;top:1212px;}
+#t41_3{left:118px;top:1227px;}
+#t42_3{left:135px;top:1227px;}
+#t43_3{left:284px;top:1227px;}
+#t44_3{left:327px;top:1227px;}
+#t45_3{left:340px;top:1227px;}
+#t46_3{left:108px;top:870px;}
+#t47_3{left:498px;top:74px;}
+#t48_3{left:498px;top:534px;}
+#t49_3{left:528px;top:534px;}
+#t4a_3{left:535px;top:101px;}
+#t4b_3{left:739px;top:101px;}
+#t4c_3{left:507px;top:127px;}
+#t4d_3{left:507px;top:156px;}
+#t4e_3{left:507px;top:171px;}
+#t4f_3{left:510px;top:171px;}
+#t4g_3{left:584px;top:171px;}
+#t4h_3{left:507px;top:186px;}
+#t4i_3{left:507px;top:200px;}
+#t4j_3{left:510px;top:200px;}
+#t4k_3{left:607px;top:200px;}
+#t4l_3{left:687px;top:156px;}
+#t4m_3{left:714px;top:171px;}
+#t4n_3{left:780px;top:171px;}
+#t4o_3{left:786px;top:171px;}
+#t4p_3{left:507px;top:226px;}
+#t4q_3{left:507px;top:245px;}
+#t4r_3{left:525px;top:245px;}
+#t4s_3{left:525px;top:260px;}
+#t4t_3{left:525px;top:275px;}
+#t4u_3{left:507px;top:294px;}
+#t4v_3{left:525px;top:294px;}
+#t4w_3{left:525px;top:308px;}
+#t4x_3{left:525px;top:323px;}
+#t4y_3{left:507px;top:342px;}
+#t4z_3{left:525px;top:342px;}
+#t50_3{left:525px;top:357px;}
+#t51_3{left:507px;top:376px;}
+#t52_3{left:525px;top:376px;}
+#t53_3{left:525px;top:390px;}
+#t54_3{left:507px;top:409px;}
+#t55_3{left:525px;top:409px;}
+#t56_3{left:749px;top:409px;}
+#t57_3{left:794px;top:409px;}
+#t58_3{left:525px;top:424px;}
+#t59_3{left:507px;top:450px;}
+#t5a_3{left:507px;top:467px;}
+#t5b_3{left:525px;top:467px;}
+#t5c_3{left:638px;top:467px;}
+#t5d_3{left:695px;top:467px;}
+#t5e_3{left:704px;top:467px;}
+#t5f_3{left:507px;top:484px;}
+#t5g_3{left:525px;top:484px;}
+#t5h_3{left:615px;top:484px;}
+#t5i_3{left:667px;top:484px;}
+#t5j_3{left:693px;top:484px;}
+#t5k_3{left:710px;top:484px;}
+#t5l_3{left:719px;top:484px;}
+#t5m_3{left:535px;top:566px;}
+#t5n_3{left:739px;top:566px;}
+#t5o_3{left:507px;top:592px;}
+#t5p_3{left:507px;top:621px;}
+#t5q_3{left:507px;top:636px;}
+#t5r_3{left:510px;top:636px;}
+#t5s_3{left:628px;top:636px;}
+#t5t_3{left:507px;top:650px;}
+#t5u_3{left:507px;top:665px;}
+#t5v_3{left:510px;top:665px;}
+#t5w_3{left:594px;top:665px;}
+#t5x_3{left:507px;top:680px;}
+#t5y_3{left:507px;top:694px;}
+#t5z_3{left:510px;top:694px;}
+#t60_3{left:646px;top:694px;}
+#t61_3{left:687px;top:621px;}
+#t62_3{left:728px;top:636px;}
+#t63_3{left:766px;top:636px;}
+#t64_3{left:771px;top:636px;}
+#t65_3{left:507px;top:720px;}
+#t66_3{left:507px;top:750px;}
+#t67_3{left:507px;top:764px;}
+#t68_3{left:510px;top:764px;}
+#t69_3{left:628px;top:764px;}
+#t6a_3{left:507px;top:779px;}
+#t6b_3{left:507px;top:794px;}
+#t6c_3{left:510px;top:794px;}
+#t6d_3{left:594px;top:794px;}
+#t6e_3{left:687px;top:750px;}
+#t6f_3{left:728px;top:764px;}
+#t6g_3{left:766px;top:764px;}
+#t6h_3{left:771px;top:764px;}
+#t6i_3{left:507px;top:820px;}
+#t6j_3{left:507px;top:839px;}
+#t6k_3{left:525px;top:839px;}
+#t6l_3{left:634px;top:839px;}
+#t6m_3{left:688px;top:839px;}
+#t6n_3{left:525px;top:853px;}
+#t6o_3{left:742px;top:853px;}
+#t6p_3{left:767px;top:853px;}
+#t6q_3{left:525px;top:868px;}
+#t6r_3{left:507px;top:887px;}
+#t6s_3{left:525px;top:887px;}
+#t6t_3{left:525px;top:902px;}
+#t6u_3{left:507px;top:921px;}
+#t6v_3{left:525px;top:921px;}
+#t6w_3{left:525px;top:935px;}
+#t6x_3{left:507px;top:954px;}
+#t6y_3{left:525px;top:954px;}
+#t6z_3{left:525px;top:969px;}
+#t70_3{left:525px;top:984px;}
+#t71_3{left:525px;top:998px;}
+#t72_3{left:507px;top:1017px;}
+#t73_3{left:525px;top:1017px;}
+#t74_3{left:701px;top:1017px;}
+#t75_3{left:706px;top:1017px;}
+#t76_3{left:525px;top:1032px;}
+#t77_3{left:507px;top:1051px;}
+#t78_3{left:525px;top:1051px;}
+#t79_3{left:525px;top:1066px;}
+#t7a_3{left:507px;top:1085px;}
+#t7b_3{left:525px;top:1085px;}
+#t7c_3{left:779px;top:1085px;}
+#t7d_3{left:827px;top:1085px;}
+#t7e_3{left:525px;top:1099px;}
+#t7f_3{left:525px;top:1114px;}
+#t7g_3{left:507px;top:1140px;}
+#t7h_3{left:507px;top:1157px;}
+#t7i_3{left:525px;top:1157px;}
+#t7j_3{left:642px;top:1157px;}
+#t7k_3{left:699px;top:1157px;}
+#t7l_3{left:711px;top:1157px;}
+#t7m_3{left:507px;top:1174px;}
+#t7n_3{left:525px;top:1174px;}
+#t7o_3{left:692px;top:1174px;}
+#t7p_3{left:749px;top:1174px;}
+#t7q_3{left:761px;top:1174px;}
+#t7r_3{left:507px;top:1191px;}
+#t7s_3{left:525px;top:1191px;}
+#t7t_3{left:615px;top:1191px;}
+#t7u_3{left:658px;top:1191px;}
+#t7v_3{left:671px;top:1191px;}
+#t7w_3{left:507px;top:1207px;}
+#t7x_3{left:525px;top:1207px;}
+#t7y_3{left:680px;top:1207px;}
+#t7z_3{left:723px;top:1207px;}
+#t80_3{left:736px;top:1207px;}
 
 .s1_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: PRLUBI-HelveticaNeueLTStd-Bd3;
+	FONT-FAMILY: CMLTXW-HelveticaNeueLTStd-Bd3;
 	color: rgb(0,0,0);
 }
 
 .s4_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: Mt-ExtraPlain3;
-	color: rgb(0,0,0);
-}
-
-.s8_3{
-	FONT-SIZE: 42px;
-	FONT-FAMILY: PRLUBI-HelveticaNeueLTStd-Lt3;
+	FONT-FAMILY: CMLTXW-MT-Extra3;
 	color: rgb(0,0,0);
 }
 
 .s3_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: PRLUBI-HelveticaNeueLTStd-Lt3;
-	color: rgb(0,0,0);
-}
-
-.s7_3{
-	FONT-SIZE: 21px;
-	FONT-FAMILY: PRLUBI-HelveticaNeueLTStd-Lt3;
+	FONT-FAMILY: CMLTXW-HelveticaNeueLTStd-Lt3;
 	color: rgb(0,0,0);
 }
 
 .s5_3{
 	FONT-SIZE: 48px;
-	FONT-FAMILY: OJBONK-HelveticaNeueLTStd-It3;
+	FONT-FAMILY: CMLTXW-HelveticaNeueLTStd-It3;
 	color: rgb(0,0,0);
 }
 
 .s2_3{
 	FONT-SIZE: 24px;
-	FONT-FAMILY: PRLUBI-HelveticaNeueLTStd-Lt3;
+	FONT-FAMILY: CMLTXW-HelveticaNeueLTStd-Lt3;
 	color: rgb(0,0,0);
 }
 
@@ -673,585 +833,342 @@ function adjustWordSpacing(divName,actualWidth) {
 <style type="text/css" >
 
 @font-face {
-	font-family: OJBONK-HelveticaNeueLTStd-It3;
-	src: url("3/fonts/OJBONK-HelveticaNeueLTStd-It.otf");
+	font-family: CMLTXW-HelveticaNeueLTStd-Bd3;
+	src: url("3/fonts/CMLTXW-HelveticaNeueLTStd-Bd.eot");
+	src: url("3/fonts/CMLTXW-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/CMLTXW-HelveticaNeueLTStd-Bd.otf") format("opentype");
 }
 
 @font-face {
-	font-family: PRLUBI-HelveticaNeueLTStd-Lt3;
-	src: url("3/fonts/PRLUBI-HelveticaNeueLTStd-Lt.otf");
+	font-family: CMLTXW-HelveticaNeueLTStd-It3;
+	src: url("3/fonts/CMLTXW-HelveticaNeueLTStd-It.eot");
+	src: url("3/fonts/CMLTXW-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/CMLTXW-HelveticaNeueLTStd-It.otf") format("opentype");
 }
 
 @font-face {
-	font-family: Mt-ExtraPlain3;
-	src: url("3/fonts/Mt-ExtraPlain.otf");
+	font-family: CMLTXW-MT-Extra3;
+	src: url("3/fonts/CMLTXW-MT-Extra.eot");
+	src: url("3/fonts/CMLTXW-MT-Extra.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/CMLTXW-MT-Extra.otf") format("opentype");
 }
 
 @font-face {
-	font-family: PRLUBI-HelveticaNeueLTStd-Bd3;
-	src: url("3/fonts/PRLUBI-HelveticaNeueLTStd-Bd.otf");
+	font-family: CMLTXW-HelveticaNeueLTStd-Lt3;
+	src: url("3/fonts/CMLTXW-HelveticaNeueLTStd-Lt.eot");
+	src: url("3/fonts/CMLTXW-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("3/fonts/CMLTXW-HelveticaNeueLTStd-Lt.otf") format("opentype");
 }
 
 </style>
 <!-- End embedded font definitions -->
 
 <!-- Begin text definitions (Positioned/styled in CSS) -->
-<div class="t">
-<div class="s1_3">
-<div id="t1_3">ARTEA</div>
-</div>
-<div class="s2_3">
-<div id="t2_3">®</div>
-</div>
-<div class="s3_3">
-<div id="t3_3">/ 3</div>
-</div>
-<div class="s1_3">
-<div id="t4_3">OPMERKINGS:</div>
-</div>
-<div class="s3_3">
-<div id="t5_3">• </div>
-<div id="t6_3">Dien toe met die eerste tekens van die siekte of met blom as </div>
-<div id="t7_3">siekte nog nie voorkom nie en herhaal 14 - 21 dae later. Moet </div>
-<div id="t8_3">nie die spuitinterval langer as 21 dae verleng nie.</div>
-<div id="t9_3">• </div>
-<div id="ta_3">Indien die weersomstandighede bevorderlik is vir ontwikkeling </div>
-<div id="tb_3">van die siekte (temperature van 15°C - 28°C en hoë </div>
-<div id="tc_3">humiditeit) gebruik die korter interval.</div>
-<div id="td_3">• </div>
-<div id="te_3">Vir seisoen lange beheer van siektes moet ’n volledige spuit-</div>
-<div id="tf_3">program gebruik word.</div>
-<div id="tg_3">• </div>
-</div>
-<div class="s1_3">
-<div id="th_3">ARTEA	</div>
-</div>
-<div class="s3_3">
-<div id="ti_3">kan in ‘n spuitprogram met AMISTAR TOP (L7897), </div>
-<div id="tj_3">AMISTAR XTRA (L8567) en SCORE (L5132) gebruik word.</div>
-<div id="tk_3">• </div>
-<div id="tl_3">Indien die siekte voor of tydens die blomperiode voorkom </div>
-<div id="tm_3">mag meer as een bespuiting nodig wees.</div>
-<div id="tn_3">• </div>
-<div id="to_3">Indien die siekte later in die seisoen voorkom sal een bespui-</div>
-<div id="tp_3">ting voldoende wees.</div>
-<div id="tq_3">• </div>
-<div id="tr_3">Moenie meer as twee (2) toedienings van </div>
-</div>
-<div class="s1_3">
-<div id="ts_3">ARTEA	</div>
-</div>
-<div class="s3_3">
-<div id="tt_3">op soja-</div>
-<div id="tu_3">bone in dieselfde seisoen maak nie. </div>
-</div>
-<div class="s1_3">
-<div id="tv_3">Spuitvolumes:</div>
-</div>
-<div class="s3_3">
-<div id="tw_3">• </div>
-<div id="tx_3">Trekkertoediening: 300 - 400 </div>
-</div>
-<div class="s4_3">
-<div id="ty_3">l</div>
-</div>
-<div class="s3_3">
-<div id="tz_3">water/ha</div>
-<div id="t10_3">BBCH: Lancashire, P.D. </div>
-</div>
-<div class="s5_3">
-<div id="t11_3">et. al.</div>
-</div>
-<div class="s3_3">
-<div id="t12_3">(1991). A uniform decimal code </div>
-<div id="t13_3">for growth stages of crops and weeds. Ann. Appl. Biol. </div>
-</div>
-<div class="s1_3">
-<div id="t14_3">119</div>
-</div>
-<div class="s3_3">
-<div id="t15_3">: </div>
-<div id="t16_3">561 - 601.</div>
-</div>
-<div class="s6_3">
-<div id="t17_3">AMISTAR</div>
-</div>
-<div class="s7_3">
-<div id="t18_3">®</div>
-</div>
-<div class="s8_3">
-<div id="t19_3">, </div>
-</div>
-<div class="s6_3">
-<div id="t1a_3">AMISTAR</div>
-</div>
-<div class="s7_3">
-<div id="t1b_3">®</div>
-</div>
-<div class="s6_3">
-<div id="t1c_3">TOP</div>
-</div>
-<div class="s8_3">
-<div id="t1d_3">, </div>
-</div>
-<div class="s6_3">
-<div id="t1e_3">ARTEA</div>
-</div>
-<div class="s7_3">
-<div id="t1f_3">®</div>
-</div>
-<div class="s8_3">
-<div id="t1g_3">and </div>
-</div>
-<div class="s6_3">
-<div id="t1h_3">SCORE</div>
-</div>
-<div class="s7_3">
-<div id="t1i_3">®</div>
-</div>
-<div class="s8_3">
-<div id="t1j_3">= Geregistreerde </div>
-<div id="t1k_3">Handelsmerk van ‘n Syngenta Groep Maatskappy.</div>
-</div>
-<div class="s6_3">
-<div id="t1l_3">©	SYNGENTA	AG,	2000.	</div>
-</div>
-<div class="s8_3">
-<div id="t1m_3">Kopiereg van die dokument is voorbehou. </div>
-<div id="t1n_3">Alle ongemagtigde vermeerdering word verbied. </div>
-<div id="t1o_3">SA Reg.: 2010-03-01</div>
-</div>
-<div class="s1_3">
-<div id="t1p_3">GEWAS/	SIEKTE</div>
-<div id="t1q_3">SOJABONE</div>
-</div>
-<div class="s5_3">
-<div id="t1r_3">Sojaboon roes</div>
-<div id="t1s_3">(Phakopsora pachyrhizi</div>
-</div>
-<div class="s3_3">
-<div id="t1t_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t1u_3">DOSIS</div>
-<div id="t1v_3">Grondtoediening:</div>
-</div>
-<div class="s3_3">
-<div id="t1w_3">500 m</div>
-</div>
-<div class="s4_3">
-<div id="t1x_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t1y_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t1z_3">OPMERKINGS:</div>
-</div>
-<div class="s3_3">
-<div id="t20_3">• </div>
-<div id="t21_3">Begin toedienings </div>
-</div>
-<div class="s1_3">
-<div id="t22_3">voordat</div>
-</div>
-<div class="s3_3">
-<div id="t23_3">3% van die totale blaaropper-</div>
-<div id="t24_3">vlakte siekte simptome vertoon </div>
-</div>
-<div class="s1_3">
-<div id="t25_3">OF</div>
-</div>
-<div class="s3_3">
-<div id="t26_3">wanneer die siekte </div>
-<div id="t27_3">simptome teenwoordig is op die basale 3 - 5 blare.</div>
-<div id="t28_3">• </div>
-<div id="t29_3">In geval van al die siektes, maar baie belangrik in die geval </div>
-<div id="t2a_3">van Noordelike blaarskroei, moet verseker word dat die </div>
-<div id="t2b_3">toedienings suiwer voorkomend gedoen word vir effektiewe </div>
-<div id="t2c_3">siektebeheer.</div>
-<div id="t2d_3">• </div>
-<div id="t2e_3">Toedienings moet elke 21 - 28 dae gedoen word. Gebruik die </div>
-<div id="t2f_3">korter interval vir die hoë siektedruk situasies.</div>
-<div id="t2g_3">• </div>
-<div id="t2h_3">Met kort seisoen kultivars behoort een bespuiting na die </div>
-<div id="t2i_3">be stuiwing genoeg te wees om die siekte te beheer. Indien </div>
-<div id="t2j_3">die siekte egter voor bestuiwing voorkom sal meer bespui-</div>
-<div id="t2k_3">tings waarskynlik nodig wees.</div>
-<div id="t2l_3">• </div>
-<div id="t2m_3">Vir verbeterde beheer kan 500 m</div>
-</div>
-<div class="s4_3">
-<div id="t2n_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t2o_3">/ha minerale olie, bv. BP </div>
-<div id="t2p_3">Crop Oil, bygevoeg word.</div>
-<div id="t2q_3">• </div>
-<div id="t2r_3">Vir seisoen lange beheer van siektes moet ‘n volledige spuit-</div>
-<div id="t2s_3">program gebruik word.</div>
-<div id="t2t_3">• </div>
-</div>
-<div class="s1_3">
-<div id="t2u_3">ARTEA	</div>
-</div>
-<div class="s3_3">
-<div id="t2v_3">kan in ‘n spuitprogram met SCORE (L5132), </div>
-<div id="t2w_3">AMISTAR (L6230) en AMISTAR TOP (L7897) gebruik word.</div>
-<div id="t2x_3">• </div>
-<div id="t2y_3">Moet nie meer as twee (2) bespuitings van </div>
-</div>
-<div class="s1_3">
-<div id="t2z_3">ARTEA	</div>
-</div>
-<div class="s3_3">
-<div id="t30_3">in mielies </div>
-<div id="t31_3">of suikermielies in die selfde groeiseisoen toedien nie.</div>
-</div>
-<div class="s1_3">
-<div id="t32_3">Spuitvolumes:</div>
-</div>
-<div class="s3_3">
-<div id="t33_3">• </div>
-</div>
-<div class="s1_3">
-<div id="t34_3">Trekkertoediening:				</div>
-</div>
-<div class="s3_3">
-<div id="t35_3">250 - 450 </div>
-</div>
-<div class="s4_3">
-<div id="t36_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t37_3">water/ha</div>
-<div id="t38_3">• </div>
-</div>
-<div class="s1_3">
-<div id="t39_3">Hoë-balk	trekkertoediening:				</div>
-</div>
-<div class="s3_3">
-<div id="t3a_3">150 - 300 </div>
-</div>
-<div class="s4_3">
-<div id="t3b_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t3c_3">water/ha</div>
-<div id="t3d_3">• </div>
-</div>
-<div class="s1_3">
-<div id="t3e_3">Lugtoediening:				</div>
-</div>
-<div class="s3_3">
-<div id="t3f_3">30 - 40 </div>
-</div>
-<div class="s4_3">
-<div id="t3g_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t3h_3">water/ha</div>
-<div id="t3i_3">• </div>
-</div>
-<div class="s1_3">
-<div id="t3j_3">Rugsakspuittoedienings:	</div>
-</div>
-<div class="s3_3">
-<div id="t3k_3">60 - 70 </div>
-</div>
-<div class="s4_3">
-<div id="t3l_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t3m_3">water/ha</div>
-</div>
-<div class="s1_3">
-<div id="t3n_3">6.4.3	 SOJABONE</div>
-<div id="t3o_3">OPMERKINGS:</div>
-<div id="t3p_3">Oogvlekbeheer:</div>
-</div>
-<div class="s3_3">
-<div id="t3q_3">Dien toe gedurende die stamverlenging-stadium tot die versky-</div>
-<div id="t3r_3">ning van die 2de node (29 - 32 BBCH). </div>
-<div id="t3s_3">Moet nie na stadium </div>
-<div id="t3t_3">32 BBCH toedien nie.</div>
-</div>
-<div class="s1_3">
-<div id="t3u_3">Vaalblaar,	bruinaarsiekte,	poeieragtige	skimmel:</div>
-</div>
-<div class="s3_3">
-<div id="t3v_3">Dien 400 m</div>
-</div>
-<div class="s4_3">
-<div id="t3w_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t3x_3">/ha toe deur die 3</div>
-</div>
-<div class="s2_3">
-<div id="t3y_3">de</div>
-</div>
-<div class="s3_3">
-<div id="t3z_3">blaar as aanwyser te ge bruik, </div>
-<div id="t40_3">voordat meer as 5 % van die oppervlakte van hierdie blaar </div>
-<div id="t41_3">besmet is. </div>
-<div id="t42_3">Die optimale tyd van toediening is met die 6-blaar </div>
-<div id="t43_3">stadium (37 - 51 BBCH). Waar ‘n tweede toediening geregver-</div>
-<div id="t44_3">dig is, word 400 m</div>
-</div>
-<div class="s4_3">
-<div id="t45_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t46_3">/ha vir grond- en lugtoedienings aanbeveel, </div>
-<div id="t47_3">gewoonlik teen die vlagblaarstadium. </div>
-<div id="t48_3">Vir ‘n enkele toediening gebruik die hoër dosis van 500 m</div>
-</div>
-<div class="s4_3">
-<div id="t49_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t4a_3">/ha </div>
-<div id="t4b_3">teen vlagblaarstadium.</div>
-</div>
-<div class="s1_3">
-<div id="t4c_3">Blaarroes,	stamroes,	geel	/	streeproes:</div>
-</div>
-<div class="s3_3">
-<div id="t4d_3">Dien toe wanneer die eerste tekens van die siekte verskyn. In </div>
-<div id="t4e_3">die geval van geel/streep/stamroes herhaal na 3 weke indien </div>
-<div id="t4f_3">toestande gunstig bly vir siekte-ontwikkeling.</div>
-</div>
-<div class="s1_3">
-<div id="t4g_3">GEWAS	/	SIEKTE</div>
-<div id="t4h_3">MIELIES	</div>
-<div id="t4i_3">Noordelike	blaarskroei</div>
-</div>
-<div class="s3_3">
-<div id="t4j_3">(</div>
-</div>
-<div class="s5_3">
-<div id="t4k_3">Exserohilum turcicum</div>
-</div>
-<div class="s3_3">
-<div id="t4l_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t4m_3">Bruinroes</div>
-</div>
-<div class="s3_3">
-<div id="t4n_3">(</div>
-</div>
-<div class="s5_3">
-<div id="t4o_3">Puccinia sorghi</div>
-</div>
-<div class="s3_3">
-<div id="t4p_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t4q_3">Grysblaarvlek</div>
-</div>
-<div class="s3_3">
-<div id="t4r_3">(</div>
-</div>
-<div class="s5_3">
-<div id="t4s_3">Cercospora zeae-maydis</div>
-</div>
-<div class="s3_3">
-<div id="t4t_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t4u_3">SUIKERMIELIES	</div>
-<div id="t4v_3">Noordelike	blaarskroei</div>
-</div>
-<div class="s3_3">
-<div id="t4w_3">(</div>
-</div>
-<div class="s5_3">
-<div id="t4x_3">Exserohilum turcicum</div>
-</div>
-<div class="s3_3">
-<div id="t4y_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t4z_3">Bruinroes</div>
-</div>
-<div class="s3_3">
-<div id="t50_3">(</div>
-</div>
-<div class="s5_3">
-<div id="t51_3">Puccinia sorghi</div>
-</div>
-<div class="s3_3">
-<div id="t52_3">)</div>
-</div>
-<div class="s1_3">
-<div id="t53_3">DOSIS</div>
-<div id="t54_3">Grond-	en	lugtoediening:</div>
-</div>
-<div class="s3_3">
-<div id="t55_3">500 </div>
-<div id="t56_3">m</div>
-</div>
-<div class="s4_3">
-<div id="t57_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t58_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t59_3">Grond-	en	lugtoediening:</div>
-</div>
-<div class="s3_3">
-<div id="t5a_3">500 </div>
-<div id="t5b_3">m</div>
-</div>
-<div class="s4_3">
-<div id="t5c_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t5d_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t5e_3">GEWAS	/	SIEKTE</div>
-<div id="t5f_3">KORING		</div>
-<div id="t5g_3">Vaalblaar</div>
-</div>
-<div class="s5_3">
-<div id="t5h_3">(Septoria tritici)</div>
-</div>
-<div class="s1_3">
-<div id="t5i_3">Bruinaarsiekte</div>
-</div>
-<div class="s5_3">
-<div id="t5j_3">(Septoria nodorum)</div>
-</div>
-<div class="s1_3">
-<div id="t5k_3">Poeieragtige	skimmel</div>
-</div>
-<div class="s5_3">
-<div id="t5l_3">(Erysiphe graminis)</div>
-</div>
-<div class="s1_3">
-<div id="t5m_3">Blaarroes</div>
-</div>
-<div class="s5_3">
-<div id="t5n_3">(Puccinia recondita)</div>
-</div>
-<div class="s1_3">
-<div id="t5o_3">Stamroes</div>
-</div>
-<div class="s5_3">
-<div id="t5p_3">(Puccinia graminis)</div>
-</div>
-<div class="s1_3">
-<div id="t5q_3">Geel/streeproes</div>
-</div>
-<div class="s5_3">
-<div id="t5r_3">(Puccinia striiformis)</div>
-</div>
-<div class="s1_3">
-<div id="t5s_3">DOSIS</div>
-<div id="t5t_3">Grond-	en	lugtoediening</div>
-</div>
-<div class="s3_3">
-<div id="t5u_3">400 - 500 m</div>
-</div>
-<div class="s4_3">
-<div id="t5v_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t5w_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t5x_3">GEWAS	/	SIEKTE</div>
-<div id="t5y_3">GARS</div>
-<div id="t5z_3">Blaarvlek</div>
-</div>
-<div class="s5_3">
-<div id="t60_3">(Rhynchosporium secalis)</div>
-</div>
-<div class="s1_3">
-<div id="t61_3">Netvlek</div>
-</div>
-<div class="s5_3">
-<div id="t62_3">(Pyrenophora teres)</div>
-</div>
-<div class="s1_3">
-<div id="t63_3">Blaarroes</div>
-</div>
-<div class="s5_3">
-<div id="t64_3">(Puccinia hordei)</div>
-</div>
-<div class="s1_3">
-<div id="t65_3">Poeieragtige	skimmel</div>
-</div>
-<div class="s5_3">
-<div id="t66_3">(Erysiphe graminis) </div>
-</div>
-<div class="s1_3">
-<div id="t67_3">DOSIS</div>
-<div id="t68_3">Grond-	en	lugtoediening:</div>
-</div>
-<div class="s3_3">
-<div id="t69_3">400 - 500 m</div>
-</div>
-<div class="s4_3">
-<div id="t6a_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t6b_3">/ha</div>
-</div>
-<div class="s1_3">
-<div id="t6c_3">OPMERKING:</div>
-</div>
-<div class="s3_3">
-<div id="t6d_3">Met die aanwesigheid van siekte vroeg in die seisoen, dien teen </div>
-<div id="t6e_3">400 m</div>
-</div>
-<div class="s4_3">
-<div id="t6f_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t6g_3">/ha toe, nie later as die 6-blaar stadium (37 - 51 BBCH) </div>
-<div id="t6h_3">en volg op met ‘n bespuiting by vlagblaarverskyning teen 400 of </div>
-<div id="t6i_3">500 m</div>
-</div>
-<div class="s4_3">
-<div id="t6j_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t6k_3">/ha afhangend van heersende weerstoestande. Die hoër </div>
-<div id="t6l_3">dosis moet gebruik word wanneer weerstoestande gunstig is vir </div>
-<div id="t6m_3">siekte ontwikkeling.</div>
-<div id="t6n_3">Vir ‘n enkele toediening gebruik die hoër dosis van 500 m</div>
-</div>
-<div class="s4_3">
-<div id="t6o_3">l</div>
-</div>
-<div class="s3_3">
-<div id="t6p_3">/ha </div>
-<div id="t6q_3">teen vlagblaarstadium.</div>
-<div id="t6r_3">6.4.2 </div>
-</div>
-<div class="s1_3">
-<div id="t6s_3">MIELIES	EN	SUIKERMIELIES</div>
-</div>
-</div>
+<div id="t1_3" class="t s1_3">ARTEA</div>
+<div id="t2_3" class="t s2_3">®</div>
+<div id="t3_3" class="t s3_3">/	3</div>
+<div id="t4_3" class="t s1_3">GARS </div>
+<div id="t5_3" class="t s3_3">(vervolg)</div>
+<div id="t6_3" class="t s1_3">OPMERKING:</div>
+<div id="t7_3" class="t s3_3">•	</div>
+<div id="t8_3" class="t s3_3">Met	die	aanwesigheid	van	siekte	vroeg	in	die	seisoen,	dien	</div>
+<div id="t9_3" class="t s3_3">teen	400	m</div>
+<div id="ta_3" class="t s4_3">l</div>
+<div id="tb_3" class="t s3_3">/ha	toe,	nie	later	as	die	6-blaar	stadium	(37	-	51	</div>
+<div id="tc_3" class="t s3_3">BBCH).	</div>
+<div id="td_3" class="t s3_3">•	</div>
+<div id="te_3" class="t s3_3">Volg	op	met	‘n	bespuiting	by	vlagblaarverskyning	teen	400	</div>
+<div id="tf_3" class="t s3_3">of	500	m</div>
+<div id="tg_3" class="t s4_3">l</div>
+<div id="th_3" class="t s3_3">/ha	afhangend	van	heersende	weerstoestande.	</div>
+<div id="ti_3" class="t s3_3">•	</div>
+<div id="tj_3" class="t s3_3">Die	hoër	dosis	moet	gebruik	word	wanneer	weerstoestande	</div>
+<div id="tk_3" class="t s3_3">gunstig	is	vir	siekte	ontwikkeling.</div>
+<div id="tl_3" class="t s3_3">•	</div>
+<div id="tm_3" class="t s3_3">Vir	‘n	enkele	toediening,	gebruik	die	hoër	dosis	van	500	m</div>
+<div id="tn_3" class="t s4_3">l</div>
+<div id="to_3" class="t s3_3">/</div>
+<div id="tp_3" class="t s3_3">ha	teen	vlagblaarstadium.</div>
+<div id="tq_3" class="t s1_3">KORING</div>
+<div id="tr_3" class="t s1_3">Oogvlek</div>
+<div id="ts_3" class="t s3_3">(</div>
+<div id="tt_3" class="t s5_3">Pseudocercosporella </div>
+<div id="tu_3" class="t s5_3">herpotrichoides</div>
+<div id="tv_3" class="t s3_3">)</div>
+<div id="tw_3" class="t s1_3">Grond- en lugtoediening</div>
+<div id="tx_3" class="t s3_3">500	m</div>
+<div id="ty_3" class="t s4_3">l</div>
+<div id="tz_3" class="t s3_3">/ha</div>
+<div id="t10_3" class="t s1_3">Vaalblaar</div>
+<div id="t11_3" class="t s3_3">(</div>
+<div id="t12_3" class="t s5_3">Septoria tritici</div>
+<div id="t13_3" class="t s3_3">)</div>
+<div id="t14_3" class="t s1_3">Bruinaarsiekte</div>
+<div id="t15_3" class="t s3_3">(</div>
+<div id="t16_3" class="t s5_3">Septoria nodorum</div>
+<div id="t17_3" class="t s3_3">)</div>
+<div id="t18_3" class="t s1_3">Poeieragtige skimmel</div>
+<div id="t19_3" class="t s3_3">(</div>
+<div id="t1a_3" class="t s5_3">Erysiphe graminis</div>
+<div id="t1b_3" class="t s3_3">)</div>
+<div id="t1c_3" class="t s1_3">Blaarroes</div>
+<div id="t1d_3" class="t s3_3">(</div>
+<div id="t1e_3" class="t s5_3">Puccinia recondita</div>
+<div id="t1f_3" class="t s3_3">)</div>
+<div id="t1g_3" class="t s1_3">Stamroes</div>
+<div id="t1h_3" class="t s3_3">(</div>
+<div id="t1i_3" class="t s5_3">Puccinia graminis</div>
+<div id="t1j_3" class="t s3_3">)</div>
+<div id="t1k_3" class="t s1_3">Geel/streeproes</div>
+<div id="t1l_3" class="t s3_3">(</div>
+<div id="t1m_3" class="t s5_3">Puccinia striiformis</div>
+<div id="t1n_3" class="t s3_3">)</div>
+<div id="t1o_3" class="t s1_3">Grond- en lugtoediening</div>
+<div id="t1p_3" class="t s3_3">400	-	500	m</div>
+<div id="t1q_3" class="t s4_3">l</div>
+<div id="t1r_3" class="t s3_3">/ha</div>
+<div id="t1s_3" class="t s1_3">OPMERKINGS:</div>
+<div id="t1t_3" class="t s1_3">Oogvlekbeheer:</div>
+<div id="t1u_3" class="t s3_3">•	</div>
+<div id="t1v_3" class="t s3_3">Dien	 toe	 gedurende	 die	 stamverlengingstadium	 tot	 die	</div>
+<div id="t1w_3" class="t s3_3">verskyning	van	die	2</div>
+<div id="t1x_3" class="t s2_3">de</div>
+<div id="t1y_3" class="t s3_3">node	(BBCH	29	-	32).		</div>
+<div id="t1z_3" class="t s3_3">•	</div>
+<div id="t20_3" class="t s3_3">Moet	nie	na	stadium	BBCH	32	toedien	nie.</div>
+<div id="t21_3" class="t s1_3">Vaalblaar, bruinaarsiekte, poeieragtige skimmel:</div>
+<div id="t22_3" class="t s3_3">•	</div>
+<div id="t23_3" class="t s3_3">Dien	 400	 m</div>
+<div id="t24_3" class="t s4_3">l</div>
+<div id="t25_3" class="t s3_3">/ha	 toe	 deur	 die	 3</div>
+<div id="t26_3" class="t s2_3">de</div>
+<div id="t27_3" class="t s3_3">blaar	 as	 aanwyser	 te	</div>
+<div id="t28_3" class="t s3_3">gebruik	voordat	meer	as	5	%	van	die	oppervlakte	van	hier-</div>
+<div id="t29_3" class="t s3_3">die	blaar	besmet	is.		</div>
+<div id="t2a_3" class="t s3_3">•	</div>
+<div id="t2b_3" class="t s3_3">Die	optimale	tyd	van	toediening	is	met	die	6-blaar	stadium	</div>
+<div id="t2c_3" class="t s3_3">(37	-	51	BBCH).	</div>
+<div id="t2d_3" class="t s3_3">•	</div>
+<div id="t2e_3" class="t s3_3">Waar	‘n	tweede	toediening	geregverdig	is,	word	400	m</div>
+<div id="t2f_3" class="t s4_3">l</div>
+<div id="t2g_3" class="t s3_3">/ha	</div>
+<div id="t2h_3" class="t s3_3">vir	grond-	en	lugtoedienings	aanbeveel,	gewoonlik	teen	die	</div>
+<div id="t2i_3" class="t s3_3">vlagblaarstadium</div>
+<div id="t2j_3" class="t s1_3">.</div>
+<div id="t2k_3" class="t s3_3">•	</div>
+<div id="t2l_3" class="t s3_3">Vir	‘n	enkele	toediening,	gebruik	die	hoër	dosis	van	500	m</div>
+<div id="t2m_3" class="t s4_3">l</div>
+<div id="t2n_3" class="t s3_3">/</div>
+<div id="t2o_3" class="t s3_3">ha	teen	vlagblaarstadium.</div>
+<div id="t2p_3" class="t s1_3">Blaarroes, stamroes, geel / streeproes:</div>
+<div id="t2q_3" class="t s3_3">•	</div>
+<div id="t2r_3" class="t s3_3">Dien	toe	wanneer	die	eerste	tekens	van	die	siekte	verskyn.	</div>
+<div id="t2s_3" class="t s3_3">In	die	geval	van	geel/streep/stamroes,	herhaal	na	3	weke	</div>
+<div id="t2t_3" class="t s3_3">indien	toestande	gunstig	bly	vir	siekte-ontwikkeling.</div>
+<div id="t2u_3" class="t s1_3">GEWAS / SIEKTE</div>
+<div id="t2v_3" class="t s1_3">DOSIS </div>
+<div id="t2w_3" class="t s1_3">GRAANSORGHUM </div>
+<div id="t2x_3" class="t s1_3">Noordelike Blaarskroei</div>
+<div id="t2y_3" class="t s3_3">(</div>
+<div id="t2z_3" class="t s5_3">Exserohilum turcicum</div>
+<div id="t30_3" class="t s3_3">)</div>
+<div id="t31_3" class="t s1_3">Roes</div>
+<div id="t32_3" class="t s3_3">(</div>
+<div id="t33_3" class="t s5_3">Puccinia spp.</div>
+<div id="t34_3" class="t s3_3">)</div>
+<div id="t35_3" class="t s1_3">Grond- en lugtoediening</div>
+<div id="t36_3" class="t s3_3">500		m</div>
+<div id="t37_3" class="t s4_3">l</div>
+<div id="t38_3" class="t s3_3">/ha</div>
+<div id="t39_3" class="t s1_3">OPMERKINGS:</div>
+<div id="t3a_3" class="t s3_3">•	</div>
+<div id="t3b_3" class="t s3_3">Dien	 voorkomend	 toe	 or	 met	 eerste	 tekens	 van	 siekte	</div>
+<div id="t3c_3" class="t s3_3">ontwikkeling	 en	 herhaal	 21	 dae	 later.	 Moet	 nie	 die	 spuit		</div>
+<div id="t3d_3" class="t s3_3">interval	verder	as	28	dae	verleng	nie.</div>
+<div id="t3e_3" class="t s3_3">•	</div>
+<div id="t3f_3" class="t s3_3">‘n	Silikoon-basis	bymiddel	of	benatter	kan	bygevoeg	word	</div>
+<div id="t3g_3" class="t s3_3">teen	die	aanbeveelde	dosis	om	produk	effektiwiteit	te	ver-</div>
+<div id="t3h_3" class="t s3_3">beter.</div>
+<div id="t3i_3" class="t s3_3">•	</div>
+<div id="t3j_3" class="t s3_3">Vir	seisoen	lange	beheer	van	blaarsiektes	is	dit	belangrik	dat	</div>
+<div id="t3k_3" class="t s3_3">‘n	spuitprogram	gebruik	word.</div>
+<div id="t3l_3" class="t s3_3">•	</div>
+<div id="t3m_3" class="t s3_3">Moenie	meer	as	twee	(2)	toedienings	van	</div>
+<div id="t3n_3" class="t s1_3">ARTEA</div>
+<div id="t3o_3" class="t s3_3">op	graan-</div>
+<div id="t3p_3" class="t s3_3">sorghum	maak	in	dieselfde	seisoen	nie.</div>
+<div id="t3q_3" class="t s1_3">Spuitvolumes:</div>
+<div id="t3r_3" class="t s3_3">•	</div>
+<div id="t3s_3" class="t s1_3">Trekkertoediening: </div>
+<div id="t3t_3" class="t s3_3">250	-	450	</div>
+<div id="t3u_3" class="t s4_3">l</div>
+<div id="t3v_3" class="t s3_3">water/ha</div>
+<div id="t3w_3" class="t s3_3">•	</div>
+<div id="t3x_3" class="t s1_3">Lugtoediening: </div>
+<div id="t3y_3" class="t s3_3">30	-	40	</div>
+<div id="t3z_3" class="t s4_3">l</div>
+<div id="t40_3" class="t s3_3">water/ha</div>
+<div id="t41_3" class="t s3_3">•	</div>
+<div id="t42_3" class="t s1_3">Rugsakspuittoediening: </div>
+<div id="t43_3" class="t s3_3">60	-	70	</div>
+<div id="t44_3" class="t s4_3">l</div>
+<div id="t45_3" class="t s3_3">water/ha</div>
+<div id="t46_3" class="t s1_3">7.2  GRAANSORGHUM</div>
+<div id="t47_3" class="t s1_3">7.3  HAWER</div>
+<div id="t48_3" class="t s1_3">7.4 </div>
+<div id="t49_3" class="t s1_3">MIELIES EN SUIKERMIELIES</div>
+<div id="t4a_3" class="t s1_3">GEWAS / SIEKTE</div>
+<div id="t4b_3" class="t s1_3">DOSIS</div>
+<div id="t4c_3" class="t s1_3">HAWER</div>
+<div id="t4d_3" class="t s1_3">Roes</div>
+<div id="t4e_3" class="t s3_3">(</div>
+<div id="t4f_3" class="t s5_3">Puccinia spp.</div>
+<div id="t4g_3" class="t s3_3">)</div>
+<div id="t4h_3" class="t s1_3">Poeieragtige meeldou</div>
+<div id="t4i_3" class="t s3_3">(</div>
+<div id="t4j_3" class="t s5_3">Erysiphe graminis</div>
+<div id="t4k_3" class="t s3_3">)</div>
+<div id="t4l_3" class="t s1_3">Grond- en lugtoediening</div>
+<div id="t4m_3" class="t s3_3">400	-	500	m</div>
+<div id="t4n_3" class="t s4_3">l</div>
+<div id="t4o_3" class="t s3_3">/ha</div>
+<div id="t4p_3" class="t s1_3">OPMERKINGS:</div>
+<div id="t4q_3" class="t s3_3">•	</div>
+<div id="t4r_3" class="t s3_3">Dien	 voorkomend	 toe	 of	 met	 eerste	 tekens	 van	 siekte	</div>
+<div id="t4s_3" class="t s3_3">ontwikkeling	 en	 herhaal	 21	 dae	 later.	 Moet	 nie	 die	 spuit-</div>
+<div id="t4t_3" class="t s3_3">interval	verder	as	28	dae	verleng	nie.</div>
+<div id="t4u_3" class="t s3_3">•	</div>
+<div id="t4v_3" class="t s3_3">Wanneer	weerstoestande	gunstig	is	vir	siekte	ontwikkeling	</div>
+<div id="t4w_3" class="t s3_3">(temperature	van	15	-	28°C	en	hoë	humiditeit),	gebruik	die	</div>
+<div id="t4x_3" class="t s3_3">korter	intervalle.</div>
+<div id="t4y_3" class="t s3_3">•	</div>
+<div id="t4z_3" class="t s3_3">Vir	seisoen	lange	beheer	van	blaarsiektes	is	dit	belangrik	dat	</div>
+<div id="t50_3" class="t s3_3">‘n	spuitprogram	gebruik	word.</div>
+<div id="t51_3" class="t s3_3">•	</div>
+<div id="t52_3" class="t s3_3">Gebruik	 ‘n	 geskikte	 watervolume	 om	 ‘n	 volbedekking	 te	</div>
+<div id="t53_3" class="t s3_3">verseker.</div>
+<div id="t54_3" class="t s3_3">•	</div>
+<div id="t55_3" class="t s3_3">Moenie	meer	as	twee	(2)	toedienings	van	</div>
+<div id="t56_3" class="t s1_3">ARTEA</div>
+<div id="t57_3" class="t s3_3">maak	in	</div>
+<div id="t58_3" class="t s3_3">dieselfde	seisoen	nie.</div>
+<div id="t59_3" class="t s1_3">Spuitvolumes:</div>
+<div id="t5a_3" class="t s3_3">•	</div>
+<div id="t5b_3" class="t s1_3">Trekkertoediening: </div>
+<div id="t5c_3" class="t s3_3">200	-	400</div>
+<div id="t5d_3" class="t s4_3">l</div>
+<div id="t5e_3" class="t s3_3">water/ha</div>
+<div id="t5f_3" class="t s3_3">•	</div>
+<div id="t5g_3" class="t s1_3">Lugtoediening: </div>
+<div id="t5h_3" class="t s3_3">Minimum</div>
+<div id="t5i_3" class="t s3_3">30	-</div>
+<div id="t5j_3" class="t s3_3">40</div>
+<div id="t5k_3" class="t s4_3">l</div>
+<div id="t5l_3" class="t s3_3">water/ha</div>
+<div id="t5m_3" class="t s1_3">GEWAS / SIEKTE</div>
+<div id="t5n_3" class="t s1_3">DOSIS </div>
+<div id="t5o_3" class="t s1_3">MIELIES </div>
+<div id="t5p_3" class="t s1_3">Noordelike blaarskroei</div>
+<div id="t5q_3" class="t s3_3">(</div>
+<div id="t5r_3" class="t s5_3">Exserohilum turcicum</div>
+<div id="t5s_3" class="t s3_3">)</div>
+<div id="t5t_3" class="t s1_3">Bruinroes</div>
+<div id="t5u_3" class="t s3_3">(</div>
+<div id="t5v_3" class="t s5_3">Puccinia sorghi</div>
+<div id="t5w_3" class="t s3_3">)</div>
+<div id="t5x_3" class="t s1_3">Grysblaarvlek</div>
+<div id="t5y_3" class="t s3_3">(</div>
+<div id="t5z_3" class="t s5_3">Cercospora zeae-maydis</div>
+<div id="t60_3" class="t s3_3">)</div>
+<div id="t61_3" class="t s1_3">Grond- en lugtoediening</div>
+<div id="t62_3" class="t s3_3">500		m</div>
+<div id="t63_3" class="t s4_3">l</div>
+<div id="t64_3" class="t s3_3">/ha</div>
+<div id="t65_3" class="t s1_3">SUIKERMIELIES </div>
+<div id="t66_3" class="t s1_3">Noordelike blaarskroei</div>
+<div id="t67_3" class="t s3_3">(</div>
+<div id="t68_3" class="t s5_3">Exserohilum turcicum</div>
+<div id="t69_3" class="t s3_3">)</div>
+<div id="t6a_3" class="t s1_3">Bruinroes</div>
+<div id="t6b_3" class="t s3_3">(</div>
+<div id="t6c_3" class="t s5_3">Puccinia sorghi</div>
+<div id="t6d_3" class="t s3_3">)</div>
+<div id="t6e_3" class="t s1_3">Grond- en lugtoediening</div>
+<div id="t6f_3" class="t s3_3">500		m</div>
+<div id="t6g_3" class="t s4_3">l</div>
+<div id="t6h_3" class="t s3_3">/ha</div>
+<div id="t6i_3" class="t s1_3">OPMERKINGS:</div>
+<div id="t6j_3" class="t s3_3">•	</div>
+<div id="t6k_3" class="t s3_3">Begin	 toedienings	</div>
+<div id="t6l_3" class="t s1_3">voordat</div>
+<div id="t6m_3" class="t s3_3">3%	 van	 die	 totale	 blaar-</div>
+<div id="t6n_3" class="t s3_3">oppervlakte	 siekte	 simptome	 vertoon	</div>
+<div id="t6o_3" class="t s1_3">OF</div>
+<div id="t6p_3" class="t s3_3">wanneer	 die	</div>
+<div id="t6q_3" class="t s3_3">siekte	simptome	teenwoordig	is	op	die	basale	3	-	5	blare.</div>
+<div id="t6r_3" class="t s3_3">•	</div>
+<div id="t6s_3" class="t s3_3">Verseker	 dat	 die	 toedienings	 suiwer	 voorkomend	 gedoen	</div>
+<div id="t6t_3" class="t s3_3">word	vir	effektiewe	siektebeheer.</div>
+<div id="t6u_3" class="t s3_3">•	</div>
+<div id="t6v_3" class="t s3_3">Toedienings	moet	elke	21	-	28	dae	gedoen	word.	Gebruik	</div>
+<div id="t6w_3" class="t s3_3">die	korter	interval	vir	die	hoë	siektedruk	situasies.</div>
+<div id="t6x_3" class="t s3_3">•	</div>
+<div id="t6y_3" class="t s3_3">Met	 kort	 seisoen	 kultivars	 behoort	 een	 bespuiting	 na	 die	</div>
+<div id="t6z_3" class="t s3_3">bestuiwing	genoeg	te	wees	om	die	siekte	te	beheer.	Indien	</div>
+<div id="t70_3" class="t s3_3">die	siekte	egter	voor	bestuiwing	voorkom	sal	meer	bespui-</div>
+<div id="t71_3" class="t s3_3">tings	waarskynlik	nodig	wees.</div>
+<div id="t72_3" class="t s3_3">•	</div>
+<div id="t73_3" class="t s3_3">Vir	verbeterde	beheer	kan	500	m</div>
+<div id="t74_3" class="t s4_3">l</div>
+<div id="t75_3" class="t s3_3">/ha	minerale	olie,	bv.	BP	</div>
+<div id="t76_3" class="t s3_3">Crop	Oil,	bygevoeg	word.</div>
+<div id="t77_3" class="t s3_3">•	</div>
+<div id="t78_3" class="t s3_3">Vir	 seisoen	 lange	 beheer	 van	 siektes	 moet	 ‘n	 volledige	</div>
+<div id="t79_3" class="t s3_3">spuitprogram	gebruik	word.</div>
+<div id="t7a_3" class="t s3_3">•	</div>
+<div id="t7b_3" class="t s3_3">Moet	 nie	 meer	 as	 twee	 (2)	 bespuitings	 van	</div>
+<div id="t7c_3" class="t s1_3">ARTEA </div>
+<div id="t7d_3" class="t s3_3">in	</div>
+<div id="t7e_3" class="t s3_3">mielies	of	suikermielies	in	die	selfde	groeiseisoen	toedien	</div>
+<div id="t7f_3" class="t s3_3">nie.</div>
+<div id="t7g_3" class="t s1_3">Spuitvolumes:</div>
+<div id="t7h_3" class="t s3_3">•	</div>
+<div id="t7i_3" class="t s1_3">Trekkertoediening: </div>
+<div id="t7j_3" class="t s3_3">250	-	450	</div>
+<div id="t7k_3" class="t s4_3">l</div>
+<div id="t7l_3" class="t s3_3">water/ha</div>
+<div id="t7m_3" class="t s3_3">•	</div>
+<div id="t7n_3" class="t s1_3">Hoë-balk trekkertoediening: </div>
+<div id="t7o_3" class="t s3_3">150	-	300	</div>
+<div id="t7p_3" class="t s4_3">l</div>
+<div id="t7q_3" class="t s3_3">water/ha</div>
+<div id="t7r_3" class="t s3_3">•	</div>
+<div id="t7s_3" class="t s1_3">Lugtoediening: </div>
+<div id="t7t_3" class="t s3_3">30	-	40	</div>
+<div id="t7u_3" class="t s4_3">l</div>
+<div id="t7v_3" class="t s3_3">water/ha</div>
+<div id="t7w_3" class="t s3_3">•	</div>
+<div id="t7x_3" class="t s1_3">Rugsakspuittoedienings: </div>
+<div id="t7y_3" class="t s3_3">60	-	70	</div>
+<div id="t7z_3" class="t s4_3">l</div>
+<div id="t80_3" class="t s3_3">water/ha</div>
+
 <!-- End text definitions -->
 
 <!-- Begin page background -->
-<div id="pg3Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0);"></div>
+<div id="pg3Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
 <div id="pg3"><img src="3/3.png" id="pdf3" style="width:909px; height:1286px; background-color:white;"/></div>
 
 <!-- End page background -->
 
 <!-- Begin page loading JS -->
 <script type="text/javascript">
-var f3 = [['t3_3',58],['t6_3',1278],['t7_3',1278],['t8_3',1027],['ta_3',1278],['tb_3',1277],['tc_3',776],['te_3',1278],['tf_3',485],['ti_3',1097],['tj_3',1235],['tl_3',1278],['tm_3',874],['to_3',1278],['tp_3',450],['tr_3',896],['tt_3',178],['tu_3',753],['tx_3',615],['t10_3',519],['t11_3',124],['t12_3',681],['t13_3',1245],['t16_3',224],['t1j_3',307],['t1k_3',935],['t1m_3',784],['t1n_3',886],['t1o_3',400],['t1r_3',317],['t1s_3',503],['t1w_3',137],['t21_3',386],['t23_3',666],['t24_3',713],['t26_3',432],['t27_3',1081],['t29_3',1280],['t2a_3',1280],['t2b_3',1280],['t2e_3',1280],['t2f_3',958],['t2h_3',1280],['t2i_3',1280],['t2j_3',1280],['t2k_3',628],['t2m_3',723],['t2o_3',536],['t2p_3',543],['t2r_3',1280],['t2s_3',485],['t2v_3',1079],['t2w_3',1251],['t2y_3',895],['t30_3',192],['t31_3',1126],['t35_3',211],['t3a_3',211],['t3f_3',156],['t3k_3',156],['t3n_3',426],['t3q_3',1329],['t3r_3',852],['t3s_3',440],['t3t_3',463],['t3v_3',249],['t3x_3',386],['t3z_3',628],['t40_3',1329],['t41_3',221],['t42_3',1072],['t43_3',1329],['t44_3',396],['t46_3',911],['t47_3',779],['t48_3',1240],['t4b_3',474],['t4d_3',1329],['t4e_3',1329],['t4f_3',943],['t4k_3',471],['t4o_3',334],['t4s_3',541],['t4x_3',471],['t51_3',334],['t5h_3',329],['t5j_3',420],['t5l_3',410],['t5n_3',430],['t5p_3',409],['t5r_3',437],['t5u_3',266],['t60_3',556],['t62_3',426],['t64_3',363],['t66_3',410],['t69_3',266],['t6d_3',1332],['t6e_3',137],['t6g_3',1174],['t6h_3',1332],['t6i_3',135],['t6k_3',1175],['t6l_3',1332],['t6m_3',409],['t6n_3',1243],['t6q_3',474]];
+var isIE = false;
+var f3 = [['tw_3',569],['t12_3',303],['t16_3',395],['t18_3',507],['t1a_3',385],['t1e_3',405],['t1i_3',384],['t1m_3',412],['t1o_3',569],['t1v_3',1256],['t21_3',1127],['t23_3',269],['t25_3',426],['t27_3',485],['t2p_3',913],['t2u_3',402],['t2x_3',535],['t2z_3',471],['t33_3',295],['t35_3',569],['t3b_3',1256],['t3c_3',1265],['t46_3',555],['t47_3',304],['t49_3',677],['t4a_3',402],['t4f_3',295],['t4h_3',512],['t4j_3',385],['t4l_3',569],['t4r_3',1259],['t4s_3',1246],['t52_3',1259],['t5m_3',402],['t5p_3',530],['t5r_3',471],['t5v_3',334],['t5z_3',541],['t61_3',569],['t66_3',530],['t68_3',471],['t6c_3',334],['t6e_3',569],['t6k_3',417],['t6m_3',590],['t6n_3',849],['t6p_3',289],['t6s_3',1259],['t6y_3',1259],['t78_3',1259],['t7b_3',1006],['t7n_3',654]];
 var c3 = 0;
 function fontAdjustments3(){;
 	if (c3<f3.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
 		adjustWordSpacing(f3[c3][0],f3[c3][1]);
 		c3++;
 		if (c3%10 == 0) {
@@ -1267,6 +1184,16 @@ function load3(){
 	setTimeout(fontAdjustments3,timeout);
 }
 </script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 289;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_3");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
 <!-- End page loading JS -->
 
 </div>
@@ -1278,7 +1205,7 @@ function load3(){
 </a>
 </div>
 <script type="text/javascript">
-	makeNavBar(3,3,909,1286,0);
+	makeNavBar(4,3,909,1286,0);
 </script>
 </body>
 </html>

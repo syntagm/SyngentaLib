@@ -1,0 +1,1152 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>TOUCHDOWN_Forte_HITECH___afr_2011_06_27 Page2</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" />
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" />
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); z-index:-2;"></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load2();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_2{left:66px;top:69px;}
+#t2_2{left:88px;top:69px;}
+#t3_2{left:88px;top:83px;}
+#t4_2{left:66px;top:98px;}
+#t5_2{left:66px;top:112px;}
+#t6_2{left:88px;top:112px;}
+#t7_2{left:88px;top:127px;}
+#t8_2{left:88px;top:141px;}
+#t9_2{left:88px;top:156px;}
+#ta_2{left:66px;top:170px;}
+#tb_2{left:88px;top:170px;}
+#tc_2{left:88px;top:185px;}
+#td_2{left:66px;top:206px;}
+#te_2{left:176px;top:206px;}
+#tf_2{left:286px;top:206px;}
+#tg_2{left:297px;top:206px;}
+#th_2{left:390px;top:206px;}
+#ti_2{left:66px;top:220px;}
+#tj_2{left:187px;top:220px;}
+#tk_2{left:66px;top:235px;}
+#tl_2{left:66px;top:249px;}
+#tm_2{left:290px;top:249px;}
+#tn_2{left:66px;top:264px;}
+#to_2{left:123px;top:264px;}
+#tp_2{left:66px;top:278px;}
+#tq_2{left:66px;top:293px;}
+#tr_2{left:66px;top:307px;}
+#ts_2{left:66px;top:322px;}
+#tt_2{left:338px;top:322px;}
+#tu_2{left:66px;top:336px;}
+#tv_2{left:238px;top:336px;}
+#tw_2{left:66px;top:357px;}
+#tx_2{left:66px;top:372px;}
+#ty_2{left:66px;top:386px;}
+#tz_2{left:66px;top:401px;}
+#t10_2{left:66px;top:415px;}
+#t11_2{left:197px;top:415px;}
+#t12_2{left:269px;top:415px;}
+#t13_2{left:66px;top:430px;}
+#t14_2{left:114px;top:430px;}
+#t15_2{left:287px;top:430px;}
+#t16_2{left:66px;top:444px;}
+#t17_2{left:66px;top:465px;}
+#t18_2{left:88px;top:465px;}
+#t19_2{left:135px;top:465px;}
+#t1a_2{left:313px;top:465px;}
+#t1b_2{left:88px;top:480px;}
+#t1c_2{left:88px;top:494px;}
+#t1d_2{left:66px;top:509px;}
+#t1e_2{left:88px;top:509px;}
+#t1f_2{left:88px;top:524px;}
+#t1g_2{left:66px;top:538px;}
+#t1h_2{left:88px;top:538px;}
+#t1i_2{left:258px;top:538px;}
+#t1j_2{left:88px;top:553px;}
+#t1k_2{left:88px;top:567px;}
+#t1l_2{left:88px;top:582px;}
+#t1m_2{left:66px;top:596px;}
+#t1n_2{left:88px;top:596px;}
+#t1o_2{left:88px;top:611px;}
+#t1p_2{left:88px;top:625px;}
+#t1q_2{left:66px;top:640px;}
+#t1r_2{left:88px;top:640px;}
+#t1s_2{left:261px;top:640px;}
+#t1t_2{left:88px;top:654px;}
+#t1u_2{left:88px;top:669px;}
+#t1v_2{left:105px;top:669px;}
+#t1w_2{left:105px;top:683px;}
+#t1x_2{left:174px;top:683px;}
+#t1y_2{left:88px;top:698px;}
+#t1z_2{left:105px;top:698px;}
+#t20_2{left:105px;top:712px;}
+#t21_2{left:66px;top:733px;}
+#t22_2{left:66px;top:748px;}
+#t23_2{left:327px;top:748px;}
+#t24_2{left:66px;top:762px;}
+#t25_2{left:66px;top:777px;}
+#t26_2{left:66px;top:800px;}
+#t27_2{left:228px;top:800px;}
+#t28_2{left:66px;top:823px;}
+#t29_2{left:88px;top:823px;}
+#t2a_2{left:133px;top:823px;}
+#t2b_2{left:304px;top:823px;}
+#t2c_2{left:88px;top:838px;}
+#t2d_2{left:88px;top:852px;}
+#t2e_2{left:88px;top:867px;}
+#t2f_2{left:290px;top:867px;}
+#t2g_2{left:88px;top:881px;}
+#t2h_2{left:141px;top:881px;}
+#t2i_2{left:88px;top:896px;}
+#t2j_2{left:88px;top:910px;}
+#t2k_2{left:88px;top:925px;}
+#t2l_2{left:88px;top:939px;}
+#t2m_2{left:88px;top:954px;}
+#t2n_2{left:88px;top:968px;}
+#t2o_2{left:150px;top:968px;}
+#t2p_2{left:320px;top:968px;}
+#t2q_2{left:88px;top:983px;}
+#t2r_2{left:66px;top:997px;}
+#t2s_2{left:88px;top:997px;}
+#t2t_2{left:88px;top:1012px;}
+#t2u_2{left:66px;top:1026px;}
+#t2v_2{left:88px;top:1026px;}
+#t2w_2{left:88px;top:1041px;}
+#t2x_2{left:66px;top:1055px;}
+#t2y_2{left:88px;top:1055px;}
+#t2z_2{left:88px;top:1070px;}
+#t30_2{left:66px;top:1084px;}
+#t31_2{left:88px;top:1084px;}
+#t32_2{left:88px;top:1099px;}
+#t33_2{left:66px;top:1113px;}
+#t34_2{left:88px;top:1113px;}
+#t35_2{left:141px;top:1113px;}
+#t36_2{left:320px;top:1113px;}
+#t37_2{left:88px;top:1128px;}
+#t38_2{left:88px;top:1142px;}
+#t39_2{left:88px;top:1157px;}
+#t3a_2{left:88px;top:1171px;}
+#t3b_2{left:66px;top:1186px;}
+#t3c_2{left:88px;top:1186px;}
+#t3d_2{left:275px;top:1186px;}
+#t3e_2{left:88px;top:1200px;}
+#t3f_2{left:88px;top:1215px;}
+#t3g_2{left:88px;top:1229px;}
+#t3h_2{left:478px;top:69px;}
+#t3i_2{left:478px;top:83px;}
+#t3j_2{left:478px;top:98px;}
+#t3k_2{left:478px;top:112px;}
+#t3l_2{left:456px;top:127px;}
+#t3m_2{left:478px;top:127px;}
+#t3n_2{left:478px;top:141px;}
+#t3o_2{left:456px;top:156px;}
+#t3p_2{left:478px;top:156px;}
+#t3q_2{left:658px;top:156px;}
+#t3r_2{left:478px;top:170px;}
+#t3s_2{left:478px;top:185px;}
+#t3t_2{left:478px;top:199px;}
+#t3u_2{left:536px;top:199px;}
+#t3v_2{left:717px;top:199px;}
+#t3w_2{left:478px;top:214px;}
+#t3x_2{left:478px;top:228px;}
+#t3y_2{left:478px;top:243px;}
+#t3z_2{left:456px;top:257px;}
+#t40_2{left:478px;top:257px;}
+#t41_2{left:478px;top:272px;}
+#t42_2{left:559px;top:272px;}
+#t43_2{left:731px;top:272px;}
+#t44_2{left:456px;top:286px;}
+#t45_2{left:478px;top:286px;}
+#t46_2{left:528px;top:286px;}
+#t47_2{left:701px;top:286px;}
+#t48_2{left:478px;top:301px;}
+#t49_2{left:631px;top:301px;}
+#t4a_2{left:478px;top:315px;}
+#t4b_2{left:456px;top:330px;}
+#t4c_2{left:478px;top:330px;}
+#t4d_2{left:526px;top:330px;}
+#t4e_2{left:695px;top:330px;}
+#t4f_2{left:478px;top:344px;}
+#t4g_2{left:478px;top:359px;}
+#t4h_2{left:456px;top:373px;}
+#t4i_2{left:478px;top:373px;}
+#t4j_2{left:528px;top:373px;}
+#t4k_2{left:701px;top:373px;}
+#t4l_2{left:478px;top:388px;}
+#t4m_2{left:478px;top:402px;}
+#t4n_2{left:456px;top:417px;}
+#t4o_2{left:478px;top:417px;}
+#t4p_2{left:478px;top:431px;}
+#t4q_2{left:561px;top:431px;}
+#t4r_2{left:738px;top:431px;}
+#t4s_2{left:478px;top:446px;}
+#t4t_2{left:478px;top:460px;}
+#t4u_2{left:678px;top:460px;}
+#t4v_2{left:478px;top:475px;}
+#t4w_2{left:528px;top:475px;}
+#t4x_2{left:478px;top:490px;}
+#t4y_2{left:478px;top:504px;}
+#t4z_2{left:478px;top:519px;}
+#t50_2{left:716px;top:519px;}
+#t51_2{left:478px;top:533px;}
+#t52_2{left:559px;top:533px;}
+#t53_2{left:456px;top:548px;}
+#t54_2{left:478px;top:548px;}
+#t55_2{left:655px;top:548px;}
+#t56_2{left:478px;top:562px;}
+#t57_2{left:478px;top:577px;}
+#t58_2{left:478px;top:591px;}
+#t59_2{left:679px;top:591px;}
+#t5a_2{left:478px;top:606px;}
+#t5b_2{left:528px;top:606px;}
+#t5c_2{left:456px;top:620px;}
+#t5d_2{left:478px;top:620px;}
+#t5e_2{left:655px;top:620px;}
+#t5f_2{left:478px;top:635px;}
+#t5g_2{left:456px;top:649px;}
+#t5h_2{left:478px;top:649px;}
+#t5i_2{left:478px;top:664px;}
+#t5j_2{left:478px;top:678px;}
+#t5k_2{left:478px;top:693px;}
+#t5l_2{left:478px;top:707px;}
+#t5m_2{left:495px;top:707px;}
+#t5n_2{left:688px;top:707px;}
+#t5o_2{left:495px;top:722px;}
+#t5p_2{left:478px;top:736px;}
+#t5q_2{left:495px;top:736px;}
+#t5r_2{left:495px;top:751px;}
+#t5s_2{left:566px;top:751px;}
+#t5t_2{left:761px;top:751px;}
+#t5u_2{left:787px;top:751px;}
+#t5v_2{left:495px;top:765px;}
+#t5w_2{left:478px;top:780px;}
+#t5x_2{left:495px;top:780px;}
+#t5y_2{left:495px;top:794px;}
+#t5z_2{left:671px;top:794px;}
+#t60_2{left:740px;top:794px;}
+#t61_2{left:759px;top:794px;}
+#t62_2{left:495px;top:809px;}
+#t63_2{left:561px;top:809px;}
+#t64_2{left:478px;top:823px;}
+#t65_2{left:495px;top:823px;}
+#t66_2{left:743px;top:823px;}
+#t67_2{left:495px;top:838px;}
+#t68_2{left:478px;top:852px;}
+#t69_2{left:654px;top:852px;}
+#t6a_2{left:703px;top:852px;}
+#t6b_2{left:478px;top:867px;}
+#t6c_2{left:495px;top:867px;}
+#t6d_2{left:495px;top:881px;}
+#t6e_2{left:516px;top:881px;}
+#t6f_2{left:634px;top:881px;}
+#t6g_2{left:495px;top:896px;}
+#t6h_2{left:478px;top:910px;}
+#t6i_2{left:495px;top:910px;}
+#t6j_2{left:456px;top:934px;}
+#t6k_2{left:456px;top:955px;}
+#t6l_2{left:478px;top:955px;}
+#t6m_2{left:655px;top:955px;}
+#t6n_2{left:478px;top:969px;}
+#t6o_2{left:478px;top:984px;}
+#t6p_2{left:478px;top:998px;}
+#t6q_2{left:478px;top:1013px;}
+#t6r_2{left:478px;top:1027px;}
+#t6s_2{left:456px;top:1042px;}
+#t6t_2{left:478px;top:1042px;}
+#t6u_2{left:478px;top:1056px;}
+#t6v_2{left:495px;top:1056px;}
+#t6w_2{left:495px;top:1071px;}
+#t6x_2{left:716px;top:1071px;}
+#t6y_2{left:495px;top:1085px;}
+#t6z_2{left:581px;top:1085px;}
+#t70_2{left:495px;top:1100px;}
+#t71_2{left:495px;top:1114px;}
+#t72_2{left:495px;top:1129px;}
+#t73_2{left:478px;top:1143px;}
+#t74_2{left:495px;top:1143px;}
+#t75_2{left:667px;top:1143px;}
+#t76_2{left:495px;top:1158px;}
+#t77_2{left:495px;top:1172px;}
+#t78_2{left:555px;top:1172px;}
+#t79_2{left:495px;top:1187px;}
+#t7a_2{left:495px;top:1201px;}
+#t7b_2{left:456px;top:1216px;}
+#t7c_2{left:478px;top:1216px;}
+#t7d_2{left:456px;top:1230px;}
+#t7e_2{left:478px;top:1230px;}
+#t7f_2{left:667px;top:1230px;}
+#t7g_2{left:340px;top:41px;}
+#t7h_2{left:512px;top:41px;}
+
+.s1_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: HWOZYT-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+.s3_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOETKV-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s2_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOETKV-HelveticaNeueLTStd-It2;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: GOETKV-HelveticaNeueLTStd-Bd2;
+	src: url("02/fonts/GOETKV-HelveticaNeueLTStd-Bd.eot");
+	src: url("02/fonts/GOETKV-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("02/fonts/GOETKV-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: GOETKV-HelveticaNeueLTStd-It2;
+	src: url("02/fonts/GOETKV-HelveticaNeueLTStd-It.eot");
+	src: url("02/fonts/GOETKV-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("02/fonts/GOETKV-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: HWOZYT-HelveticaNeueLTStd-Lt2;
+	src: url("02/fonts/HWOZYT-HelveticaNeueLTStd-Lt.eot");
+	src: url("02/fonts/HWOZYT-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("02/fonts/HWOZYT-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_2" class="t s1_2">4. </div>
+<div id="t2_2" class="t s1_2">Alle bewerkings moet gedoen word om die blom en saad-</div>
+<div id="t3_2" class="t s1_2">vor ming van onkruide te verhoed</div>
+<div id="t4_2" class="t s1_2">5. Onkruiddoderrekords moet gehou word vir elke land</div>
+<div id="t5_2" class="t s1_2">6. </div>
+<div id="t6_2" class="t s1_2">Die vervoer/beweging van weerstandbiedende onkruid sade </div>
+<div id="t7_2" class="t s1_2">of vegetatiewe materiaal na ander lande verhoed word deur </div>
+<div id="t8_2" class="t s1_2">implemente en stropers skoon te maak voor gebruik van een </div>
+<div id="t9_2" class="t s1_2">land na ‘n ander en deur skoon saad te plant.</div>
+<div id="ta_2" class="t s1_2">7. </div>
+<div id="tb_2" class="t s1_2">Elke land jaarliks inspekteer word om weerstandbiedendheid </div>
+<div id="tc_2" class="t s1_2">vroegtydig te identifiseer.</div>
+<div id="td_2" class="t s1_2">Populasies van of </div>
+<div id="te_2" class="t s2_2">Conyza bonariensis</div>
+<div id="tf_2" class="t s1_2">, </div>
+<div id="tg_2" class="t s2_2">Lolium rigidum</div>
+<div id="th_2" class="t s1_2">and </div>
+<div id="ti_2" class="t s2_2">Plantago lanceolata</div>
+<div id="tj_2" class="t s1_2">is reeds geïdentifiseer en gerapporteer </div>
+<div id="tk_2" class="t s1_2">met bevestigde weerstand teen glifosate. Vermy ten alle koste </div>
+<div id="tl_2" class="t s1_2">die bespuiting van sulke populasies met</div>
+<div id="tm_2" class="t s3_2">TOUCHDOWN Forte </div>
+<div id="tn_2" class="t s3_2">HITECH. </div>
+<div id="to_2" class="t s1_2">Van hierdie populasies mag ook weerstandbiedend </div>
+<div id="tp_2" class="t s1_2">teen produkte soos parakwat en dikwat wees. Sekere van hierdie </div>
+<div id="tq_2" class="t s1_2">populasies mag ook weerstandbiedend wees teen onkruiddoders </div>
+<div id="tr_2" class="t s1_2">van die arieloksiefenoksie propionaat groep, sikloheksaandioon </div>
+<div id="ts_2" class="t s1_2">groep en sulfonielureum groepe en weerstand teen </div>
+<div id="tt_2" class="t s1_2">glifosaat soos </div>
+<div id="tu_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="tv_2" class="t s1_2">mag ondervind word. </div>
+<div id="tw_2" class="t s1_2">Aangesien die grootte en omvang van hierdie weerstandbiedende </div>
+<div id="tx_2" class="t s1_2">populasies moeilik is om te bepaal, is dit noodsaaklik, dat lande </div>
+<div id="ty_2" class="t s1_2">jaarliks ondersoek moet word om moontlike weerstand vroeg </div>
+<div id="tz_2" class="t s1_2">te identifiseer. Indien bostaande noodmaatreëls nie nougeset </div>
+<div id="t10_2" class="t s1_2">nagekom word nie kan </div>
+<div id="t11_2" class="t s3_2">SYNGENTA</div>
+<div id="t12_2" class="t s1_2">nie verantwoordelik gehou </div>
+<div id="t13_2" class="t s1_2">word as </div>
+<div id="t14_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t15_2" class="t s1_2">nie weerstandbiedende </div>
+<div id="t16_2" class="t s1_2">onkruide beheer nie.</div>
+<div id="t17_2" class="t s1_2">1. </div>
+<div id="t18_2" class="t s1_2">Gebruik </div>
+<div id="t19_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t1a_2" class="t s1_2">as ‘n deel van ‘n </div>
+<div id="t1b_2" class="t s1_2">geïntegreerde gewas en weerstandbiedendheids bestuur-</div>
+<div id="t1c_2" class="t s1_2">sprogram om onkruid weerstandbiedendheid te voorkom.</div>
+<div id="t1d_2" class="t s1_2">2. </div>
+<div id="t1e_2" class="t s1_2">Hierdie weerstandbiedendheids bestuursprogram moet onk-</div>
+<div id="t1f_2" class="t s1_2">ruiddoders van verskillende werkingswyses insluit.</div>
+<div id="t1g_2" class="t s1_2">3.</div>
+<div id="t1h_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t1i_2" class="t s1_2">moenie meer as drie keer per </div>
+<div id="t1j_2" class="t s1_2">jaar per land gebruik word nie. Indien dit nodig is om plante </div>
+<div id="t1k_2" class="t s1_2">wat nie beheer is nie te spuit, gebruik onkruiddoders van ‘n </div>
+<div id="t1l_2" class="t s1_2">ander chemiese klas. </div>
+<div id="t1m_2" class="t s1_2">4. </div>
+<div id="t1n_2" class="t s1_2">Om weerstandbiedende of moontlike weerstandbiedende </div>
+<div id="t1o_2" class="t s1_2">onkruide te beheer en te elimineer moet die strategie wees </div>
+<div id="t1p_2" class="t s1_2">om plante nie toe te laat om saad te stort nie.</div>
+<div id="t1q_2" class="t s1_2">5. </div>
+<div id="t1r_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t1s_2" class="t s1_2">moet gebruik word om gras </div>
+<div id="t1t_2" class="t s1_2">populasies te bestuur sodat :</div>
+<div id="t1u_2" class="t s1_2">a) </div>
+<div id="t1v_2" class="t s1_2">weerstandbiedendheid teen verskillende produkte van </div>
+<div id="t1w_2" class="t s1_2">verskillende </div>
+<div id="t1x_2" class="t s1_2">chemiese groepe te verhoed of te vertraag.</div>
+<div id="t1y_2" class="t s1_2">b) </div>
+<div id="t1z_2" class="t s1_2">verskillende grade van weerstandbiedendheid teenoor ver-</div>
+<div id="t20_2" class="t s1_2">skillende produkte of klasse van produkte beheer kan word. </div>
+<div id="t21_2" class="t s1_2">‘n Plaaslike plaasstrategie vir die voorkoming en bestuur van </div>
+<div id="t22_2" class="t s1_2">weerstandbiedendheid moet ontwikkel word. </div>
+<div id="t23_2" class="t s3_2">Vir spesifieke </div>
+<div id="t24_2" class="t s3_2">inligting oor weerstandsbestuur kontak die registrasie-</div>
+<div id="t25_2" class="t s3_2">houer van hierdie produk.</div>
+<div id="t26_2" class="t s3_2">GEBRUIKSAANWYSINGS: </div>
+<div id="t27_2" class="t s1_2">gebruik slegs soos aangedui.</div>
+<div id="t28_2" class="t s1_2">1. </div>
+<div id="t29_2" class="t s1_2">Gebruik </div>
+<div id="t2a_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t2b_2" class="t s1_2">slegs op aktiefgroei-</div>
+<div id="t2c_2" class="t s1_2">ende plante wat nie rustend of onder temperatuurstremming, </div>
+<div id="t2d_2" class="t s1_2">vogstremming of enige ander stremming verkeer nie. Reën </div>
+<div id="t2e_2" class="t s1_2">of besproeiïng ‘n paar dae voor ‘n </div>
+<div id="t2f_2" class="t s3_2">TOUCHDOWN Forte </div>
+<div id="t2g_2" class="t s3_2">HITECH </div>
+<div id="t2h_2" class="t s1_2">bespuiting, verseker dat die onkruid aktief groei </div>
+<div id="t2i_2" class="t s1_2">en dat onkruidbeheer optimaal is. Onkruide wat gedurende </div>
+<div id="t2j_2" class="t s1_2">stremmings toestande groei mag klein vertoon maar het </div>
+<div id="t2k_2" class="t s1_2">waarskynlik hul biologiese groei fase voltooi en moet soos </div>
+<div id="t2l_2" class="t s1_2">volwasse plante hanteer word wanneer dosisse bepaal word. </div>
+<div id="t2m_2" class="t s1_2">Dieselfde geld vir plante wat afgewei, gesny, gebrand of selfs </div>
+<div id="t2n_2" class="t s1_2">‘n keer met </div>
+<div id="t2o_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t2p_2" class="t s1_2">of ander onkruid-</div>
+<div id="t2q_2" class="t s1_2">doders gespuit is. </div>
+<div id="t2r_2" class="t s1_2">2. </div>
+<div id="t2s_2" class="t s1_2">Gebruik slegs skoon water met geen gesuspendeerde grond </div>
+<div id="t2t_2" class="t s1_2">deeltjies in die spuitmengsel.</div>
+<div id="t2u_2" class="t s1_2">3. </div>
+<div id="t2v_2" class="t s1_2">Maak altyd seker dat spuitapparaat skoon, vry van afsak sels, </div>
+<div id="t2w_2" class="t s1_2">roes en stof is en korrek gekalibreer is voordat gespuit word.</div>
+<div id="t2x_2" class="t s1_2">4. </div>
+<div id="t2y_2" class="t s1_2">Gebruik lae spuitdruk (100 - 200 kPa) en korrekte spuitpunte </div>
+<div id="t2z_2" class="t s1_2">om spuitnewel te voorkom.</div>
+<div id="t30_2" class="t s1_2">5. </div>
+<div id="t31_2" class="t s1_2">Verseker eweredige bedekking van alle onkruide onder </div>
+<div id="t32_2" class="t s1_2">bespui ting en bespuit tot net voor die punt van afloop.</div>
+<div id="t33_2" class="t s1_2">6. </div>
+<div id="t34_2" class="t s1_2">Wanneer </div>
+<div id="t35_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t36_2" class="t s1_2">gebruik word vir </div>
+<div id="t37_2" class="t s1_2">chemiese land voorbereiding voor die uitplant van saailinge </div>
+<div id="t38_2" class="t s1_2">soos tamaties, tabak of enige gewas waarvan die stammetjies </div>
+<div id="t39_2" class="t s1_2">groen en sag is, moet ‘n minimum periode van 14 dae verloop </div>
+<div id="t3a_2" class="t s1_2">tussen bespuiting en uitplant van saailinge.</div>
+<div id="t3b_2" class="t s1_2">7. </div>
+<div id="t3c_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t3d_2" class="t s1_2">word geabsorbeer deur </div>
+<div id="t3e_2" class="t s1_2">onvolwasse bas en die blare van meeste plante en bome. </div>
+<div id="t3f_2" class="t s1_2">Kontak met dele wat nie volwasse bas op die hoofstam het </div>
+<div id="t3g_2" class="t s1_2">nie, soos bome jonger as drie jaar kan ernstige gelokaliseerde </div>
+<div id="t3h_2" class="t s1_2">en getranslokeerde skade veroorsaak. Daarom moet kontak </div>
+<div id="t3i_2" class="t s1_2">met blare, groen of onvolwasse bas en vrugte deur direkte </div>
+<div id="t3j_2" class="t s1_2">kontak of spuitnewel vermy word. Maak altyd seker dat slegs </div>
+<div id="t3k_2" class="t s1_2">ongewenste plante bespuit word.</div>
+<div id="t3l_2" class="t s1_2">8. </div>
+<div id="t3m_2" class="t s1_2">Moet nie toedien in gesnoeide wingerde en vrugtebome voor-</div>
+<div id="t3n_2" class="t s1_2">dat die snoeiwonde behoorlik geseël het nie. </div>
+<div id="t3o_2" class="t s1_2">9. </div>
+<div id="t3p_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t3q_2" class="t s1_2">is ‘n nie-selektiewe siste-</div>
+<div id="t3r_2" class="t s1_2">miese onkruiddoder wat slegs aktief is indien dit op die blare </div>
+<div id="t3s_2" class="t s1_2">en groen bas van plantegroei toegedien word. Die sigbare </div>
+<div id="t3t_2" class="t s1_2">effek van </div>
+<div id="t3u_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t3v_2" class="t s1_2">op behandelde </div>
+<div id="t3w_2" class="t s1_2">plantegroei is gewoonlik 7 - 10 dae na behandeling sigbaar </div>
+<div id="t3x_2" class="t s1_2">maar kan wissel afhangende van bv. weerstoestande, groei-</div>
+<div id="t3y_2" class="t s1_2">kragtigheid van die teiken onkruid, die toedienings tyd, ens. </div>
+<div id="t3z_2" class="t s1_2">10. </div>
+<div id="t40_2" class="t s1_2">Reën of besproeiing binne 3 uur na behandeling kan die doel-</div>
+<div id="t41_2" class="t s1_2">treffenheid van </div>
+<div id="t42_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t43_2" class="t s1_2">verminder. </div>
+<div id="t44_2" class="t s1_2">11. </div>
+<div id="t45_2" class="t s1_2">Moet nie </div>
+<div id="t46_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t47_2" class="t s1_2">toedien op stofbe-</div>
+<div id="t48_2" class="t s1_2">dekte onkruidblare nie. Dien </div>
+<div id="t49_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t4a_2" class="t s1_2">in hierdie geval slegs toe nadat stof deur reën afgewas is. </div>
+<div id="t4b_2" class="t s1_2">12. </div>
+<div id="t4c_2" class="t s1_2">Moet nie</div>
+<div id="t4d_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t4e_2" class="t s1_2">toedien op onkruide </div>
+<div id="t4f_2" class="t s1_2">wat nat gedou of gereën, dormant of onder stremming ver-</div>
+<div id="t4g_2" class="t s1_2">keer bv. vog, hitte of koue stremming is nie.</div>
+<div id="t4h_2" class="t s1_2">13. </div>
+<div id="t4i_2" class="t s1_2">Moet nie </div>
+<div id="t4j_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t4k_2" class="t s1_2">toedien in dien die </div>
+<div id="t4l_2" class="t s1_2">atmosferiese toestande ongunstig is nie bv. as die humiditeit </div>
+<div id="t4m_2" class="t s1_2">laer as 40% is of die wind meer as 10 km/uur waai nie. </div>
+<div id="t4n_2" class="t s1_2">14. </div>
+<div id="t4o_2" class="t s1_2">Ander plaagbeheermiddels wat op bome toegedien word en </div>
+<div id="t4p_2" class="t s1_2">dan afloop op </div>
+<div id="t4q_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t4r_2" class="t s1_2">behandelde </div>
+<div id="t4s_2" class="t s1_2">onkruide binne 12 uur na toediening, kan die werking van die </div>
+<div id="t4t_2" class="t s1_2">onkruiddoder benadeel. Aangesien </div>
+<div id="t4u_2" class="t s3_2">TOUCHDOWN Forte </div>
+<div id="t4v_2" class="t s3_2">HITECH</div>
+<div id="t4w_2" class="t s1_2">geen vooropkoms-aktiwiteit op onkruide het nie, sal </div>
+<div id="t4x_2" class="t s1_2">herhaalde toedienings nodig wees (wanneer alleen toegedien) </div>
+<div id="t4y_2" class="t s1_2">om seisoenlange beheer te verseker. Verseker dat teiken-</div>
+<div id="t4z_2" class="t s1_2">on kruide volledig blootgestel word aan die </div>
+<div id="t50_2" class="t s3_2">TOUCHDOWN </div>
+<div id="t51_2" class="t s3_2">Forte HITECH</div>
+<div id="t52_2" class="t s1_2">-bespuiting.</div>
+<div id="t53_2" class="t s1_2">15.</div>
+<div id="t54_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t55_2" class="t s1_2">kan op glifosaat verdraag-</div>
+<div id="t56_2" class="t s1_2">same katoen, sojaboon en mielieplante gespuit word. Enige </div>
+<div id="t57_2" class="t s1_2">individuele plante wat nie die glifosaat geen bevat nie en met </div>
+<div id="t58_2" class="t s1_2">glifosaat bevattende produkte soos </div>
+<div id="t59_2" class="t s3_2">TOUCHDOWN Forte </div>
+<div id="t5a_2" class="t s3_2">HITECH </div>
+<div id="t5b_2" class="t s1_2">gespuit word sal afsterf.</div>
+<div id="t5c_2" class="t s1_2">16. </div>
+<div id="t5d_2" class="t s3_2">TOUCHDOWN Forte HITECH</div>
+<div id="t5e_2" class="t s1_2">beheer nie opslag van gli-</div>
+<div id="t5f_2" class="t s1_2">fosaat weerstandbiedende gewasse nie. </div>
+<div id="t5g_2" class="t s1_2">17. </div>
+<div id="t5h_2" class="t s1_2">Wisselvallige beheer van onkruide by selfs hierdie hoë dosisse </div>
+<div id="t5i_2" class="t s1_2">mag voorkom as gevolg van verskeie redes:</div>
+<div id="t5j_2" class="t s1_2">a) droogte toestande </div>
+<div id="t5k_2" class="t s1_2">b) koue of hitte stres toestande,</div>
+<div id="t5l_2" class="t s1_2">c) </div>
+<div id="t5m_2" class="t s1_2">plante met wasagtige blare bv. </div>
+<div id="t5n_2" class="t s2_2">Portulaca oleracea, </div>
+<div id="t5o_2" class="t s2_2">Chenopodium album, Gisekia pharnecoides,</div>
+<div id="t5p_2" class="t s1_2">d) </div>
+<div id="t5q_2" class="t s1_2">natuurlike weerstandbiedendheid teen die beheer met </div>
+<div id="t5r_2" class="t s1_2">glifosaat bv. </div>
+<div id="t5s_2" class="t s2_2">Commelina bengalensis, Ipomoea </div>
+<div id="t5t_2" class="t s1_2">spp</div>
+<div id="t5u_2" class="t s1_2">en</div>
+<div id="t5v_2" class="t s2_2">Conyza bonariensis,</div>
+<div id="t5w_2" class="t s1_2">e) </div>
+<div id="t5x_2" class="t s1_2">weerstandbiedendheid wat opgebou het weens herhaal-</div>
+<div id="t5y_2" class="t s1_2">delike gebruik van glifosaat bv </div>
+<div id="t5z_2" class="t s2_2">Lolium spp</div>
+<div id="t60_2" class="t s1_2">en </div>
+<div id="t61_2" class="t s2_2">Conyza </div>
+<div id="t62_2" class="t s2_2">bonariensis</div>
+<div id="t63_2" class="t s1_2">(bevestigde weerstandbiedendheid in RSA), </div>
+<div id="t64_2" class="t s1_2">f) </div>
+<div id="t65_2" class="t s1_2">swak bedekking en penetrasie van blare bv. </div>
+<div id="t66_2" class="t s2_2">Argemone </div>
+<div id="t67_2" class="t s2_2">subfusiformis,</div>
+<div id="t68_2" class="t s1_2">g) plante met knolle en bolle bv. </div>
+<div id="t69_2" class="t s2_2">Cyperus </div>
+<div id="t6a_2" class="t s1_2">spp</div>
+<div id="t6b_2" class="t s1_2">h) </div>
+<div id="t6c_2" class="t s1_2">wan verhoudings tussen die bo en ondergrondse dele </div>
+<div id="t6d_2" class="t s1_2">bv. </div>
+<div id="t6e_2" class="t s2_2">Conyza bonariensis </div>
+<div id="t6f_2" class="t s1_2">na ‘n droë periode of na groei </div>
+<div id="t6g_2" class="t s1_2">gedurende die winter.</div>
+<div id="t6h_2" class="t s1_2">i) </div>
+<div id="t6i_2" class="t s1_2">swak water kwaliteit.</div>
+<div id="t6j_2" class="t s3_2">Verenigbaarheid:</div>
+<div id="t6k_2" class="t s1_2">1. </div>
+<div id="t6l_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t6m_2" class="t s1_2">is verenigbaar met Callisto </div>
+<div id="t6n_2" class="t s1_2">(L6795), Dual Gold (L5749), Metagan Gold (L5748), </div>
+<div id="t6o_2" class="t s1_2">Gardoprim Plus Gold (L7736), Karate (L3752), Karate Zeon </div>
+<div id="t6p_2" class="t s1_2">(L6330), tebuthiuron en diuron. Raadpleeg die onderskeie </div>
+<div id="t6q_2" class="t s1_2">etikette vir toedieningshoeveelhede, waarskuwings en voor-</div>
+<div id="t6r_2" class="t s1_2">sorgmaatreëls.</div>
+<div id="t6s_2" class="t s1_2">2.</div>
+<div id="t6t_2" class="t s3_2">Bymiddels:</div>
+<div id="t6u_2" class="t s1_2">a. </div>
+<div id="t6v_2" class="t s1_2">Die byvoeging van 0,5 - 2,0 % ammoniumsulfaat in tenk-</div>
+<div id="t6w_2" class="t s1_2">mengsels sal die doeltreffendheid van </div>
+<div id="t6x_2" class="t s3_2">TOUCHDOWN </div>
+<div id="t6y_2" class="t s3_2">Forte HITECH </div>
+<div id="t6z_2" class="t s1_2">verbeter wanneer swak kwaliteit water of </div>
+<div id="t70_2" class="t s1_2">water van ‘n onbekende kwaliteit gebruik word. Vir opti-</div>
+<div id="t71_2" class="t s1_2">male beheer moet ammonium sulfaat verkieslik te alle tye </div>
+<div id="t72_2" class="t s1_2">gebruik word.</div>
+<div id="t73_2" class="t s1_2">b. </div>
+<div id="t74_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t75_2" class="t s1_2">mag nie met enige ander </div>
+<div id="t76_2" class="t s1_2">bymiddel anders as ammoniumsulfaat gemeng en gespuit </div>
+<div id="t77_2" class="t s1_2">word nie. </div>
+<div id="t78_2" class="t s1_2">Die gebruik van ander bymiddels kan tot ver-</div>
+<div id="t79_2" class="t s1_2">laging in aktiwiteit bydra en die registrasiehouer sal geen </div>
+<div id="t7a_2" class="t s1_2">verantwoordelikheid aanvaar vir sodanige gebruike nie.</div>
+<div id="t7b_2" class="t s1_2">3. </div>
+<div id="t7c_2" class="t s3_2">Atrasien:</div>
+<div id="t7d_2" class="t s1_2">a. </div>
+<div id="t7e_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t7f_2" class="t s1_2">is nie verenigbaar met </div>
+<div id="t7g_2" class="t s3_2">TOUCHDOWN Forte HITECH </div>
+<div id="t7h_2" class="t s1_2">/ 2</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg2Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg2"><img src="02/2.png" id="pdf2" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f2 = [['t2_2',1287],['t3_2',696],['t4_2',1192],['t6_2',1287],['t7_2',1286],['t8_2',1286],['t9_2',969],['tb_2',1286],['tc_2',526],['td_2',404],['te_2',440],['tg_2',340],['ti_2',448],['tj_2',890],['tk_2',1373],['tl_2',874],['tm_2',477],['to_2',1147],['tp_2',1373],['tq_2',1373],['tr_2',1373],['ts_2',1061],['tt_2',287],['tu_2',670],['tv_2',451],['tw_2',1373],['tx_2',1373],['ty_2',1373],['tz_2',1373],['t10_2',500],['t12_2',564],['t13_2',172],['t14_2',674],['t15_2',493],['t16_2',432],['t19_2',688],['t1a_2',385],['t1b_2',1286],['t1c_2',1219],['t1e_2',1286],['t1f_2',1053],['t1h_2',665],['t1i_2',608],['t1j_2',1286],['t1k_2',1287],['t1l_2',447],['t1n_2',1286],['t1o_2',1287],['t1p_2',967],['t1r_2',674],['t1s_2',596],['t1t_2',616],['t1v_2',1218],['t1x_2',913],['t1z_2',1217],['t20_2',1217],['t21_2',1373],['t22_2',1006],['t23_2',332],['t24_2',1373],['t25_2',600],['t27_2',617],['t2a_2',668],['t2b_2',425],['t2c_2',1286],['t2d_2',1287],['t2e_2',780],['t2f_2',481],['t2h_2',1074],['t2i_2',1286],['t2j_2',1287],['t2k_2',1287],['t2l_2',1286],['t2m_2',1287],['t2n_2',235],['t2o_2',665],['t2p_2',360],['t2q_2',377],['t2s_2',1286],['t2t_2',604],['t2v_2',1287],['t2w_2',1284],['t2y_2',1286],['t2z_2',574],['t31_2',1285],['t32_2',1147],['t35_2',690],['t36_2',358],['t37_2',1286],['t38_2',1286],['t39_2',1287],['t3a_2',904],['t3c_2',713],['t3d_2',540],['t3e_2',1286],['t3f_2',1286],['t3g_2',1287],['t3h_2',1287],['t3i_2',1286],['t3j_2',1287],['t3k_2',705],['t3m_2',1286],['t3n_2',942],['t3p_2',695],['t3q_2',564],['t3r_2',1286],['t3s_2',1287],['t3t_2',202],['t3u_2',697],['t3v_2',330],['t3w_2',1286],['t3x_2',1286],['t3y_2',1255],['t40_2',1286],['t41_2',310],['t42_2',670],['t45_2',185],['t46_2',674],['t47_2',393],['t48_2',596],['t49_2',674],['t4a_2',1215],['t4c_2',180],['t4d_2',665],['t4e_2',417],['t4f_2',1286],['t4g_2',927],['t4i_2',185],['t4j_2',674],['t4k_2',393],['t4l_2',1286],['t4m_2',1165],['t4o_2',1287],['t4p_2',309],['t4q_2',685],['t4s_2',1287],['t4t_2',768],['t4u_2',487],['t4w_2',1088],['t4x_2',1287],['t4y_2',1286],['t4z_2',930],['t51_2',322],['t54_2',686],['t55_2',577],['t56_2',1286],['t57_2',1286],['t58_2',778],['t59_2',482],['t5b_2',506],['t5d_2',687],['t5e_2',576],['t5f_2',849],['t5h_2',1287],['t5i_2',932],['t5j_2',459],['t5k_2',687],['t5m_2',738],['t5n_2',445],['t5o_2',968],['t5q_2',1217],['t5r_2',261],['t5s_2',756],['t5v_2',437],['t5x_2',1217],['t5y_2',676],['t5z_2',252],['t63_2',919],['t65_2',969],['t68_2',689],['t6c_2',1217],['t6e_2',429],['t6f_2',663],['t6g_2',460],['t6i_2',437],['t6l_2',686],['t6m_2',578],['t6n_2',1287],['t6o_2',1286],['t6p_2',1287],['t6q_2',1286],['t6v_2',1217],['t6w_2',854],['t6y_2',325],['t6z_2',874],['t70_2',1217],['t71_2',1217],['t72_2',291],['t74_2',672],['t75_2',530],['t76_2',1217],['t77_2',200],['t78_2',979],['t79_2',1217],['t7a_2',1155],['t7e_2',720],['t7f_2',532],['t7g_2',670],['t7h_2',58]];
+var c2 = 0;
+function fontAdjustments2(){;
+	if (c2<f2.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f2[c2][0],f2[c2][1]);
+		c2++;
+		if (c2%10 == 0) {
+			setTimeout(function(){fontAdjustments2()},0);
+		} else {
+			fontAdjustments2();
+		}
+	}
+};
+function load2(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments2,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 270;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_2");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(13,2,909,1286,0);
+</script>
+</body>
+</html>

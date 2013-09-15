@@ -1,0 +1,1411 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>CALLISTO___Afr_2012_05_08 Page6</title>
+</head>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load6();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_6{left:462px;top:324px;}
+#t2_6{left:464px;top:338px;}
+#t3_6{left:498px;top:338px;}
+#t4_6{left:503px;top:338px;}
+#t5_6{left:462px;top:411px;}
+#t6_6{left:464px;top:425px;}
+#t7_6{left:498px;top:425px;}
+#t8_6{left:503px;top:425px;}
+#t9_6{left:577px;top:302px;}
+#ta_6{left:557px;top:317px;}
+#tb_6{left:570px;top:331px;}
+#tc_6{left:559px;top:346px;}
+#td_6{left:594px;top:346px;}
+#te_6{left:599px;top:346px;}
+#tf_6{left:577px;top:396px;}
+#tg_6{left:557px;top:410px;}
+#th_6{left:570px;top:425px;}
+#ti_6{left:559px;top:439px;}
+#tj_6{left:594px;top:439px;}
+#tk_6{left:599px;top:439px;}
+#tl_6{left:673px;top:302px;}
+#tm_6{left:651px;top:317px;}
+#tn_6{left:663px;top:331px;}
+#to_6{left:655px;top:346px;}
+#tp_6{left:690px;top:346px;}
+#tq_6{left:695px;top:346px;}
+#tr_6{left:673px;top:396px;}
+#ts_6{left:650px;top:410px;}
+#tt_6{left:666px;top:425px;}
+#tu_6{left:655px;top:439px;}
+#tv_6{left:690px;top:439px;}
+#tw_6{left:695px;top:439px;}
+#tx_6{left:751px;top:302px;}
+#ty_6{left:756px;top:317px;}
+#tz_6{left:732px;top:331px;}
+#t10_6{left:734px;top:346px;}
+#t11_6{left:751px;top:396px;}
+#t12_6{left:756px;top:410px;}
+#t13_6{left:732px;top:425px;}
+#t14_6{left:734px;top:439px;}
+#t15_6{left:462px;top:586px;}
+#t16_6{left:464px;top:600px;}
+#t17_6{left:499px;top:600px;}
+#t18_6{left:504px;top:600px;}
+#t19_6{left:476px;top:633px;}
+#t1a_6{left:472px;top:647px;}
+#t1b_6{left:580px;top:580px;}
+#t1c_6{left:553px;top:595px;}
+#t1d_6{left:561px;top:609px;}
+#t1e_6{left:602px;top:609px;}
+#t1f_6{left:607px;top:609px;}
+#t1g_6{left:564px;top:633px;}
+#t1h_6{left:577px;top:648px;}
+#t1i_6{left:717px;top:581px;}
+#t1j_6{left:691px;top:596px;}
+#t1k_6{left:700px;top:611px;}
+#t1l_6{left:704px;top:634px;}
+#t1m_6{left:712px;top:648px;}
+#t1n_6{left:462px;top:503px;}
+#t1o_6{left:464px;top:517px;}
+#t1p_6{left:499px;top:517px;}
+#t1q_6{left:504px;top:517px;}
+#t1r_6{left:581px;top:489px;}
+#t1s_6{left:554px;top:503px;}
+#t1t_6{left:576px;top:518px;}
+#t1u_6{left:561px;top:532px;}
+#t1v_6{left:602px;top:532px;}
+#t1w_6{left:608px;top:532px;}
+#t1x_6{left:718px;top:487px;}
+#t1y_6{left:723px;top:501px;}
+#t1z_6{left:699px;top:516px;}
+#t20_6{left:701px;top:530px;}
+#t21_6{left:623px;top:461px;}
+#t22_6{left:623px;top:373px;}
+#t23_6{left:623px;top:556px;}
+#t24_6{left:461px;top:672px;}
+#t25_6{left:491px;top:698px;}
+#t26_6{left:537px;top:698px;}
+#t27_6{left:667px;top:698px;}
+#t28_6{left:537px;top:712px;}
+#t29_6{left:394px;top:42px;}
+#t2a_6{left:459px;top:42px;}
+#t2b_6{left:73px;top:517px;}
+#t2c_6{left:75px;top:532px;}
+#t2d_6{left:110px;top:532px;}
+#t2e_6{left:115px;top:532px;}
+#t2f_6{left:73px;top:597px;}
+#t2g_6{left:75px;top:612px;}
+#t2h_6{left:110px;top:612px;}
+#t2i_6{left:115px;top:612px;}
+#t2j_6{left:188px;top:495px;}
+#t2k_6{left:168px;top:510px;}
+#t2l_6{left:181px;top:524px;}
+#t2m_6{left:154px;top:539px;}
+#t2n_6{left:221px;top:539px;}
+#t2o_6{left:226px;top:539px;}
+#t2p_6{left:186px;top:583px;}
+#t2q_6{left:168px;top:597px;}
+#t2r_6{left:183px;top:612px;}
+#t2s_6{left:154px;top:626px;}
+#t2t_6{left:221px;top:626px;}
+#t2u_6{left:226px;top:626px;}
+#t2v_6{left:284px;top:496px;}
+#t2w_6{left:263px;top:510px;}
+#t2x_6{left:274px;top:525px;}
+#t2y_6{left:267px;top:539px;}
+#t2z_6{left:301px;top:539px;}
+#t30_6{left:307px;top:539px;}
+#t31_6{left:284px;top:583px;}
+#t32_6{left:262px;top:597px;}
+#t33_6{left:278px;top:612px;}
+#t34_6{left:267px;top:626px;}
+#t35_6{left:301px;top:626px;}
+#t36_6{left:307px;top:626px;}
+#t37_6{left:361px;top:496px;}
+#t38_6{left:367px;top:510px;}
+#t39_6{left:342px;top:525px;}
+#t3a_6{left:345px;top:539px;}
+#t3b_6{left:361px;top:583px;}
+#t3c_6{left:367px;top:597px;}
+#t3d_6{left:342px;top:612px;}
+#t3e_6{left:345px;top:626px;}
+#t3f_6{left:73px;top:761px;}
+#t3g_6{left:75px;top:775px;}
+#t3h_6{left:110px;top:775px;}
+#t3i_6{left:115px;top:775px;}
+#t3j_6{left:87px;top:808px;}
+#t3k_6{left:83px;top:822px;}
+#t3l_6{left:189px;top:754px;}
+#t3m_6{left:161px;top:768px;}
+#t3n_6{left:150px;top:783px;}
+#t3o_6{left:230px;top:783px;}
+#t3p_6{left:235px;top:783px;}
+#t3q_6{left:172px;top:807px;}
+#t3r_6{left:186px;top:822px;}
+#t3s_6{left:326px;top:757px;}
+#t3t_6{left:299px;top:771px;}
+#t3u_6{left:309px;top:786px;}
+#t3v_6{left:313px;top:808px;}
+#t3w_6{left:320px;top:822px;}
+#t3x_6{left:73px;top:684px;}
+#t3y_6{left:75px;top:699px;}
+#t3z_6{left:110px;top:699px;}
+#t40_6{left:115px;top:699px;}
+#t41_6{left:187px;top:670px;}
+#t42_6{left:160px;top:684px;}
+#t43_6{left:181px;top:699px;}
+#t44_6{left:148px;top:713px;}
+#t45_6{left:228px;top:713px;}
+#t46_6{left:233px;top:713px;}
+#t47_6{left:323px;top:670px;}
+#t48_6{left:329px;top:684px;}
+#t49_6{left:304px;top:699px;}
+#t4a_6{left:307px;top:713px;}
+#t4b_6{left:234px;top:560px;}
+#t4c_6{left:234px;top:650px;}
+#t4d_6{left:234px;top:734px;}
+#t4e_6{left:72px;top:845px;}
+#t4f_6{left:102px;top:869px;}
+#t4g_6{left:148px;top:869px;}
+#t4h_6{left:276px;top:869px;}
+#t4i_6{left:102px;top:883px;}
+#t4j_6{left:148px;top:883px;}
+#t4k_6{left:276px;top:883px;}
+#t4l_6{left:102px;top:906px;}
+#t4m_6{left:148px;top:906px;}
+#t4n_6{left:276px;top:906px;}
+#t4o_6{left:102px;top:921px;}
+#t4p_6{left:148px;top:921px;}
+#t4q_6{left:276px;top:921px;}
+#t4r_6{left:148px;top:935px;}
+#t4s_6{left:276px;top:935px;}
+#t4t_6{left:102px;top:950px;}
+#t4u_6{left:148px;top:950px;}
+#t4v_6{left:276px;top:950px;}
+#t4w_6{left:102px;top:964px;}
+#t4x_6{left:148px;top:964px;}
+#t4y_6{left:276px;top:964px;}
+#t4z_6{left:463px;top:740px;}
+#t50_6{left:463px;top:755px;}
+#t51_6{left:493px;top:784px;}
+#t52_6{left:538px;top:784px;}
+#t53_6{left:669px;top:784px;}
+#t54_6{left:493px;top:798px;}
+#t55_6{left:538px;top:798px;}
+#t56_6{left:669px;top:798px;}
+#t57_6{left:493px;top:813px;}
+#t58_6{left:538px;top:813px;}
+#t59_6{left:669px;top:813px;}
+#t5a_6{left:493px;top:827px;}
+#t5b_6{left:538px;top:827px;}
+#t5c_6{left:669px;top:827px;}
+#t5d_6{left:493px;top:842px;}
+#t5e_6{left:538px;top:842px;}
+#t5f_6{left:669px;top:842px;}
+#t5g_6{left:456px;top:877px;}
+#t5h_6{left:649px;top:877px;}
+#t5i_6{left:730px;top:877px;}
+#t5j_6{left:739px;top:877px;}
+#t5k_6{left:456px;top:892px;}
+#t5l_6{left:456px;top:906px;}
+#t5m_6{left:694px;top:906px;}
+#t5n_6{left:456px;top:921px;}
+#t5o_6{left:456px;top:950px;}
+#t5p_6{left:504px;top:950px;}
+#t5q_6{left:456px;top:980px;}
+#t5r_6{left:522px;top:980px;}
+#t5s_6{left:456px;top:994px;}
+#t5t_6{left:546px;top:994px;}
+#t5u_6{left:456px;top:1009px;}
+#t5v_6{left:456px;top:1024px;}
+#t5w_6{left:456px;top:1038px;}
+#t5x_6{left:456px;top:1053px;}
+#t5y_6{left:474px;top:1053px;}
+#t5z_6{left:474px;top:1068px;}
+#t60_6{left:474px;top:1082px;}
+#t61_6{left:474px;top:1097px;}
+#t62_6{left:474px;top:1112px;}
+#t63_6{left:474px;top:1126px;}
+#t64_6{left:474px;top:1141px;}
+#t65_6{left:474px;top:1156px;}
+#t66_6{left:456px;top:1170px;}
+#t67_6{left:474px;top:1170px;}
+#t68_6{left:513px;top:1170px;}
+#t69_6{left:581px;top:1170px;}
+#t6a_6{left:474px;top:1185px;}
+#t6b_6{left:474px;top:1200px;letter-spacing:-1px;}
+#t6c_6{left:495px;top:1200px;}
+#t6d_6{left:495px;top:1214px;}
+#t6e_6{left:474px;top:1229px;letter-spacing:-1px;}
+#t6f_6{left:495px;top:1229px;}
+#t6g_6{left:74px;top:89px;}
+#t6h_6{left:76px;top:103px;}
+#t6i_6{left:110px;top:103px;}
+#t6j_6{left:116px;top:103px;}
+#t6k_6{left:188px;top:72px;}
+#t6l_6{left:169px;top:86px;}
+#t6m_6{left:184px;top:101px;}
+#t6n_6{left:156px;top:115px;}
+#t6o_6{left:222px;top:115px;}
+#t6p_6{left:228px;top:115px;}
+#t6q_6{left:284px;top:72px;}
+#t6r_6{left:261px;top:87px;}
+#t6s_6{left:277px;top:101px;}
+#t6t_6{left:266px;top:116px;}
+#t6u_6{left:301px;top:116px;}
+#t6v_6{left:306px;top:116px;}
+#t6w_6{left:362px;top:73px;}
+#t6x_6{left:367px;top:87px;}
+#t6y_6{left:343px;top:102px;}
+#t6z_6{left:345px;top:116px;}
+#t70_6{left:73px;top:259px;}
+#t71_6{left:75px;top:274px;}
+#t72_6{left:110px;top:274px;}
+#t73_6{left:115px;top:274px;}
+#t74_6{left:87px;top:308px;}
+#t75_6{left:83px;top:323px;}
+#t76_6{left:187px;top:253px;}
+#t77_6{left:157px;top:267px;}
+#t78_6{left:151px;top:282px;}
+#t79_6{left:225px;top:282px;}
+#t7a_6{left:230px;top:282px;}
+#t7b_6{left:170px;top:308px;}
+#t7c_6{left:183px;top:323px;}
+#t7d_6{left:326px;top:253px;}
+#t7e_6{left:300px;top:267px;}
+#t7f_6{left:309px;top:282px;}
+#t7g_6{left:313px;top:308px;}
+#t7h_6{left:320px;top:323px;}
+#t7i_6{left:73px;top:179px;}
+#t7j_6{left:75px;top:194px;}
+#t7k_6{left:110px;top:194px;}
+#t7l_6{left:115px;top:194px;}
+#t7m_6{left:185px;top:162px;}
+#t7n_6{left:159px;top:177px;}
+#t7o_6{left:180px;top:191px;}
+#t7p_6{left:150px;top:206px;}
+#t7q_6{left:223px;top:206px;}
+#t7r_6{left:229px;top:206px;}
+#t7s_6{left:323px;top:160px;}
+#t7t_6{left:329px;top:175px;}
+#t7u_6{left:304px;top:189px;}
+#t7v_6{left:307px;top:204px;}
+#t7w_6{left:234px;top:137px;}
+#t7x_6{left:234px;top:230px;}
+#t7y_6{left:72px;top:346px;}
+#t7z_6{left:102px;top:371px;}
+#t80_6{left:148px;top:371px;}
+#t81_6{left:271px;top:371px;}
+#t82_6{left:148px;top:385px;}
+#t83_6{left:271px;top:385px;}
+#t84_6{left:102px;top:400px;}
+#t85_6{left:148px;top:400px;}
+#t86_6{left:271px;top:400px;}
+#t87_6{left:102px;top:414px;}
+#t88_6{left:148px;top:414px;}
+#t89_6{left:271px;top:414px;}
+#t8a_6{left:102px;top:437px;}
+#t8b_6{left:148px;top:437px;}
+#t8c_6{left:271px;top:437px;}
+#t8d_6{left:102px;top:452px;}
+#t8e_6{left:148px;top:452px;}
+#t8f_6{left:271px;top:452px;}
+#t8g_6{left:73px;top:1024px;}
+#t8h_6{left:75px;top:1038px;}
+#t8i_6{left:109px;top:1038px;}
+#t8j_6{left:114px;top:1038px;}
+#t8k_6{left:73px;top:1111px;}
+#t8l_6{left:75px;top:1125px;}
+#t8m_6{left:109px;top:1125px;}
+#t8n_6{left:114px;top:1125px;}
+#t8o_6{left:188px;top:1006px;}
+#t8p_6{left:168px;top:1020px;}
+#t8q_6{left:181px;top:1035px;}
+#t8r_6{left:154px;top:1049px;}
+#t8s_6{left:221px;top:1049px;}
+#t8t_6{left:226px;top:1049px;}
+#t8u_6{left:188px;top:1093px;}
+#t8v_6{left:168px;top:1108px;}
+#t8w_6{left:181px;top:1122px;}
+#t8x_6{left:154px;top:1137px;}
+#t8y_6{left:221px;top:1137px;}
+#t8z_6{left:226px;top:1137px;}
+#t90_6{left:284px;top:1006px;}
+#t91_6{left:262px;top:1021px;}
+#t92_6{left:274px;top:1035px;}
+#t93_6{left:266px;top:1050px;}
+#t94_6{left:301px;top:1050px;}
+#t95_6{left:306px;top:1050px;}
+#t96_6{left:284px;top:1093px;}
+#t97_6{left:261px;top:1108px;}
+#t98_6{left:277px;top:1122px;}
+#t99_6{left:266px;top:1137px;}
+#t9a_6{left:301px;top:1137px;}
+#t9b_6{left:306px;top:1137px;}
+#t9c_6{left:362px;top:1006px;}
+#t9d_6{left:367px;top:1021px;}
+#t9e_6{left:343px;top:1035px;}
+#t9f_6{left:345px;top:1050px;}
+#t9g_6{left:362px;top:1093px;}
+#t9h_6{left:367px;top:1108px;}
+#t9i_6{left:344px;top:1122px;}
+#t9j_6{left:345px;top:1137px;}
+#t9k_6{left:73px;top:1196px;}
+#t9l_6{left:75px;top:1211px;}
+#t9m_6{left:110px;top:1211px;}
+#t9n_6{left:115px;top:1211px;}
+#t9o_6{left:191px;top:1179px;}
+#t9p_6{left:163px;top:1193px;}
+#t9q_6{left:184px;top:1208px;}
+#t9r_6{left:150px;top:1222px;}
+#t9s_6{left:231px;top:1222px;}
+#t9t_6{left:236px;top:1222px;}
+#t9u_6{left:323px;top:1179px;}
+#t9v_6{left:329px;top:1193px;}
+#t9w_6{left:306px;top:1208px;}
+#t9x_6{left:307px;top:1222px;}
+#t9y_6{left:234px;top:1071px;}
+#t9z_6{left:234px;top:1158px;}
+#ta0_6{left:463px;top:107px;}
+#ta1_6{left:465px;top:121px;}
+#ta2_6{left:499px;top:121px;}
+#ta3_6{left:505px;top:121px;}
+#ta4_6{left:477px;top:144px;}
+#ta5_6{left:473px;top:159px;}
+#ta6_6{left:578px;top:91px;}
+#ta7_6{left:551px;top:105px;}
+#ta8_6{left:539px;top:120px;}
+#ta9_6{left:620px;top:120px;}
+#taa_6{left:625px;top:120px;}
+#tab_6{left:561px;top:144px;}
+#tac_6{left:574px;top:158px;}
+#tad_6{left:715px;top:93px;}
+#tae_6{left:689px;top:108px;}
+#taf_6{left:699px;top:122px;}
+#tag_6{left:702px;top:144px;}
+#tah_6{left:710px;top:159px;}
+#tai_6{left:623px;top:70px;}
+#taj_6{left:462px;top:180px;}
+#tak_6{left:492px;top:204px;}
+#tal_6{left:537px;top:204px;}
+#tam_6{left:661px;top:204px;}
+#tan_6{left:492px;top:227px;}
+#tao_6{left:537px;top:227px;}
+#tap_6{left:661px;top:227px;}
+#taq_6{left:492px;top:242px;}
+#tar_6{left:537px;top:242px;}
+#tas_6{left:661px;top:242px;}
+#tat_6{left:492px;top:256px;}
+#tau_6{left:537px;top:256px;}
+#tav_6{left:661px;top:256px;}
+
+.s1_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ACNDZH-HelveticaNeueLTStd-Bd6;
+	color: rgb(0,0,0);
+}
+
+.s3_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ZUDXLJ-MT-Extra6;
+	color: rgb(0,0,0);
+}
+
+.s2_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: ZUDXLJ-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+.s4_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: YMTRXL-HelveticaNeueLTStd-It6;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: ZUDXLJ-MT-Extra6;
+	src: url("6/fonts/ZUDXLJ-MT-Extra.eot");
+	src: url("6/fonts/ZUDXLJ-MT-Extra.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/ZUDXLJ-MT-Extra.otf") format("opentype");
+}
+
+@font-face {
+	font-family: ACNDZH-HelveticaNeueLTStd-Bd6;
+	src: url("6/fonts/ACNDZH-HelveticaNeueLTStd-Bd.eot");
+	src: url("6/fonts/ACNDZH-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/ACNDZH-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: YMTRXL-HelveticaNeueLTStd-It6;
+	src: url("6/fonts/YMTRXL-HelveticaNeueLTStd-It.eot");
+	src: url("6/fonts/YMTRXL-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/YMTRXL-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: ZUDXLJ-HelveticaNeueLTStd-Lt6;
+	src: url("6/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.eot");
+	src: url("6/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/ZUDXLJ-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_6" class="t s1_6">CALLISTO</div>
+<div id="t2_6" class="t s2_6">260	m</div>
+<div id="t3_6" class="t s3_6">l</div>
+<div id="t4_6" class="t s2_6">/ha</div>
+<div id="t5_6" class="t s1_6">CALLISTO</div>
+<div id="t6_6" class="t s2_6">260	m</div>
+<div id="t7_6" class="t s3_6">l</div>
+<div id="t8_6" class="t s2_6">/ha</div>
+<div id="t9_6" class="t s2_6">plus</div>
+<div id="ta_6" class="t s1_6">METAGAN </div>
+<div id="tb_6" class="t s1_6">GOLD</div>
+<div id="tc_6" class="t s2_6">508	m</div>
+<div id="td_6" class="t s3_6">l</div>
+<div id="te_6" class="t s2_6">/ha</div>
+<div id="tf_6" class="t s2_6">plus</div>
+<div id="tg_6" class="t s1_6">METAGAN </div>
+<div id="th_6" class="t s1_6">GOLD</div>
+<div id="ti_6" class="t s2_6">454	m</div>
+<div id="tj_6" class="t s3_6">l</div>
+<div id="tk_6" class="t s2_6">/ha</div>
+<div id="tl_6" class="t s2_6">plus</div>
+<div id="tm_6" class="t s1_6">GESAPRIM </div>
+<div id="tn_6" class="t s1_6">SUPER</div>
+<div id="to_6" class="t s2_6">416	m</div>
+<div id="tp_6" class="t s3_6">l</div>
+<div id="tq_6" class="t s2_6">/ha</div>
+<div id="tr_6" class="t s2_6">plus</div>
+<div id="ts_6" class="t s1_6">GARDOMIL</div>
+<div id="tt_6" class="t s1_6">GOLD</div>
+<div id="tu_6" class="t s2_6">502	m</div>
+<div id="tv_6" class="t s3_6">l</div>
+<div id="tw_6" class="t s2_6">/ha</div>
+<div id="tx_6" class="t s2_6">plus	</div>
+<div id="ty_6" class="t s1_6">‘n </div>
+<div id="tz_6" class="t s1_6">aanbevole</div>
+<div id="t10_6" class="t s1_6">bymiddel*</div>
+<div id="t11_6" class="t s2_6">plus	</div>
+<div id="t12_6" class="t s1_6">‘n </div>
+<div id="t13_6" class="t s1_6">aanbevole</div>
+<div id="t14_6" class="t s1_6">bymiddel*</div>
+<div id="t15_6" class="t s1_6">CALLISTO</div>
+<div id="t16_6" class="t s2_6">260	m</div>
+<div id="t17_6" class="t s3_6">l</div>
+<div id="t18_6" class="t s2_6">/ha</div>
+<div id="t19_6" class="t s1_6">Weke </div>
+<div id="t1a_6" class="t s1_6">beheer</div>
+<div id="t1b_6" class="t s1_6">plus</div>
+<div id="t1c_6" class="t s1_6">GARDO GOLD</div>
+<div id="t1d_6" class="t s2_6">1562	m</div>
+<div id="t1e_6" class="t s3_6">l</div>
+<div id="t1f_6" class="t s2_6">/ha</div>
+<div id="t1g_6" class="t s1_6">Botaniese </div>
+<div id="t1h_6" class="t s1_6">naam</div>
+<div id="t1i_6" class="t s2_6">plus	</div>
+<div id="t1j_6" class="t s1_6">‘n aanbevole</div>
+<div id="t1k_6" class="t s1_6">bymiddel*</div>
+<div id="t1l_6" class="t s1_6">Gewone </div>
+<div id="t1m_6" class="t s1_6">naam</div>
+<div id="t1n_6" class="t s1_6">CALLISTO</div>
+<div id="t1o_6" class="t s2_6">260	m</div>
+<div id="t1p_6" class="t s3_6">l</div>
+<div id="t1q_6" class="t s2_6">/ha</div>
+<div id="t1r_6" class="t s1_6">plus</div>
+<div id="t1s_6" class="t s1_6">PRIMAGRAM </div>
+<div id="t1t_6" class="t s1_6">GOLD</div>
+<div id="t1u_6" class="t s2_6">1682	m</div>
+<div id="t1v_6" class="t s3_6">l</div>
+<div id="t1w_6" class="t s2_6">/ha</div>
+<div id="t1x_6" class="t s2_6">plus	</div>
+<div id="t1y_6" class="t s1_6">‘n </div>
+<div id="t1z_6" class="t s1_6">aanbevole</div>
+<div id="t20_6" class="t s1_6">bymiddel*</div>
+<div id="t21_6" class="t s1_6">of</div>
+<div id="t22_6" class="t s1_6">of</div>
+<div id="t23_6" class="t s1_6">of</div>
+<div id="t24_6" class="t s1_6">Bogenoemde onkruide plus</div>
+<div id="t25_6" class="t s2_6">8	</div>
+<div id="t26_6" class="t s4_6">Crotalaria </div>
+<div id="t27_6" class="t s1_6">mielie Crotalaria</div>
+<div id="t28_6" class="t s4_6">sphaerocarpa</div>
+<div id="t29_6" class="t s1_6">CALLISTO</div>
+<div id="t2a_6" class="t s2_6">/	6</div>
+<div id="t2b_6" class="t s1_6">CALLISTO</div>
+<div id="t2c_6" class="t s2_6">208	m</div>
+<div id="t2d_6" class="t s3_6">l</div>
+<div id="t2e_6" class="t s2_6">/ha</div>
+<div id="t2f_6" class="t s1_6">CALLISTO</div>
+<div id="t2g_6" class="t s2_6">208	m</div>
+<div id="t2h_6" class="t s3_6">l</div>
+<div id="t2i_6" class="t s2_6">/ha</div>
+<div id="t2j_6" class="t s2_6">plus</div>
+<div id="t2k_6" class="t s1_6">METAGAN </div>
+<div id="t2l_6" class="t s1_6">GOLD</div>
+<div id="t2m_6" class="t s2_6">406	-	508	m</div>
+<div id="t2n_6" class="t s3_6">l</div>
+<div id="t2o_6" class="t s2_6">/ha</div>
+<div id="t2p_6" class="t s1_6">plus</div>
+<div id="t2q_6" class="t s1_6">METAGAN</div>
+<div id="t2r_6" class="t s1_6">GOLD </div>
+<div id="t2s_6" class="t s2_6">352	-	454	m</div>
+<div id="t2t_6" class="t s3_6">l</div>
+<div id="t2u_6" class="t s2_6">/ha</div>
+<div id="t2v_6" class="t s2_6">plus</div>
+<div id="t2w_6" class="t s1_6">GESAPRIM </div>
+<div id="t2x_6" class="t s1_6">SUPER</div>
+<div id="t2y_6" class="t s2_6">416	m</div>
+<div id="t2z_6" class="t s3_6">l</div>
+<div id="t30_6" class="t s2_6">/ha</div>
+<div id="t31_6" class="t s2_6">plus</div>
+<div id="t32_6" class="t s1_6">GARDOMIL</div>
+<div id="t33_6" class="t s1_6">GOLD</div>
+<div id="t34_6" class="t s2_6">502	m</div>
+<div id="t35_6" class="t s3_6">l</div>
+<div id="t36_6" class="t s2_6">/ha</div>
+<div id="t37_6" class="t s2_6">plus	</div>
+<div id="t38_6" class="t s1_6">‘n </div>
+<div id="t39_6" class="t s1_6">aanbevole</div>
+<div id="t3a_6" class="t s1_6">bymiddel*</div>
+<div id="t3b_6" class="t s2_6">plus	</div>
+<div id="t3c_6" class="t s1_6">‘n</div>
+<div id="t3d_6" class="t s1_6">aanbevole</div>
+<div id="t3e_6" class="t s1_6">bymiddel*</div>
+<div id="t3f_6" class="t s1_6">CALLISTO</div>
+<div id="t3g_6" class="t s2_6">208	m</div>
+<div id="t3h_6" class="t s3_6">l</div>
+<div id="t3i_6" class="t s2_6">/ha</div>
+<div id="t3j_6" class="t s1_6">Weke </div>
+<div id="t3k_6" class="t s1_6">beheer</div>
+<div id="t3l_6" class="t s1_6">plus</div>
+<div id="t3m_6" class="t s1_6">GARDO GOLD</div>
+<div id="t3n_6" class="t s2_6">1242	-	1562	m</div>
+<div id="t3o_6" class="t s3_6">l</div>
+<div id="t3p_6" class="t s2_6">/ha</div>
+<div id="t3q_6" class="t s1_6">Botaniese</div>
+<div id="t3r_6" class="t s1_6">naam</div>
+<div id="t3s_6" class="t s2_6">plus	</div>
+<div id="t3t_6" class="t s1_6">‘n aanbevole</div>
+<div id="t3u_6" class="t s1_6">bymiddel*</div>
+<div id="t3v_6" class="t s1_6">Gewone </div>
+<div id="t3w_6" class="t s1_6">naam</div>
+<div id="t3x_6" class="t s1_6">CALLISTO</div>
+<div id="t3y_6" class="t s2_6">208	m</div>
+<div id="t3z_6" class="t s3_6">l</div>
+<div id="t40_6" class="t s2_6">/ha</div>
+<div id="t41_6" class="t s1_6">plus</div>
+<div id="t42_6" class="t s1_6">PRIMAGRAM </div>
+<div id="t43_6" class="t s1_6">GOLD</div>
+<div id="t44_6" class="t s2_6">1344	-	1682	m</div>
+<div id="t45_6" class="t s3_6">l</div>
+<div id="t46_6" class="t s2_6">/ha</div>
+<div id="t47_6" class="t s2_6">plus	</div>
+<div id="t48_6" class="t s1_6">‘n </div>
+<div id="t49_6" class="t s1_6">aanbevole</div>
+<div id="t4a_6" class="t s1_6">bymiddel*</div>
+<div id="t4b_6" class="t s1_6">of</div>
+<div id="t4c_6" class="t s1_6">of</div>
+<div id="t4d_6" class="t s1_6">of</div>
+<div id="t4e_6" class="t s1_6">Bogenoemde onkruide plus</div>
+<div id="t4f_6" class="t s2_6">4	</div>
+<div id="t4g_6" class="t s4_6">Digitaria sanguinalis </div>
+<div id="t4h_6" class="t s1_6">kruisvingergras</div>
+<div id="t4i_6" class="t s2_6">4	</div>
+<div id="t4j_6" class="t s4_6">Eleusine indica </div>
+<div id="t4k_6" class="t s1_6">jongosgras</div>
+<div id="t4l_6" class="t s2_6">8	</div>
+<div id="t4m_6" class="t s4_6">Amaranthus hybridus </div>
+<div id="t4n_6" class="t s1_6">gewone misbredie</div>
+<div id="t4o_6" class="t s2_6">8	</div>
+<div id="t4p_6" class="t s4_6">Commelina  </div>
+<div id="t4q_6" class="t s1_6">Bengaalse wande-</div>
+<div id="t4r_6" class="t s4_6">benghalensis </div>
+<div id="t4s_6" class="t s1_6">lende Jood</div>
+<div id="t4t_6" class="t s2_6">8	</div>
+<div id="t4u_6" class="t s4_6">Ipomoea purpurea </div>
+<div id="t4v_6" class="t s1_6">purperwinde</div>
+<div id="t4w_6" class="t s2_6">8	</div>
+<div id="t4x_6" class="t s4_6">Tribulus terrestris </div>
+<div id="t4y_6" class="t s1_6">dubbeltjie</div>
+<div id="t4z_6" class="t s1_6">Tot en met 80 % onderdrukking van die volgende </div>
+<div id="t50_6" class="t s1_6">on kruide:</div>
+<div id="t51_6" class="t s2_6">8	</div>
+<div id="t52_6" class="t s4_6">Chloris virgata </div>
+<div id="t53_6" class="t s1_6">witpluimchloris</div>
+<div id="t54_6" class="t s2_6">8	</div>
+<div id="t55_6" class="t s4_6">Cyperus esculentus</div>
+<div id="t56_6" class="t s1_6">geeluintjie</div>
+<div id="t57_6" class="t s2_6">8	</div>
+<div id="t58_6" class="t s4_6">Hibiscus cannabinus </div>
+<div id="t59_6" class="t s1_6">wildestokroos</div>
+<div id="t5a_6" class="t s2_6">8	</div>
+<div id="t5b_6" class="t s4_6">Urochloa panicoides </div>
+<div id="t5c_6" class="t s1_6">beesgras</div>
+<div id="t5d_6" class="t s2_6">8	</div>
+<div id="t5e_6" class="t s4_6">Xanthium strumarium </div>
+<div id="t5f_6" class="t s1_6">kankerroos</div>
+<div id="t5g_6" class="t s2_6">Raadpleeg	 die	 GARDOMIL	 GOLD,</div>
+<div id="t5h_6" class="t s2_6">GARDO	 GOLD</div>
+<div id="t5i_6" class="t s1_6">,</div>
+<div id="t5j_6" class="t s2_6">GESAPRIM	</div>
+<div id="t5k_6" class="t s2_6">SUPER,	 PRIMAGRAM	 GOLD,	 BREAKTHRU,	 COMPLEMENT	</div>
+<div id="t5l_6" class="t s2_6">SUPER,	PENETREX,	SOLITAIRE	en	TRONIC	etikette	vir	waarsku-</div>
+<div id="t5m_6" class="t s2_6">etikette	vir	waarsku-</div>
+<div id="t5n_6" class="t s2_6">wings,	voorsorgmaatreëls	en	gebruiksaanwysings.</div>
+<div id="t5o_6" class="t s1_6">6.1.3 </div>
+<div id="t5p_6" class="t s1_6">Glifosaat weerstandbiedende mielies</div>
+<div id="t5q_6" class="t s1_6">CALLISTO </div>
+<div id="t5r_6" class="t s2_6">kan	 in	 tenkmengsels	 toegedien	 word	 saam	 met	 of	</div>
+<div id="t5s_6" class="t s2_6">GARDO	 GOLD</div>
+<div id="t5t_6" class="t s2_6">en	 TOUCHDOWN	 Forte	 HITECH	 of	 METAGAN	</div>
+<div id="t5u_6" class="t s2_6">GOLD	 plus	 TOUCHDOWN	 Forte	 HITECH	 op	 glifosaat	 weer-</div>
+<div id="t5v_6" class="t s2_6">standbiedende	mielies	om	uitklop	en	residuele	onkruidbeheer	te	</div>
+<div id="t5w_6" class="t s2_6">verskaf.</div>
+<div id="t5x_6" class="t s2_6">•	</div>
+<div id="t5y_6" class="t s2_6">Enige	individuele	plante	wat	nie	die	glifosaat	geen	bevat	nie	en	</div>
+<div id="t5z_6" class="t s2_6">met	glifosaat	bevattende	produkte	soos	TOUCHDOWN	Forte	</div>
+<div id="t60_6" class="t s2_6">HITECH	gespuit	word	sal	afsterf.	Voorsorg	moet	getref	word	</div>
+<div id="t61_6" class="t s2_6">om	 nie	 die	 tenkmengsel	 op	 konvensionele	 mielies	 (nie	 glifo-</div>
+<div id="t62_6" class="t s2_6">saat	 weerstandbiedende	 mielies)	 te	 spuit	 nie.	 Volg	 die	 etiket	</div>
+<div id="t63_6" class="t s2_6">aanwysings	vir	tenkmengsels	op	glifosaat	weerstandbiedende	</div>
+<div id="t64_6" class="t s2_6">mielies	soos	verduidelik	op	die	TOUCHDOWN	FORTE	HITECH	</div>
+<div id="t65_6" class="t s2_6">etiket.</div>
+<div id="t66_6" class="t s2_6">•	</div>
+<div id="t67_6" class="t s2_6">Indien	</div>
+<div id="t68_6" class="t s1_6">CALLISTO </div>
+<div id="t69_6" class="t s2_6">met	 GARDO	 GOLD	 en	 TOUCHDOWN	</div>
+<div id="t6a_6" class="t s2_6">Forte	HITECH	in	tenkmengsels	gemeng	word,	moet		</div>
+<div id="t6b_6" class="t s2_6">•		</div>
+<div id="t6c_6" class="t s2_6">ammonium	 sulfaat	 soos	 Velocity	 Glyfo	 gebruik	 word	 om	</div>
+<div id="t6d_6" class="t s2_6">die	kwaliteit	van	die	water	te	herstel</div>
+<div id="t6e_6" class="t s2_6">•		</div>
+<div id="t6f_6" class="t s2_6">geen	bymiddels	gebruik	word	nie</div>
+<div id="t6g_6" class="t s1_6">CALLISTO</div>
+<div id="t6h_6" class="t s2_6">208	m</div>
+<div id="t6i_6" class="t s3_6">l</div>
+<div id="t6j_6" class="t s2_6">/ha</div>
+<div id="t6k_6" class="t s1_6">plus</div>
+<div id="t6l_6" class="t s1_6">METAGAN</div>
+<div id="t6m_6" class="t s1_6">GOLD </div>
+<div id="t6n_6" class="t s2_6">217	-	454	m</div>
+<div id="t6o_6" class="t s3_6">l</div>
+<div id="t6p_6" class="t s2_6">/ha</div>
+<div id="t6q_6" class="t s2_6">plus</div>
+<div id="t6r_6" class="t s1_6">GARDOMIL</div>
+<div id="t6s_6" class="t s1_6">GOLD</div>
+<div id="t6t_6" class="t s2_6">502	m</div>
+<div id="t6u_6" class="t s3_6">l</div>
+<div id="t6v_6" class="t s2_6">/ha</div>
+<div id="t6w_6" class="t s2_6">plus	</div>
+<div id="t6x_6" class="t s1_6">‘n</div>
+<div id="t6y_6" class="t s1_6">aanbevole</div>
+<div id="t6z_6" class="t s1_6">bymiddel*</div>
+<div id="t70_6" class="t s1_6">CALLISTO</div>
+<div id="t71_6" class="t s2_6">208	m</div>
+<div id="t72_6" class="t s3_6">l</div>
+<div id="t73_6" class="t s2_6">/ha</div>
+<div id="t74_6" class="t s1_6">Weke </div>
+<div id="t75_6" class="t s1_6">beheer</div>
+<div id="t76_6" class="t s1_6">plus</div>
+<div id="t77_6" class="t s1_6">GARDO GOLD</div>
+<div id="t78_6" class="t s2_6">832	-	1562	m</div>
+<div id="t79_6" class="t s3_6">l</div>
+<div id="t7a_6" class="t s2_6">/ha</div>
+<div id="t7b_6" class="t s1_6">Botaniese </div>
+<div id="t7c_6" class="t s1_6">naam</div>
+<div id="t7d_6" class="t s2_6">plus	</div>
+<div id="t7e_6" class="t s1_6">‘n aanbevole</div>
+<div id="t7f_6" class="t s1_6">bymiddel*</div>
+<div id="t7g_6" class="t s1_6">Gewone </div>
+<div id="t7h_6" class="t s1_6">naam</div>
+<div id="t7i_6" class="t s1_6">CALLISTO</div>
+<div id="t7j_6" class="t s2_6">208	m</div>
+<div id="t7k_6" class="t s3_6">l</div>
+<div id="t7l_6" class="t s2_6">/ha</div>
+<div id="t7m_6" class="t s1_6">plus</div>
+<div id="t7n_6" class="t s1_6">PRIMAGRAM </div>
+<div id="t7o_6" class="t s1_6">GOLD</div>
+<div id="t7p_6" class="t s2_6">897	-	1682	m</div>
+<div id="t7q_6" class="t s3_6">l</div>
+<div id="t7r_6" class="t s2_6">/ha</div>
+<div id="t7s_6" class="t s2_6">plus	</div>
+<div id="t7t_6" class="t s1_6">‘n</div>
+<div id="t7u_6" class="t s1_6">aanbevole</div>
+<div id="t7v_6" class="t s1_6">bymiddel*</div>
+<div id="t7w_6" class="t s1_6">of</div>
+<div id="t7x_6" class="t s1_6">of</div>
+<div id="t7y_6" class="t s1_6">Bogenoemde onkruide plus</div>
+<div id="t7z_6" class="t s2_6">4	</div>
+<div id="t80_6" class="t s4_6">Commelina  </div>
+<div id="t81_6" class="t s1_6">Bengaalse wande-</div>
+<div id="t82_6" class="t s4_6">benghalensis </div>
+<div id="t83_6" class="t s1_6">lende Jood</div>
+<div id="t84_6" class="t s2_6">4	</div>
+<div id="t85_6" class="t s4_6">Ipomoea purpurea </div>
+<div id="t86_6" class="t s1_6">purperwinde</div>
+<div id="t87_6" class="t s2_6">4	</div>
+<div id="t88_6" class="t s4_6">Tribulus terrestris </div>
+<div id="t89_6" class="t s1_6">dubbeltjie</div>
+<div id="t8a_6" class="t s2_6">8	</div>
+<div id="t8b_6" class="t s4_6">Cleome monophylla </div>
+<div id="t8c_6" class="t s1_6">rusperbossie</div>
+<div id="t8d_6" class="t s2_6">8	</div>
+<div id="t8e_6" class="t s4_6">Hibiscus trionum </div>
+<div id="t8f_6" class="t s1_6">Terblansbossie</div>
+<div id="t8g_6" class="t s1_6">CALLISTO</div>
+<div id="t8h_6" class="t s2_6">260	m</div>
+<div id="t8i_6" class="t s3_6">l</div>
+<div id="t8j_6" class="t s2_6">/ha</div>
+<div id="t8k_6" class="t s1_6">CALLISTO</div>
+<div id="t8l_6" class="t s2_6">260	m</div>
+<div id="t8m_6" class="t s3_6">l</div>
+<div id="t8n_6" class="t s2_6">/ha</div>
+<div id="t8o_6" class="t s2_6">plus</div>
+<div id="t8p_6" class="t s1_6">METAGAN </div>
+<div id="t8q_6" class="t s1_6">GOLD</div>
+<div id="t8r_6" class="t s2_6">339	-	508	m</div>
+<div id="t8s_6" class="t s3_6">l</div>
+<div id="t8t_6" class="t s2_6">/ha</div>
+<div id="t8u_6" class="t s2_6">plus</div>
+<div id="t8v_6" class="t s1_6">METAGAN </div>
+<div id="t8w_6" class="t s1_6">GOLD</div>
+<div id="t8x_6" class="t s2_6">285	-	454	m</div>
+<div id="t8y_6" class="t s3_6">l</div>
+<div id="t8z_6" class="t s2_6">/ha</div>
+<div id="t90_6" class="t s2_6">plus</div>
+<div id="t91_6" class="t s1_6">GESAPRIM </div>
+<div id="t92_6" class="t s1_6">SUPER</div>
+<div id="t93_6" class="t s2_6">416	m</div>
+<div id="t94_6" class="t s3_6">l</div>
+<div id="t95_6" class="t s2_6">/ha</div>
+<div id="t96_6" class="t s2_6">plus</div>
+<div id="t97_6" class="t s1_6">GARDOMIL</div>
+<div id="t98_6" class="t s1_6">GOLD</div>
+<div id="t99_6" class="t s2_6">502	m</div>
+<div id="t9a_6" class="t s3_6">l</div>
+<div id="t9b_6" class="t s2_6">/ha</div>
+<div id="t9c_6" class="t s2_6">plus	</div>
+<div id="t9d_6" class="t s1_6">‘n </div>
+<div id="t9e_6" class="t s1_6">aanbevole</div>
+<div id="t9f_6" class="t s1_6">bymiddel*</div>
+<div id="t9g_6" class="t s2_6">plus	</div>
+<div id="t9h_6" class="t s1_6">‘n</div>
+<div id="t9i_6" class="t s1_6">aanbevole</div>
+<div id="t9j_6" class="t s1_6">bymiddel*</div>
+<div id="t9k_6" class="t s1_6">CALLISTO</div>
+<div id="t9l_6" class="t s2_6">260	m</div>
+<div id="t9m_6" class="t s3_6">l</div>
+<div id="t9n_6" class="t s2_6">/ha</div>
+<div id="t9o_6" class="t s2_6">plus</div>
+<div id="t9p_6" class="t s1_6">PRIMAGRAM </div>
+<div id="t9q_6" class="t s1_6">GOLD</div>
+<div id="t9r_6" class="t s2_6">1122	-	1682	m</div>
+<div id="t9s_6" class="t s3_6">l</div>
+<div id="t9t_6" class="t s2_6">/ha</div>
+<div id="t9u_6" class="t s2_6">plus	</div>
+<div id="t9v_6" class="t s1_6">‘n</div>
+<div id="t9w_6" class="t s1_6">aanbevole</div>
+<div id="t9x_6" class="t s1_6">bymiddel*</div>
+<div id="t9y_6" class="t s1_6">of</div>
+<div id="t9z_6" class="t s1_6">of</div>
+<div id="ta0_6" class="t s1_6">CALLISTO</div>
+<div id="ta1_6" class="t s2_6">260	m</div>
+<div id="ta2_6" class="t s3_6">l</div>
+<div id="ta3_6" class="t s2_6">/ha</div>
+<div id="ta4_6" class="t s1_6">Weke </div>
+<div id="ta5_6" class="t s1_6">beheer</div>
+<div id="ta6_6" class="t s1_6">plus</div>
+<div id="ta7_6" class="t s1_6">GARDO GOLD</div>
+<div id="ta8_6" class="t s2_6">1040	-	1562	m</div>
+<div id="ta9_6" class="t s3_6">l</div>
+<div id="taa_6" class="t s2_6">/ha</div>
+<div id="tab_6" class="t s1_6">Botaniese </div>
+<div id="tac_6" class="t s1_6">naam</div>
+<div id="tad_6" class="t s2_6">plus	</div>
+<div id="tae_6" class="t s1_6">‘n aanbevole</div>
+<div id="taf_6" class="t s1_6">bymiddel*</div>
+<div id="tag_6" class="t s1_6">Gewone </div>
+<div id="tah_6" class="t s1_6">naam</div>
+<div id="tai_6" class="t s1_6">of</div>
+<div id="taj_6" class="t s1_6">Bogenoemde onkruide plus</div>
+<div id="tak_6" class="t s2_6">4	</div>
+<div id="tal_6" class="t s4_6">Hibiscus cannabinus </div>
+<div id="tam_6" class="t s1_6">wildestokroos</div>
+<div id="tan_6" class="t s2_6">8	</div>
+<div id="tao_6" class="t s4_6">Citrullus lanatus</div>
+<div id="tap_6" class="t s1_6">karkoer</div>
+<div id="taq_6" class="t s2_6">8	</div>
+<div id="tar_6" class="t s4_6">Digitaria sanguinalis </div>
+<div id="tas_6" class="t s1_6">kruisvingergras</div>
+<div id="tat_6" class="t s2_6">8	</div>
+<div id="tau_6" class="t s4_6">Eleusine indica </div>
+<div id="tav_6" class="t s1_6">jongosgras</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg6Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg6"><img src="6/6.png" id="pdf6" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f6 = [['t1c_6',335],['t1j_6',296],['t24_6',644],['t27_6',383],['t3m_6',335],['t3t_6',296],['t4e_6',644],['t4g_6',432],['t4j_6',326],['t4m_6',463],['t4n_6',430],['t4p_6',262],['t4q_6',434],['t4s_6',259],['t4u_6',402],['t4x_6',377],['t4z_6',1327],['t50_6',219],['t52_6',311],['t55_6',429],['t58_6',450],['t5b_6',448],['t5e_6',465],['t5g_6',749],['t5h_6',323],['t5k_6',1387],['t5p_6',863],['t5r_6',1123],['t5s_6',321],['t5t_6',1026],['t5u_6',1373],['t61_6',1304],['t62_6',1318],['t69_6',887],['t6c_6',1231],['t77_6',335],['t7e_6',296],['t7y_6',644],['t80_6',262],['t81_6',434],['t83_6',259],['t85_6',402],['t88_6',377],['t8b_6',435],['t8e_6',368],['ta7_6',335],['tae_6',296],['taj_6',644],['tal_6',450],['tao_6',347],['tar_6',432],['tau_6',326]];
+var c6 = 0;
+function fontAdjustments6(){;
+	if (c6<f6.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f6[c6][0],f6[c6][1]);
+		c6++;
+		if (c6%10 == 0) {
+			setTimeout(function(){fontAdjustments6()},0);
+		} else {
+			fontAdjustments6();
+		}
+	}
+};
+function load6(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments6,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 392;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_6");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(8,6,909,1286,0);
+</script>
+</body>
+</html>

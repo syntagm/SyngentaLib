@@ -1,0 +1,818 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>Sorgomil_Gold_600_SC_Afr___2001_07_09 Page6</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" />
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" />
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); z-index:-2;"></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load6();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_6{left:349px;top:41px;}
+#t2_6{left:503px;top:41px;}
+#t3_6{left:466px;top:215px;}
+#t4_6{left:543px;top:217px;}
+#t5_6{left:547px;top:215px;}
+#t6_6{left:558px;top:215px;}
+#t7_6{left:604px;top:217px;}
+#t8_6{left:608px;top:215px;}
+#t9_6{left:621px;top:215px;}
+#ta_6{left:651px;top:217px;}
+#tb_6{left:655px;top:215px;}
+#tc_6{left:666px;top:215px;}
+#td_6{left:710px;top:217px;}
+#te_6{left:714px;top:215px;}
+#tf_6{left:727px;top:215px;}
+#tg_6{left:784px;top:217px;}
+#th_6{left:789px;top:215px;}
+#ti_6{left:466px;top:230px;}
+#tj_6{left:519px;top:232px;}
+#tk_6{left:524px;top:230px;}
+#tl_6{left:534px;top:230px;}
+#tm_6{left:580px;top:232px;}
+#tn_6{left:585px;top:230px;}
+#to_6{left:609px;top:230px;}
+#tp_6{left:682px;top:230px;}
+#tq_6{left:723px;top:230px;}
+#tr_6{left:466px;top:244px;}
+#ts_6{left:466px;top:259px;}
+#tt_6{left:542px;top:259px;}
+#tu_6{left:466px;top:273px;}
+#tv_6{left:466px;top:346px;}
+#tw_6{left:478px;top:346px;}
+#tx_6{left:596px;top:346px;}
+#ty_6{left:466px;top:360px;}
+#tz_6{left:703px;top:418px;}
+#t10_6{left:84px;top:69px;}
+#t11_6{left:150px;top:69px;}
+#t12_6{left:84px;top:83px;}
+#t13_6{left:67px;top:112px;}
+#t14_6{left:84px;top:112px;}
+#t15_6{left:84px;top:127px;}
+#t16_6{left:84px;top:141px;}
+#t17_6{left:84px;top:156px;}
+#t18_6{left:238px;top:156px;}
+#t19_6{left:255px;top:156px;}
+#t1a_6{left:67px;top:185px;}
+#t1b_6{left:84px;top:185px;}
+#t1c_6{left:84px;top:199px;}
+#t1d_6{left:67px;top:228px;}
+#t1e_6{left:84px;top:228px;}
+#t1f_6{left:84px;top:243px;}
+#t1g_6{left:110px;top:243px;}
+#t1h_6{left:174px;top:243px;}
+#t1i_6{left:84px;top:257px;}
+#t1j_6{left:237px;top:257px;}
+#t1k_6{left:253px;top:257px;}
+#t1l_6{left:84px;top:272px;}
+#t1m_6{left:84px;top:286px;}
+#t1n_6{left:67px;top:315px;}
+#t1o_6{left:84px;top:315px;}
+#t1p_6{left:226px;top:315px;}
+#t1q_6{left:294px;top:315px;}
+#t1r_6{left:84px;top:330px;}
+#t1s_6{left:84px;top:344px;}
+#t1t_6{left:252px;top:344px;}
+#t1u_6{left:273px;top:344px;}
+#t1v_6{left:84px;top:359px;}
+#t1w_6{left:262px;top:359px;}
+#t1x_6{left:84px;top:373px;}
+#t1y_6{left:84px;top:388px;}
+#t1z_6{left:67px;top:417px;}
+#t20_6{left:84px;top:417px;}
+#t21_6{left:189px;top:417px;}
+#t22_6{left:349px;top:417px;}
+#t23_6{left:367px;top:417px;}
+#t24_6{left:84px;top:431px;}
+#t25_6{left:84px;top:446px;}
+#t26_6{left:67px;top:475px;}
+#t27_6{left:84px;top:475px;}
+#t28_6{left:84px;top:490px;}
+#t29_6{left:84px;top:504px;}
+#t2a_6{left:84px;top:519px;}
+#t2b_6{left:67px;top:548px;}
+#t2c_6{left:84px;top:548px;}
+#t2d_6{left:84px;top:562px;}
+#t2e_6{left:135px;top:562px;}
+#t2f_6{left:300px;top:562px;}
+#t2g_6{left:319px;top:562px;}
+#t2h_6{left:84px;top:577px;}
+#t2i_6{left:84px;top:591px;}
+#t2j_6{left:238px;top:591px;}
+#t2k_6{left:84px;top:606px;}
+#t2l_6{left:84px;top:620px;}
+
+.s1_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: LSDLHL-HelveticaNeueLTStd-Bd6;
+	color: rgb(0,0,0);
+}
+
+.s6_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: KKTFTN-HelveticaNeueLTStd-It6;
+	color: rgb(0,0,0);
+}
+
+.s4_6{
+	FONT-SIZE: 21px;
+	FONT-FAMILY: LSDLHL-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+.s2_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: LSDLHL-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+.s3_6{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: LSDLHL-HelveticaNeueLTStd-Bd6;
+	color: rgb(0,0,0);
+}
+
+.s5_6{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: LSDLHL-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: KKTFTN-HelveticaNeueLTStd-It6;
+	src: url("6/fonts/KKTFTN-HelveticaNeueLTStd-It.eot");
+	src: url("6/fonts/KKTFTN-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/KKTFTN-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: LSDLHL-HelveticaNeueLTStd-Bd6;
+	src: url("6/fonts/LSDLHL-HelveticaNeueLTStd-Bd.eot");
+	src: url("6/fonts/LSDLHL-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/LSDLHL-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: LSDLHL-HelveticaNeueLTStd-Lt6;
+	src: url("6/fonts/LSDLHL-HelveticaNeueLTStd-Lt.eot");
+	src: url("6/fonts/LSDLHL-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/LSDLHL-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_6" class="t s1_6">SORGOMIL GOLD 600 SC</div>
+<div id="t2_6" class="t s2_6">/ 6</div>
+<div id="t3_6" class="t s3_6">COMPLEMENT</div>
+<div id="t4_6" class="t s4_6">®</div>
+<div id="t5_6" class="t s5_6">, </div>
+<div id="t6_6" class="t s3_6">CONCEP</div>
+<div id="t7_6" class="t s4_6">®</div>
+<div id="t8_6" class="t s5_6">, </div>
+<div id="t9_6" class="t s3_6">DUAL</div>
+<div id="ta_6" class="t s4_6">®</div>
+<div id="tb_6" class="t s5_6">, </div>
+<div id="tc_6" class="t s3_6">FALCON</div>
+<div id="td_6" class="t s4_6">®</div>
+<div id="te_6" class="t s5_6">, </div>
+<div id="tf_6" class="t s3_6">GESAPRIM</div>
+<div id="tg_6" class="t s4_6">®</div>
+<div id="th_6" class="t s5_6">, </div>
+<div id="ti_6" class="t s3_6">METAGAN</div>
+<div id="tj_6" class="t s4_6">®</div>
+<div id="tk_6" class="t s5_6">,</div>
+<div id="tl_6" class="t s3_6">SERVIAN</div>
+<div id="tm_6" class="t s4_6">®</div>
+<div id="tn_6" class="t s5_6">, </div>
+<div id="to_6" class="t s3_6">SORGOMIL</div>
+<div id="tp_6" class="t s5_6">= </div>
+<div id="tq_6" class="t s5_6">Geregistreerde </div>
+<div id="tr_6" class="t s5_6">Handelsmerke van ‘n Syngenta Groep Maatskappy.</div>
+<div id="ts_6" class="t s3_6">SPRAY- AIDE</div>
+<div id="tt_6" class="t s5_6">= Geregistreerde Handelsmerk van Hygrotech Saad </div>
+<div id="tu_6" class="t s5_6">(Edms) Bpk</div>
+<div id="tv_6" class="t s5_6">© </div>
+<div id="tw_6" class="t s3_6">SYNGENTA AG, 2000.</div>
+<div id="tx_6" class="t s5_6">Kopiereg van die dokument is voorbehou. </div>
+<div id="ty_6" class="t s5_6">Alle ongemagtigde vermeerdering word verbied.</div>
+<div id="tz_6" class="t s5_6">SAReg.: 2001-07-09</div>
+<div id="t10_6" class="t s6_6">Eucalyptus</div>
+<div id="t11_6" class="t s2_6">plantasies om die residuele effek op grasse te </div>
+<div id="t12_6" class="t s2_6">verbeter. Raadpleeg die FALCON GOLD etiket.</div>
+<div id="t13_6" class="t s2_6">•	</div>
+<div id="t14_6" class="t s2_6">Die beheer van onkruide groter as 30 cm kan verbeter word </div>
+<div id="t15_6" class="t s2_6">deur hulle af te kap en toe te laat om te hergroei tot die </div>
+<div id="t16_6" class="t s2_6">aanbevole grootte, voor toediening van tenkmengsels van</div>
+<div id="t17_6" class="t s1_6">SORGOMIL GOLD 600 SC </div>
+<div id="t18_6" class="t s2_6">en</div>
+<div id="t19_6" class="t s2_6">glifosaat.</div>
+<div id="t1a_6" class="t s2_6">•	</div>
+<div id="t1b_6" class="t s2_6">Stroke/kolle meerjarige onkruide moet met ‘n geskikte kontak- </div>
+<div id="t1c_6" class="t s2_6">of sistemiese onkruiddoder beheer word.</div>
+<div id="t1d_6" class="t s2_6">•	</div>
+<div id="t1e_6" class="t s2_6">Swak residuele beheer van vlak ontkiemende onkruide, </div>
+<div id="t1f_6" class="t s2_6">bv. </div>
+<div id="t1g_6" class="t s6_6">T. minuta</div>
+<div id="t1h_6" class="t s2_6">kan verwag word van tenkmengsels van</div>
+<div id="t1i_6" class="t s1_6">SORGOMIL GOLD 600 SC </div>
+<div id="t1j_6" class="t s2_6">en</div>
+<div id="t1k_6" class="t s2_6">glifosaat toegedien op gronde </div>
+<div id="t1l_6" class="t s2_6">met ‘n lae organiese materie- en/of klei-inhoud gevolg word </div>
+<div id="t1m_6" class="t s2_6">deur swaar besproeiing of reën.</div>
+<div id="t1n_6" class="t s2_6">•	</div>
+<div id="t1o_6" class="t s2_6">Die onderste blare van </div>
+<div id="t1p_6" class="t s6_6">Eucalyptus</div>
+<div id="t1q_6" class="t s2_6">boompies kan tyde-</div>
+<div id="t1r_6" class="t s2_6">like vergeling toon as ‘n toediening van tenkmengsels van</div>
+<div id="t1s_6" class="t s1_6">SORGOMIL GOLD 600 SC </div>
+<div id="t1t_6" class="t s2_6">en</div>
+<div id="t1u_6" class="t s2_6">glifosaat op ligte gronde </div>
+<div id="t1v_6" class="t s2_6">gevolg word deur swaar reën. </div>
+<div id="t1w_6" class="t s2_6">Dit sal egter geen nadelige </div>
+<div id="t1x_6" class="t s2_6">effek op die boompies hê nie en die boompies sal ook vinnig </div>
+<div id="t1y_6" class="t s2_6">uitgroei.</div>
+<div id="t1z_6" class="t s2_6">•	</div>
+<div id="t20_6" class="t s2_6">Tenkmengsels van</div>
+<div id="t21_6" class="t s1_6">SORGOMIL GOLD 600 SC </div>
+<div id="t22_6" class="t s2_6">en</div>
+<div id="t23_6" class="t s2_6">glifosaat </div>
+<div id="t24_6" class="t s2_6">moet verkieslik gebruik word gedurende die fase wanneer </div>
+<div id="t25_6" class="t s2_6">onkruide aktief groei.</div>
+<div id="t26_6" class="t s2_6">•	</div>
+<div id="t27_6" class="t s2_6">Graad van beheer en duur van nawerking hang af van </div>
+<div id="t28_6" class="t s2_6">on kruidspesie, onkruidgrootte, groeitoestande tydens en na </div>
+<div id="t29_6" class="t s2_6">bespui ting, reënval en organiese materie-inhoud van die </div>
+<div id="t2a_6" class="t s2_6">grond.</div>
+<div id="t2b_6" class="t s2_6">•	</div>
+<div id="t2c_6" class="t s2_6">Die groei van gevoelige onkruide word vinnig deur tenkmeng-</div>
+<div id="t2d_6" class="t s2_6">sels van</div>
+<div id="t2e_6" class="t s1_6">SORGOMIL GOLD 600 SC </div>
+<div id="t2f_6" class="t s2_6">en</div>
+<div id="t2g_6" class="t s2_6">glifosaat gestaak </div>
+<div id="t2h_6" class="t s2_6">alhoewel die simptome nie waarneembaar mag wees voor 3 </div>
+<div id="t2i_6" class="t s2_6">tot 5 dae na toediening nie. </div>
+<div id="t2j_6" class="t s2_6">Onkruidbeheer sal 10 tot 14 dae </div>
+<div id="t2k_6" class="t s2_6">na toediening plaasvind, afhangende van die groeitoestande </div>
+<div id="t2l_6" class="t s2_6">en onkruidgevoeligheid.</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg6Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg6"><img src="6/6.png" id="pdf6" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f6 = [['t1_6',602],['t2_6',58],['tr_6',957],['ts_6',284],['tt_6',998],['tu_6',214],['tw_6',445],['tx_6',781],['ty_6',886],['tz_6',387],['t11_6',1040],['t12_6',996],['t14_6',1304],['t15_6',1304],['t16_6',1304],['t17_6',602],['t1b_6',1304],['t1c_6',866],['t1e_6',1304],['t1g_6',225],['t1h_6',943],['t1i_6',598],['t1k_6',627],['t1l_6',1304],['t1m_6',671],['t1o_6',534],['t1q_6',462],['t1r_6',1304],['t1s_6',644],['t1u_6',550],['t1v_6',664],['t1w_6',594],['t1x_6',1304],['t20_6',398],['t21_6',618],['t24_6',1304],['t25_6',441],['t27_6',1304],['t28_6',1304],['t29_6',1304],['t2c_6',1304],['t2d_6',180],['t2e_6',632],['t2g_6',364],['t2h_6',1304],['t2i_6',583],['t2j_6',690],['t2k_6',1304],['t2l_6',498]];
+var c6 = 0;
+function fontAdjustments6(){;
+	if (c6<f6.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f6[c6][0],f6[c6][1]);
+		c6++;
+		if (c6%10 == 0) {
+			setTimeout(function(){fontAdjustments6()},0);
+		} else {
+			fontAdjustments6();
+		}
+	}
+};
+function load6(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments6,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 94;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_6");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(6,6,909,1286,0);
+</script>
+</body>
+</html>

@@ -1,0 +1,908 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>CRUISER_FORCE___Afr_2010_08_11_E_ Page2</title>
+</head>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load2();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_2{left:373px;top:41px;}
+#t2_2{left:478px;top:41px;}
+#t3_2{left:472px;top:111px;}
+#t4_2{left:462px;top:148px;}
+#t5_2{left:462px;top:177px;}
+#t6_2{left:462px;top:192px;}
+#t7_2{left:465px;top:192px;}
+#t8_2{left:462px;top:206px;}
+#t9_2{left:493px;top:206px;}
+#ta_2{left:462px;top:221px;}
+#tb_2{left:462px;top:235px;}
+#tc_2{left:465px;top:235px;}
+#td_2{left:526px;top:235px;}
+#te_2{left:462px;top:250px;}
+#tf_2{left:462px;top:264px;}
+#tg_2{left:462px;top:279px;}
+#th_2{left:462px;top:293px;}
+#ti_2{left:465px;top:293px;}
+#tj_2{left:462px;top:308px;}
+#tk_2{left:462px;top:322px;}
+#tl_2{left:462px;top:337px;}
+#tm_2{left:462px;top:351px;}
+#tn_2{left:465px;top:351px;}
+#to_2{left:462px;top:366px;}
+#tp_2{left:539px;top:366px;}
+#tq_2{left:581px;top:105px;}
+#tr_2{left:584px;top:119px;}
+#ts_2{left:599px;top:177px;}
+#tt_2{left:594px;top:192px;}
+#tu_2{left:638px;top:192px;}
+#tv_2{left:582px;top:206px;}
+#tw_2{left:697px;top:111px;}
+#tx_2{left:670px;top:177px;letter-spacing:1px;}
+#ty_2{left:771px;top:177px;letter-spacing:1px;}
+#tz_2{left:670px;top:192px;letter-spacing:1px;}
+#t10_2{left:736px;top:192px;letter-spacing:1px;}
+#t11_2{left:670px;top:206px;}
+#t12_2{left:670px;top:221px;}
+#t13_2{left:747px;top:221px;}
+#t14_2{left:670px;top:235px;}
+#t15_2{left:670px;top:264px;letter-spacing:2px;}
+#t16_2{left:727px;top:264px;letter-spacing:1px;}
+#t17_2{left:774px;top:264px;letter-spacing:1px;}
+#t18_2{left:670px;top:279px;letter-spacing:1px;}
+#t19_2{left:751px;top:279px;letter-spacing:1px;}
+#t1a_2{left:670px;top:293px;letter-spacing:1px;}
+#t1b_2{left:740px;top:293px;letter-spacing:1px;}
+#t1c_2{left:768px;top:293px;}
+#t1d_2{left:670px;top:308px;}
+#t1e_2{left:670px;top:322px;}
+#t1f_2{left:458px;top:67px;}
+#t1g_2{left:463px;top:519px;}
+#t1h_2{left:554px;top:521px;}
+#t1i_2{left:563px;top:519px;}
+#t1j_2{left:575px;top:519px;}
+#t1k_2{left:463px;top:533px;}
+#t1l_2{left:467px;top:591px;}
+#t1m_2{left:479px;top:591px;}
+#t1n_2{left:593px;top:591px;}
+#t1o_2{left:467px;top:606px;}
+#t1p_2{left:698px;top:649px;}
+#t1q_2{left:743px;top:649px;}
+#t1r_2{left:67px;top:67px;}
+#t1s_2{left:84px;top:67px;}
+#t1t_2{left:199px;top:67px;}
+#t1u_2{left:84px;top:82px;}
+#t1v_2{left:84px;top:96px;}
+#t1w_2{left:190px;top:96px;}
+#t1x_2{left:67px;top:111px;}
+#t1y_2{left:84px;top:111px;}
+#t1z_2{left:84px;top:125px;}
+#t20_2{left:181px;top:125px;}
+#t21_2{left:285px;top:125px;}
+#t22_2{left:84px;top:140px;}
+#t23_2{left:84px;top:154px;}
+#t24_2{left:108px;top:154px;}
+#t25_2{left:214px;top:154px;}
+#t26_2{left:67px;top:183px;}
+#t27_2{left:99px;top:183px;}
+#t28_2{left:67px;top:212px;}
+#t29_2{left:176px;top:212px;}
+#t2a_2{left:67px;top:227px;}
+#t2b_2{left:67px;top:241px;}
+#t2c_2{left:67px;top:256px;}
+#t2d_2{left:67px;top:271px;}
+#t2e_2{left:67px;top:300px;}
+#t2f_2{left:95px;top:300px;}
+#t2g_2{left:67px;top:329px;}
+#t2h_2{left:84px;top:329px;}
+#t2i_2{left:198px;top:329px;}
+#t2j_2{left:84px;top:343px;}
+#t2k_2{left:84px;top:358px;}
+#t2l_2{left:84px;top:372px;}
+#t2m_2{left:179px;top:372px;}
+#t2n_2{left:84px;top:387px;}
+#t2o_2{left:158px;top:387px;}
+#t2p_2{left:263px;top:387px;}
+#t2q_2{left:84px;top:401px;}
+#t2r_2{left:84px;top:416px;}
+#t2s_2{left:67px;top:445px;}
+#t2t_2{left:84px;top:445px;}
+#t2u_2{left:257px;top:445px;}
+#t2v_2{left:362px;top:445px;}
+#t2w_2{left:84px;top:459px;}
+#t2x_2{left:84px;top:474px;}
+#t2y_2{left:84px;top:503px;}
+#t2z_2{left:171px;top:503px;}
+#t30_2{left:84px;top:517px;}
+#t31_2{left:266px;top:517px;}
+#t32_2{left:271px;top:517px;}
+#t33_2{left:67px;top:546px;}
+#t34_2{left:84px;top:546px;}
+#t35_2{left:84px;top:561px;}
+#t36_2{left:266px;top:561px;}
+#t37_2{left:84px;top:575px;}
+#t38_2{left:84px;top:590px;}
+#t39_2{left:84px;top:604px;}
+#t3a_2{left:67px;top:633px;}
+#t3b_2{left:84px;top:633px;}
+#t3c_2{left:84px;top:648px;}
+#t3d_2{left:84px;top:662px;}
+#t3e_2{left:67px;top:691px;}
+#t3f_2{left:162px;top:691px;}
+#t3g_2{left:67px;top:706px;}
+
+.s6_2{
+	FONT-SIZE: 21px;
+	FONT-FAMILY: EQGNYZ-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s1_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: EQGNYZ-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s3_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: CAMBWD-HelveticaNeueLTStd-It2;
+	color: rgb(0,0,0);
+}
+
+.s8_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: FYQTMX-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+.s2_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: EQGNYZ-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+.s5_2{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: EQGNYZ-HelveticaNeueLTStd-Bd2;
+	color: rgb(0,0,0);
+}
+
+.s4_2{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: DIWHKB-MT-Extra2;
+	color: rgb(0,0,0);
+}
+
+.s7_2{
+	FONT-SIZE: 42px;
+	FONT-FAMILY: EQGNYZ-HelveticaNeueLTStd-Lt2;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: EQGNYZ-HelveticaNeueLTStd-Bd2;
+	src: url("2/fonts/EQGNYZ-HelveticaNeueLTStd-Bd.eot");
+	src: url("2/fonts/EQGNYZ-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/EQGNYZ-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: FYQTMX-HelveticaNeueLTStd-Lt2;
+	src: url("2/fonts/FYQTMX-HelveticaNeueLTStd-Lt.eot");
+	src: url("2/fonts/FYQTMX-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/FYQTMX-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+@font-face {
+	font-family: DIWHKB-MT-Extra2;
+	src: url("2/fonts/DIWHKB-MT-Extra.eot");
+	src: url("2/fonts/DIWHKB-MT-Extra.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/DIWHKB-MT-Extra.otf") format("opentype");
+}
+
+@font-face {
+	font-family: EQGNYZ-HelveticaNeueLTStd-Lt2;
+	src: url("2/fonts/EQGNYZ-HelveticaNeueLTStd-Lt.eot");
+	src: url("2/fonts/EQGNYZ-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/EQGNYZ-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+@font-face {
+	font-family: CAMBWD-HelveticaNeueLTStd-It2;
+	src: url("2/fonts/CAMBWD-HelveticaNeueLTStd-It.eot");
+	src: url("2/fonts/CAMBWD-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("2/fonts/CAMBWD-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_2" class="t s1_2">CRUISER FORCE</div>
+<div id="t2_2" class="t s2_2">/ 2</div>
+<div id="t3_2" class="t s1_2">Gewas / Plaag</div>
+<div id="t4_2" class="t s1_2">MIELIES</div>
+<div id="t5_2" class="t s1_2">Swartmieliekewer</div>
+<div id="t6_2" class="t s2_2">(</div>
+<div id="t7_2" class="t s3_2">Heteronychus</div>
+<div id="t8_2" class="t s3_2">arator</div>
+<div id="t9_2" class="t s2_2">)</div>
+<div id="ta_2" class="t s1_2">Vals draadwurm</div>
+<div id="tb_2" class="t s2_2">(</div>
+<div id="tc_2" class="t s3_2">Somaticus</div>
+<div id="td_2" class="t s2_2">en </div>
+<div id="te_2" class="t s3_2">Gonocephalum</div>
+<div id="tf_2" class="t s2_2">spp.) </div>
+<div id="tg_2" class="t s1_2">Snuitkewers</div>
+<div id="th_2" class="t s2_2">(</div>
+<div id="ti_2" class="t s3_2">Protostrophus</div>
+<div id="tj_2" class="t s2_2">spp.) </div>
+<div id="tk_2" class="t s1_2">Bontmieliekewer-</div>
+<div id="tl_2" class="t s1_2">larwes</div>
+<div id="tm_2" class="t s2_2">(</div>
+<div id="tn_2" class="t s3_2">Astylus </div>
+<div id="to_2" class="t s3_2">atromaculatus</div>
+<div id="tp_2" class="t s2_2">) </div>
+<div id="tq_2" class="t s1_2">Toedienings-</div>
+<div id="tr_2" class="t s1_2">hoeveelheid</div>
+<div id="ts_2" class="t s2_2">1,471 - </div>
+<div id="tt_2" class="t s2_2">2,942 m</div>
+<div id="tu_2" class="t s4_2">l</div>
+<div id="tv_2" class="t s2_2">produk / saad</div>
+<div id="tw_2" class="t s1_2">Opmerkings</div>
+<div id="tx_2" class="t s2_2">Saailingskade </div>
+<div id="ty_2" class="t s2_2">mag </div>
+<div id="tz_2" class="t s2_2">voorkom </div>
+<div id="t10_2" class="t s2_2">gedurende </div>
+<div id="t11_2" class="t s2_2">hoë plaagdruk ten spyte </div>
+<div id="t12_2" class="t s2_2">van behande </div>
+<div id="t13_2" class="t s2_2">ling met </div>
+<div id="t14_2" class="t s1_2">CRUISER FORCE.</div>
+<div id="t15_2" class="t s2_2">Saad </div>
+<div id="t16_2" class="t s2_2">wat </div>
+<div id="t17_2" class="t s2_2">met </div>
+<div id="t18_2" class="t s1_2">CRUISER </div>
+<div id="t19_2" class="t s1_2">FORCE </div>
+<div id="t1a_2" class="t s2_2">behandel </div>
+<div id="t1b_2" class="t s2_2">is </div>
+<div id="t1c_2" class="t s2_2">moet </div>
+<div id="t1d_2" class="t s2_2">verkieslik tussen 3 en 5 </div>
+<div id="t1e_2" class="t s2_2">cm diep geplant word.</div>
+<div id="t1f_2" class="t s1_2">6. TOEDIENINGSHOEVEELHEID</div>
+<div id="t1g_2" class="t s5_2">CRUISER FORCE</div>
+<div id="t1h_2" class="t s6_2">®</div>
+<div id="t1i_2" class="t s5_2">=</div>
+<div id="t1j_2" class="t s7_2">Geregistreerde Handelsmerk van ‘n Syngenta </div>
+<div id="t1k_2" class="t s7_2">Groep Maatskappy.</div>
+<div id="t1l_2" class="t s7_2">© </div>
+<div id="t1m_2" class="t s5_2">SYNGENTA AG, 2000. </div>
+<div id="t1n_2" class="t s7_2">Kopiereg in hierdie dokument word voor-</div>
+<div id="t1o_2" class="t s7_2">behou. Alle ongeoorloofde reproduksie is verbied.</div>
+<div id="t1p_2" class="t s7_2">SA Reg. </div>
+<div id="t1q_2" class="t s7_2">2010-08-11</div>
+<div id="t1r_2" class="t s8_2">•	</div>
+<div id="t1s_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t1t_2" class="t s2_2">moet nie saam met Teprosyn Mo/P </div>
+<div id="t1u_2" class="t s2_2">gebruik word nie aangesien dit die saadbedekking met </div>
+<div id="t1v_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t1w_2" class="t s2_2">benadeel.</div>
+<div id="t1x_2" class="t s8_2">•	</div>
+<div id="t1y_2" class="t s2_2">Syngenta Suid-Afrika aanvaar nie verantwoordelikheid vir die </div>
+<div id="t1z_2" class="t s2_2">swak werking van </div>
+<div id="t20_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t21_2" class="t s2_2">waar ander saadbehan-</div>
+<div id="t22_2" class="t s2_2">delingsmiddels, wat nie op die etiket genoem word nie, saam </div>
+<div id="t23_2" class="t s2_2">met </div>
+<div id="t24_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t25_2" class="t s2_2">gebruik word nie.</div>
+<div id="t26_2" class="t s2_2">5.2 </div>
+<div id="t27_2" class="t s2_2">MENGINSTRUKSIES</div>
+<div id="t28_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t29_2" class="t s2_2">is ‘n rooikleurige vloeibare konsentraat wat </div>
+<div id="t2a_2" class="t s2_2">eers met ‘n klein hoeveelheid water gemeng moet word. Meng </div>
+<div id="t2b_2" class="t s2_2">deeglik met die aanbevole hoeveelheid water voordat dit by die </div>
+<div id="t2c_2" class="t s2_2">saad gevoeg word. Die mengsel moet binne 24 uur na voorberei-</div>
+<div id="t2d_2" class="t s2_2">ding gebruik word.</div>
+<div id="t2e_2" class="t s2_2">5.3 </div>
+<div id="t2f_2" class="t s2_2">SAADBEHANDELING</div>
+<div id="t2g_2" class="t s8_2">•	</div>
+<div id="t2h_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t2i_2" class="t s2_2">kan met meeste groot saadbehande-</div>
+<div id="t2j_2" class="t s2_2">lingsapparaat toegedien word, op voorwaarde dat die produk-</div>
+<div id="t2k_2" class="t s2_2">mengsel direk deur spuitpunte of roterende skywe op die saad </div>
+<div id="t2l_2" class="t s2_2">toegedien word. </div>
+<div id="t2m_2" class="t s2_2">Dit is belangrik dat enige groot toedienings-</div>
+<div id="t2n_2" class="t s2_2">apparaat met </div>
+<div id="t2o_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t2p_2" class="t s2_2">gekalibreer word, aangesien </div>
+<div id="t2q_2" class="t s2_2">die vloei snelheid mag wissel van ander produkte wat vir saad-</div>
+<div id="t2r_2" class="t s2_2">behandeling gebruik word.</div>
+<div id="t2s_2" class="t s8_2">•	</div>
+<div id="t2t_2" class="t s2_2">Voeg die aanbevole hoeveelheid </div>
+<div id="t2u_2" class="t s1_2">CRUISER FORCE </div>
+<div id="t2v_2" class="t s2_2">by skoon </div>
+<div id="t2w_2" class="t s2_2">water sodat die voorgeskrewe hoeveelheid mengsel per volume </div>
+<div id="t2x_2" class="t s2_2">saad nie oorskry word nie.</div>
+<div id="t2y_2" class="t s1_2">VOORBEELD: </div>
+<div id="t2z_2" class="t s2_2">Die aanbevole hoeveelheid flodder om 100 kg </div>
+<div id="t30_2" class="t s2_2">mieliesaad te behandel is 1 500 m</div>
+<div id="t31_2" class="t s4_2">l</div>
+<div id="t32_2" class="t s2_2">.</div>
+<div id="t33_2" class="t s8_2">•	</div>
+<div id="t34_2" class="t s2_2">Voeg die mengsel by die saad terwyl dit gemeng word, totdat </div>
+<div id="t35_2" class="t s2_2">‘n egalige bedekking verkry word. </div>
+<div id="t36_2" class="t s2_2">Meng totdat die saad egalig </div>
+<div id="t37_2" class="t s2_2">bedek is, droog voorkom en daar geen oortollige vog op die </div>
+<div id="t38_2" class="t s2_2">kante of bodem van die menger oorbly nie. Moet nie langer </div>
+<div id="t39_2" class="t s2_2">meng as wat nodig is nie.</div>
+<div id="t3a_2" class="t s8_2">•	</div>
+<div id="t3b_2" class="t s2_2">Die saad moet verkieslik net voor plant behandel word en </div>
+<div id="t3c_2" class="t s2_2">moet nie onnodig oorstaan nie. Behandel slegs genoeg saad </div>
+<div id="t3d_2" class="t s2_2">vir onmiddelike gebruik.</div>
+<div id="t3e_2" class="t s1_2">AANMERKING: </div>
+<div id="t3f_2" class="t s2_2">Maak alle apparaat deeglik skoon na behande-</div>
+<div id="t3g_2" class="t s2_2">ling en toediening.</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg2Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg2"><img src="2/2.png" id="pdf2" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f2 = [['t1_2',406],['t2_2',58],['t3_2',338],['ta_2',379],['ts_2',155],['tt_2',178],['tv_2',297],['t11_2',501],['t12_2',305],['t13_2',195],['t14_2',419],['t1d_2',501],['t1e_2',477],['t1f_2',754],['t1g_2',363],['t1j_2',876],['t1k_2',366],['t1m_2',442],['t1n_2',759],['t1o_2',918],['t1p_2',153],['t1s_2',425],['t1t_2',844],['t1u_2',1305],['t1v_2',406],['t1y_2',1304],['t1z_2',373],['t20_2',404],['t21_2',500],['t22_2',1304],['t24_2',406],['t25_2',366],['t28_2',413],['t29_2',937],['t2a_2',1373],['t2b_2',1373],['t2c_2',1373],['t2d_2',396],['t2h_2',421],['t2i_2',851],['t2j_2',1304],['t2k_2',1304],['t2l_2',344],['t2m_2',927],['t2n_2',281],['t2o_2',404],['t2p_2',591],['t2q_2',1304],['t2r_2',562],['t2t_2',677],['t2u_2',405],['t2v_2',193],['t2w_2',1304],['t2x_2',559],['t2z_2',958],['t30_2',726],['t34_2',1304],['t35_2',700],['t36_2',579],['t37_2',1304],['t38_2',1304],['t39_2',543],['t3b_2',1304],['t3c_2',1304],['t3d_2',498],['t3f_2',992],['t3g_2',384]];
+var c2 = 0;
+function fontAdjustments2(){;
+	if (c2<f2.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f2[c2][0],f2[c2][1]);
+		c2++;
+		if (c2%10 == 0) {
+			setTimeout(function(){fontAdjustments2()},0);
+		} else {
+			fontAdjustments2();
+		}
+	}
+};
+function load2(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments2,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 125;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_2");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(2,2,909,1286,0);
+</script>
+</body>
+</html>

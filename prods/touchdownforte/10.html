@@ -1,0 +1,933 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>TOUCHDOWN_Forte_HITECH___afr_2011_06_27 Page10</title>
+</head>
+
+<body style="background-color:#919191;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" />
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" />
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); z-index:-2;"></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load10();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_10{left:148px;top:101px;}
+#t2_10{left:77px;top:130px;}
+#t3_10{left:102px;top:130px;}
+#t4_10{left:110px;top:144px;}
+#t5_10{left:110px;top:159px;}
+#t6_10{left:110px;top:173px;}
+#t7_10{left:110px;top:188px;}
+#t8_10{left:102px;top:202px;}
+#t9_10{left:110px;top:217px;}
+#ta_10{left:110px;top:231px;}
+#tb_10{left:110px;top:246px;}
+#tc_10{left:110px;top:260px;}
+#td_10{left:110px;top:275px;}
+#te_10{left:102px;top:289px;}
+#tf_10{left:110px;top:304px;}
+#tg_10{left:110px;top:318px;}
+#th_10{left:110px;top:333px;}
+#ti_10{left:110px;top:347px;}
+#tj_10{left:110px;top:362px;}
+#tk_10{left:110px;top:376px;}
+#tl_10{left:110px;top:391px;}
+#tm_10{left:149px;top:391px;}
+#tn_10{left:102px;top:405px;}
+#to_10{left:110px;top:420px;}
+#tp_10{left:110px;top:435px;}
+#tq_10{left:110px;top:449px;}
+#tr_10{left:110px;top:464px;}
+#ts_10{left:110px;top:478px;}
+#tt_10{left:77px;top:507px;}
+#tu_10{left:102px;top:507px;}
+#tv_10{left:75px;top:653px;}
+#tw_10{left:100px;top:653px;}
+#tx_10{left:75px;top:682px;}
+#ty_10{left:100px;top:682px;}
+#tz_10{left:501px;top:99px;}
+#t10_10{left:302px;top:128px;}
+#t11_10{left:512px;top:128px;}
+#t12_10{left:675px;top:128px;}
+#t13_10{left:302px;top:157px;}
+#t14_10{left:302px;top:505px;}
+#t15_10{left:302px;top:519px;}
+#t16_10{left:302px;top:534px;}
+#t17_10{left:302px;top:548px;}
+#t18_10{left:302px;top:574px;}
+#t19_10{left:302px;top:599px;}
+#t1a_10{left:396px;top:599px;}
+#t1b_10{left:432px;top:599px;}
+#t1c_10{left:460px;top:599px;}
+#t1d_10{left:648px;top:599px;}
+#t1e_10{left:661px;top:599px;}
+#t1f_10{left:699px;top:599px;}
+#t1g_10{left:728px;top:599px;}
+#t1h_10{left:302px;top:614px;}
+#t1i_10{left:396px;top:614px;}
+#t1j_10{left:425px;top:614px;}
+#t1k_10{left:466px;top:614px;}
+#t1l_10{left:509px;top:614px;}
+#t1m_10{left:512px;top:614px;}
+#t1n_10{left:558px;top:614px;}
+#t1o_10{left:595px;top:614px;}
+#t1p_10{left:766px;top:614px;}
+#t1q_10{left:302px;top:628px;}
+#t1r_10{left:348px;top:628px;}
+#t1s_10{left:353px;top:628px;}
+#t1t_10{left:302px;top:653px;}
+#t1u_10{left:298px;top:683px;}
+#t1v_10{left:341px;top:683px;}
+#t1w_10{left:508px;top:683px;}
+#t1x_10{left:298px;top:697px;}
+#t1y_10{left:298px;top:712px;}
+#t1z_10{left:337px;top:41px;}
+#t20_10{left:508px;top:41px;}
+#t21_10{left:66px;top:72px;}
+#t22_10{left:75px;top:740px;}
+#t23_10{left:100px;top:740px;}
+#t24_10{left:336px;top:784px;}
+#t25_10{left:624px;top:769px;}
+#t26_10{left:631px;top:798px;}
+#t27_10{left:720px;top:798px;}
+#t28_10{left:75px;top:827px;}
+#t29_10{left:105px;top:827px;}
+#t2a_10{left:305px;top:827px;}
+#t2b_10{left:398px;top:827px;}
+#t2c_10{left:609px;top:827px;}
+#t2d_10{left:619px;top:827px;}
+#t2e_10{left:628px;top:827px;}
+#t2f_10{left:658px;top:827px;}
+#t2g_10{left:663px;top:827px;}
+#t2h_10{left:713px;top:827px;}
+#t2i_10{left:105px;top:842px;}
+#t2j_10{left:305px;top:842px;}
+#t2k_10{left:305px;top:871px;}
+#t2l_10{left:431px;top:871px;}
+#t2m_10{left:620px;top:871px;}
+#t2n_10{left:641px;top:871px;}
+#t2o_10{left:646px;top:871px;}
+#t2p_10{left:735px;top:871px;}
+#t2q_10{left:305px;top:885px;}
+#t2r_10{left:380px;top:885px;}
+#t2s_10{left:305px;top:900px;}
+#t2t_10{left:400px;top:900px;}
+#t2u_10{left:305px;top:929px;}
+#t2v_10{left:344px;top:929px;}
+#t2w_10{left:371px;top:929px;}
+#t2x_10{left:625px;top:929px;}
+#t2y_10{left:636px;top:929px;}
+#t2z_10{left:641px;top:929px;}
+#t30_10{left:735px;top:929px;}
+#t31_10{left:305px;top:943px;}
+#t32_10{left:305px;top:958px;}
+#t33_10{left:75px;top:987px;}
+#t34_10{left:105px;top:987px;}
+#t35_10{left:305px;top:987px;}
+#t36_10{left:440px;top:987px;}
+#t37_10{left:620px;top:987px;}
+#t38_10{left:641px;top:987px;}
+#t39_10{left:646px;top:987px;}
+#t3a_10{left:730px;top:987px;}
+#t3b_10{left:75px;top:1001px;}
+#t3c_10{left:305px;top:1001px;}
+#t3d_10{left:75px;top:1016px;}
+#t3e_10{left:305px;top:1019px;}
+#t3f_10{left:538px;top:1019px;}
+#t3g_10{left:305px;top:1040px;}
+#t3h_10{left:484px;top:1040px;}
+#t3i_10{left:489px;top:1040px;}
+#t3j_10{left:305px;top:1054px;}
+#t3k_10{left:305px;top:1072px;}
+#t3l_10{left:305px;top:1087px;}
+#t3m_10{left:75px;top:1116px;}
+#t3n_10{left:105px;top:1116px;}
+#t3o_10{left:305px;top:1116px;}
+#t3p_10{left:620px;top:1116px;}
+#t3q_10{left:641px;top:1116px;}
+#t3r_10{left:646px;top:1116px;}
+#t3s_10{left:730px;top:1116px;}
+#t3t_10{left:105px;top:1130px;}
+#t3u_10{left:305px;top:1130px;}
+#t3v_10{left:415px;top:1130px;}
+#t3w_10{left:75px;top:1145px;}
+#t3x_10{left:305px;top:1145px;}
+#t3y_10{left:75px;top:1159px;}
+#t3z_10{left:75px;top:1174px;}
+#t40_10{left:305px;top:1166px;}
+#t41_10{left:368px;top:1165px;}
+#t42_10{left:484px;top:1165px;}
+#t43_10{left:489px;top:1165px;}
+#t44_10{left:75px;top:1188px;}
+#t45_10{left:305px;top:1181px;}
+#t46_10{left:372px;top:1178px;}
+#t47_10{left:88px;top:1203px;}
+#t48_10{left:305px;top:1203px;}
+#t49_10{left:305px;top:1217px;}
+
+.s1_10{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOETKV-HelveticaNeueLTStd-Bd10;
+	color: rgb(0,0,0);
+}
+
+.s3_10{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOETKV-HelveticaNeueLTStd-It10;
+	color: rgb(0,0,0);
+}
+
+.s2_10{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: HWOZYT-HelveticaNeueLTStd-Lt10;
+	color: rgb(0,0,0);
+}
+
+.s4_10{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: GOETKV-Mt-ExtraPlain10;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: GOETKV-HelveticaNeueLTStd-Bd10;
+	src: url("10/fonts/GOETKV-HelveticaNeueLTStd-Bd.eot");
+	src: url("10/fonts/GOETKV-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("10/fonts/GOETKV-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: GOETKV-HelveticaNeueLTStd-It10;
+	src: url("10/fonts/GOETKV-HelveticaNeueLTStd-It.eot");
+	src: url("10/fonts/GOETKV-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("10/fonts/GOETKV-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: GOETKV-Mt-ExtraPlain10;
+	src: url("10/fonts/GOETKV-Mt-ExtraPlain.eot");
+	src: url("10/fonts/GOETKV-Mt-ExtraPlain.eot?#iefix") format("embedded-opentype"),
+		url("10/fonts/GOETKV-Mt-ExtraPlain.otf") format("opentype");
+}
+
+@font-face {
+	font-family: HWOZYT-HelveticaNeueLTStd-Lt10;
+	src: url("10/fonts/HWOZYT-HelveticaNeueLTStd-Lt.eot");
+	src: url("10/fonts/HWOZYT-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("10/fonts/HWOZYT-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_10" class="t s1_10">GEWASSE</div>
+<div id="t2_10" class="t s2_10">3.1 </div>
+<div id="t3_10" class="t s1_10">Algemeen</div>
+<div id="t4_10" class="t s2_10">Aalwyn </div>
+<div id="t5_10" class="t s2_10">Hops </div>
+<div id="t6_10" class="t s2_10">Olywe</div>
+<div id="t7_10" class="t s2_10">Turksvy</div>
+<div id="t8_10" class="t s1_10">Sagtevrugte </div>
+<div id="t9_10" class="t s2_10">Appels, Appelkose </div>
+<div id="ta_10" class="t s2_10">Kweper </div>
+<div id="tb_10" class="t s2_10">Nektariens </div>
+<div id="tc_10" class="t s2_10">Perskes, Pere, Pruime, </div>
+<div id="td_10" class="t s2_10">Pruimedante</div>
+<div id="te_10" class="t s1_10">Sub tropiese vrugte</div>
+<div id="tf_10" class="t s2_10">Avocado’s </div>
+<div id="tg_10" class="t s2_10">Granadella </div>
+<div id="th_10" class="t s2_10">Kiwivrug, Koejawels, Koffie </div>
+<div id="ti_10" class="t s2_10">Lietstjies </div>
+<div id="tj_10" class="t s2_10">Mango’s </div>
+<div id="tk_10" class="t s2_10">Papaja, Pynappels </div>
+<div id="tl_10" class="t s2_10">Sitrus, </div>
+<div id="tm_10" class="t s2_10">Tee. </div>
+<div id="tn_10" class="t s1_10">Neut en bessie vrugte</div>
+<div id="to_10" class="t s2_10">Amandels, </div>
+<div id="tp_10" class="t s2_10">Swartbessie, </div>
+<div id="tq_10" class="t s2_10">Kersies, </div>
+<div id="tr_10" class="t s2_10">Makadamias, </div>
+<div id="ts_10" class="t s2_10">Pekanneute</div>
+<div id="tt_10" class="t s2_10">3.2</div>
+<div id="tu_10" class="t s1_10">Wingerde en vrugtebome </div>
+<div id="tv_10" class="t s2_10">3.3</div>
+<div id="tw_10" class="t s1_10">Sisal </div>
+<div id="tx_10" class="t s2_10">3.4 </div>
+<div id="ty_10" class="t s1_10">Bewerkte lande</div>
+<div id="tz_10" class="t s1_10">OPMERKINGS</div>
+<div id="t10_10" class="t s2_10">Verwys na onkruidtabelle vir dosisse van </div>
+<div id="t11_10" class="t s1_10">TOUCHDOWN Forte HITECH</div>
+<div id="t12_10" class="t s2_10">.</div>
+<div id="t13_10" class="t s2_10">Beskerm jong bome met groen bas van direkte bespuiting.</div>
+<div id="t14_10" class="t s2_10">Dien	toe	voor	bot	op	wingerde	ouer	as	2	jaar.	Jonger	wingerde	met	groen	bas	moet	afgeskerm	</div>
+<div id="t15_10" class="t s2_10">word. Rig bespuiting na onkruide.</div>
+<div id="t16_10" class="t s2_10">Moet nie toedien in gesnoeide wingerde of vrugtebome voordat die snoeiwonde behoorlik </div>
+<div id="t17_10" class="t s2_10">geseël het nie.</div>
+<div id="t18_10" class="t s1_10">Dekgewasvernietiging in wingerde:</div>
+<div id="t19_10" class="t s2_10">Vir die beheer van </div>
+<div id="t1a_10" class="t s3_10">Avena</div>
+<div id="t1b_10" class="t s2_10">spp. (</div>
+<div id="t1c_10" class="t s1_10">wildebaardhawer, gewone hawer</div>
+<div id="t1d_10" class="t s2_10">), *</div>
+<div id="t1e_10" class="t s3_10">Lolium</div>
+<div id="t1f_10" class="t s2_10">spp. (</div>
+<div id="t1g_10" class="t s1_10">Italiaanse </div>
+<div id="t1h_10" class="t s1_10">raaigras, drabok</div>
+<div id="t1i_10" class="t s2_10">) en *</div>
+<div id="t1j_10" class="t s3_10">Secale</div>
+<div id="t1k_10" class="t s3_10">cereale</div>
+<div id="t1l_10" class="t s2_10">(</div>
+<div id="t1m_10" class="t s1_10">raaigras</div>
+<div id="t1n_10" class="t s2_10">), dien </div>
+<div id="t1o_10" class="t s1_10">TOUCHDOWN Forte HITECH</div>
+<div id="t1p_10" class="t s2_10">toe </div>
+<div id="t1q_10" class="t s2_10">teen 0,7 </div>
+<div id="t1r_10" class="t s4_10">l</div>
+<div id="t1s_10" class="t s2_10">/ha. Dien toe 10 dae of langer na snoei maar voor bot.</div>
+<div id="t1t_10" class="t s2_10">Toedienings kan in kwekery en volwasse plante gedoen word</div>
+<div id="t1u_10" class="t s2_10">Gebruik </div>
+<div id="t1v_10" class="t s1_10">TOUCHDOWN Forte HITECH</div>
+<div id="t1w_10" class="t s2_10">na-oes van vorige gewas. Moet nie teikenplante voor 6 </div>
+<div id="t1x_10" class="t s2_10">ure na toediening versteur nie (voor plant van gewasse) en voordat nuwe gewasse opgekom het.</div>
+<div id="t1y_10" class="t s2_10">Onkruide moet altyd aktief groeiend wees tydens bespuiting.</div>
+<div id="t1z_10" class="t s1_10">TOUCHDOWN Forte HITECH</div>
+<div id="t20_10" class="t s2_10">/ 10</div>
+<div id="t21_10" class="t s1_10">3. SPESIFIEKE GEWAS-AANBEVELINGS:</div>
+<div id="t22_10" class="t s2_10">3.5</div>
+<div id="t23_10" class="t s1_10">Bosbou gebruike</div>
+<div id="t24_10" class="t s1_10">GEWONE NAAM (Common name)</div>
+<div id="t25_10" class="t s1_10">TOEDIENINGSHOEVEELHEID</div>
+<div id="t26_10" class="t s1_10">/ ha</div>
+<div id="t27_10" class="t s1_10">Oplossing</div>
+<div id="t28_10" class="t s1_10">1. </div>
+<div id="t29_10" class="t s1_10">Onkruid beheer in  </div>
+<div id="t2a_10" class="t s3_10">Acacia mearnsii </div>
+<div id="t2b_10" class="t s1_10">(swart wattel) (black wattle) </div>
+<div id="t2c_10" class="t s1_10">2 </div>
+<div id="t2d_10" class="t s4_10">l</div>
+<div id="t2e_10" class="t s1_10">- 2,6 </div>
+<div id="t2f_10" class="t s4_10">l</div>
+<div id="t2g_10" class="t s1_10">/ha </div>
+<div id="t2h_10" class="t s1_10">1 % - 1,3 %</div>
+<div id="t2i_10" class="t s1_10">gevestigde plantasies </div>
+<div id="t2j_10" class="t s2_10">Dien toe op jong bome vanaf 0,1 - 2 m hoog.</div>
+<div id="t2k_10" class="t s3_10">Solanum mauritianum </div>
+<div id="t2l_10" class="t s1_10">(luisboom) (bugweed)  </div>
+<div id="t2m_10" class="t s1_10">1,3 </div>
+<div id="t2n_10" class="t s4_10">l</div>
+<div id="t2o_10" class="t s1_10">/ha </div>
+<div id="t2p_10" class="t s1_10">1 % </div>
+<div id="t2q_10" class="t s1_10">Groot bome:</div>
+<div id="t2r_10" class="t s2_10">Sny tot 50 cm, laat nuwe groei van ten minste 50 cm toe voor toediening.</div>
+<div id="t2s_10" class="t s1_10">Klein boompies:</div>
+<div id="t2t_10" class="t s2_10">Dien direk op die blare toe.</div>
+<div id="t2u_10" class="t s3_10">Rubus </div>
+<div id="t2v_10" class="t s2_10">spp </div>
+<div id="t2w_10" class="t s1_10">(braam) (American bramble)  </div>
+<div id="t2x_10" class="t s1_10">4 </div>
+<div id="t2y_10" class="t s4_10">l</div>
+<div id="t2z_10" class="t s1_10">/ha </div>
+<div id="t30_10" class="t s1_10">2 % </div>
+<div id="t31_10" class="t s2_10">Sny rankgroei in winter. Dien toe wanneer nuwe groei meer as 0,5 m hoog is. Indien hergroei </div>
+<div id="t32_10" class="t s2_10">voorkom, spuit met ‘n 1% oplossing</div>
+<div id="t33_10" class="t s1_10">2. </div>
+<div id="t34_10" class="t s1_10">Voor brande: </div>
+<div id="t35_10" class="t s2_10">Die onkruid populasie sal </div>
+<div id="t36_10" class="t s2_10">bestaan uit beide eenjarige </div>
+<div id="t37_10" class="t s1_10">2,6 </div>
+<div id="t38_10" class="t s4_10">l</div>
+<div id="t39_10" class="t s1_10">/ha </div>
+<div id="t3a_10" class="t s1_10">1,3 %</div>
+<div id="t3b_10" class="t s2_10">Die voorbereiding van ‘n algehele </div>
+<div id="t3c_10" class="t s2_10">en meerjarige onkruide</div>
+<div id="t3d_10" class="t s2_10">brandbaan of brandstroke. </div>
+<div id="t3e_10" class="t s2_10">Verwys na onkruidlys soos vir INDUSTRIËLE </div>
+<div id="t3f_10" class="t s2_10">GEBRUIK</div>
+<div id="t3g_10" class="t s2_10">‘n Minimum spuitmengsel van 200 </div>
+<div id="t3h_10" class="t s4_10">l</div>
+<div id="t3i_10" class="t s2_10">/ha moet toegedien word wanneer die 1,3% spuitoplossing </div>
+<div id="t3j_10" class="t s2_10">gebruik word. </div>
+<div id="t3k_10" class="t s2_10">‘n Opvolgbespuiting mag nodig wees om hergroei van sommige hardnekkige onkruide te beheer. </div>
+<div id="t3l_10" class="t s2_10">Gebruik 1,3% oplossing op ‘n kolbespuitings basis.</div>
+<div id="t3m_10" class="t s1_10">3. </div>
+<div id="t3n_10" class="t s1_10">Baan voor bereiding </div>
+<div id="t3o_10" class="t s2_10">Die onkruid populasie bestaan uit beide eenjarige en </div>
+<div id="t3p_10" class="t s1_10">2,6 </div>
+<div id="t3q_10" class="t s4_10">l</div>
+<div id="t3r_10" class="t s1_10">/ha </div>
+<div id="t3s_10" class="t s1_10">1,3 %</div>
+<div id="t3t_10" class="t s1_10">vir boomsaailinge </div>
+<div id="t3u_10" class="t s2_10">meerjarige onkruide. </div>
+<div id="t3v_10" class="t s2_10">Vir sommige van die onkruide</div>
+<div id="t3w_10" class="t s2_10">Situasies geskik vir bogemelde  </div>
+<div id="t3x_10" class="t s2_10">wat beheer word, verwys na onkruid lys soos vir INDUSTRIËLE GEBRUIK.</div>
+<div id="t3y_10" class="t s2_10">toedienings sluit in: </div>
+<div id="t3z_10" class="t s2_10">a) Natuurlike of onversteurde veld </div>
+<div id="t40_10" class="t s2_10">‘n Minimum </div>
+<div id="t41_10" class="t s2_10">spuitmengsel van 200 </div>
+<div id="t42_10" class="t s4_10">l</div>
+<div id="t43_10" class="t s2_10">/ha moet toegedien word wanneer die 1,3% spuitoplossing</div>
+<div id="t44_10" class="t s2_10">b) Hervestiging van plantasie na afkap </div>
+<div id="t45_10" class="t s2_10">gebruik word</div>
+<div id="t46_10" class="t s2_10">.</div>
+<div id="t47_10" class="t s2_10">van bome.</div>
+<div id="t48_10" class="t s2_10">‘n Opvolgbespuiting mag nodig wees om hergroei van sommige hardnekkige meerjarige </div>
+<div id="t49_10" class="t s2_10">on kruide te beheer. Gebruik ‘n 1,3% oplossing op ‘n kolbespuitingsbasis.</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg10Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg10"><img src="10/10.png" id="pdf10" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f10 = [['t9_10',383],['tc_10',468],['te_10',446],['th_10',546],['tk_10',379],['tn_10',497],['tu_10',617],['ty_10',355],['t10_10',824],['t11_10',655],['t13_10',1204],['t15_10',690],['t16_10',1921],['t17_10',306],['t18_10',795],['t19_10',362],['t1b_10',114],['t1c_10',750],['t1d_10',53],['t1f_10',114],['t1h_10',378],['t1i_10',117],['t1n_10',129],['t1o_10',665],['t1q_10',168],['t1s_10',1115],['t1t_10',1257],['t1v_10',654],['t1w_10',1115],['t1x_10',1955],['t1y_10',1237],['t1z_10',670],['t20_10',85],['t21_10',948],['t23_10',398],['t24_10',785],['t26_10',90],['t29_10',420],['t2a_10',343],['t2b_10',645],['t2e_10',102],['t2h_10',272],['t2i_10',492],['t2j_10',933],['t2k_10',475],['t2l_10',516],['t2p_10',91],['t2q_10',286],['t2r_10',1511],['t2s_10',366],['t2t_10',553],['t2w_10',666],['t30_10',91],['t31_10',1944],['t32_10',742],['t34_10',293],['t35_10',510],['t36_10',547],['t3a_10',131],['t3b_10',676],['t3c_10',466],['t3d_10',546],['t3e_10',906],['t3g_10',702],['t3i_10',1208],['t3j_10',282],['t3k_10',1980],['t3l_10',1050],['t3n_10',458],['t3o_10',1067],['t3s_10',131],['t3t_10',400],['t3u_10',414],['t3v_10',605],['t3w_10',641],['t3x_10',1518],['t3y_10',387],['t3z_10',682],['t40_10',239],['t41_10',448],['t43_10',1208],['t44_10',774],['t45_10',269],['t47_10',218],['t48_10',1945],['t49_10',1500]];
+var c10 = 0;
+function fontAdjustments10(){;
+	if (c10<f10.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f10[c10][0],f10[c10][1]);
+		c10++;
+		if (c10%10 == 0) {
+			setTimeout(function(){fontAdjustments10()},0);
+		} else {
+			fontAdjustments10();
+		}
+	}
+};
+function load10(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments10,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 154;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_10");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(13,10,909,1286,0);
+</script>
+</body>
+</html>

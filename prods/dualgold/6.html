@@ -1,0 +1,1117 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>DUAL_GOLD_Afr_2008_11_11 Page6</title>
+</head>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load6();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_6{left:388px;top:41px;}
+#t2_6{left:464px;top:41px;}
+#t3_6{left:457px;top:69px;}
+#t4_6{left:474px;top:69px;}
+#t5_6{left:474px;top:83px;}
+#t6_6{left:474px;top:98px;}
+#t7_6{left:474px;top:112px;}
+#t8_6{left:457px;top:127px;}
+#t9_6{left:474px;top:127px;}
+#ta_6{left:474px;top:141px;}
+#tb_6{left:474px;top:156px;}
+#tc_6{left:553px;top:156px;}
+#td_6{left:474px;top:170px;}
+#te_6{left:474px;top:185px;}
+#tf_6{left:457px;top:222px;}
+#tg_6{left:457px;top:256px;}
+#th_6{left:474px;top:256px;}
+#ti_6{left:661px;top:256px;}
+#tj_6{left:666px;top:256px;}
+#tk_6{left:474px;top:270px;}
+#tl_6{left:457px;top:308px;}
+#tm_6{left:457px;top:341px;}
+#tn_6{left:474px;top:341px;}
+#to_6{left:474px;top:356px;}
+#tp_6{left:545px;top:356px;}
+#tq_6{left:622px;top:356px;}
+#tr_6{left:474px;top:370px;}
+#ts_6{left:617px;top:370px;}
+#tt_6{left:474px;top:385px;}
+#tu_6{left:474px;top:399px;}
+#tv_6{left:736px;top:399px;}
+#tw_6{left:474px;top:414px;}
+#tx_6{left:474px;top:428px;}
+#ty_6{left:474px;top:443px;}
+#tz_6{left:474px;top:457px;}
+#t10_6{left:786px;top:457px;}
+#t11_6{left:474px;top:472px;}
+#t12_6{left:474px;top:486px;}
+#t13_6{left:474px;top:501px;}
+#t14_6{left:474px;top:515px;}
+#t15_6{left:474px;top:530px;}
+#t16_6{left:604px;top:530px;}
+#t17_6{left:474px;top:545px;}
+#t18_6{left:738px;top:545px;}
+#t19_6{left:474px;top:559px;}
+#t1a_6{left:474px;top:574px;}
+#t1b_6{left:474px;top:588px;}
+#t1c_6{left:550px;top:588px;}
+#t1d_6{left:630px;top:588px;}
+#t1e_6{left:474px;top:603px;}
+#t1f_6{left:474px;top:617px;}
+#t1g_6{left:457px;top:655px;}
+#t1h_6{left:457px;top:669px;}
+#t1i_6{left:457px;top:713px;}
+#t1j_6{left:503px;top:713px;}
+#t1k_6{left:590px;top:713px;}
+#t1l_6{left:668px;top:713px;}
+#t1m_6{left:457px;top:727px;}
+#t1n_6{left:528px;top:727px;}
+#t1o_6{left:639px;top:727px;}
+#t1p_6{left:457px;top:771px;}
+#t1q_6{left:521px;top:771px;}
+#t1r_6{left:457px;top:785px;}
+#t1s_6{left:457px;top:800px;}
+#t1t_6{left:457px;top:1047px;}
+#t1u_6{left:457px;top:1078px;}
+#t1v_6{left:659px;top:1078px;}
+#t1w_6{left:664px;top:1078px;}
+#t1x_6{left:457px;top:1092px;}
+#t1y_6{left:457px;top:1136px;}
+#t1z_6{left:501px;top:1136px;}
+#t20_6{left:587px;top:1136px;}
+#t21_6{left:663px;top:1136px;}
+#t22_6{left:457px;top:1150px;}
+#t23_6{left:457px;top:1186px;}
+#t24_6{left:766px;top:1186px;}
+#t25_6{left:457px;top:1200px;}
+#t26_6{left:497px;top:1200px;}
+#t27_6{left:588px;top:1200px;}
+#t28_6{left:668px;top:1200px;}
+#t29_6{left:457px;top:1215px;}
+#t2a_6{left:457px;top:1229px;}
+#t2b_6{left:67px;top:69px;}
+#t2c_6{left:126px;top:69px;}
+#t2d_6{left:67px;top:83px;}
+#t2e_6{left:67px;top:98px;}
+#t2f_6{left:225px;top:98px;}
+#t2g_6{left:67px;top:511px;}
+#t2h_6{left:67px;top:525px;}
+#t2i_6{left:67px;top:540px;}
+#t2j_6{left:67px;top:569px;}
+#t2k_6{left:67px;top:598px;}
+#t2l_6{left:67px;top:627px;}
+#t2m_6{left:84px;top:627px;}
+#t2n_6{left:136px;top:627px;}
+#t2o_6{left:214px;top:627px;}
+#t2p_6{left:84px;top:641px;}
+#t2q_6{left:84px;top:656px;}
+#t2r_6{left:67px;top:685px;}
+#t2s_6{left:67px;top:714px;}
+#t2t_6{left:84px;top:714px;}
+#t2u_6{left:84px;top:730px;letter-spacing:-1px;}
+#t2v_6{left:106px;top:730px;}
+#t2w_6{left:376px;top:730px;}
+#t2x_6{left:106px;top:745px;}
+#t2y_6{left:145px;top:745px;}
+#t2z_6{left:84px;top:762px;letter-spacing:-1px;}
+#t30_6{left:106px;top:762px;}
+#t31_6{left:271px;top:762px;}
+#t32_6{left:343px;top:762px;}
+#t33_6{left:106px;top:776px;}
+#t34_6{left:129px;top:776px;}
+#t35_6{left:106px;top:791px;}
+#t36_6{left:197px;top:791px;}
+#t37_6{left:106px;top:805px;}
+#t38_6{left:336px;top:805px;}
+#t39_6{left:106px;top:820px;}
+#t3a_6{left:307px;top:820px;}
+#t3b_6{left:106px;top:834px;}
+#t3c_6{left:67px;top:851px;}
+#t3d_6{left:84px;top:851px;}
+#t3e_6{left:84px;top:868px;letter-spacing:-1px;}
+#t3f_6{left:106px;top:868px;}
+#t3g_6{left:376px;top:868px;}
+#t3h_6{left:106px;top:882px;}
+#t3i_6{left:145px;top:882px;}
+#t3j_6{left:67px;top:899px;}
+#t3k_6{left:84px;top:899px;}
+#t3l_6{left:84px;top:915px;letter-spacing:-1px;}
+#t3m_6{left:106px;top:915px;}
+#t3n_6{left:376px;top:915px;}
+#t3o_6{left:106px;top:930px;}
+#t3p_6{left:145px;top:930px;}
+#t3q_6{left:67px;top:963px;}
+#t3r_6{left:67px;top:992px;}
+#t3s_6{left:84px;top:992px;}
+#t3t_6{left:336px;top:992px;}
+#t3u_6{left:84px;top:1007px;}
+#t3v_6{left:67px;top:1036px;}
+#t3w_6{left:67px;top:1059px;}
+#t3x_6{left:84px;top:1059px;}
+#t3y_6{left:84px;top:1074px;}
+#t3z_6{left:338px;top:1074px;}
+#t40_6{left:84px;top:1088px;}
+#t41_6{left:67px;top:1108px;}
+#t42_6{left:84px;top:1108px;}
+#t43_6{left:84px;top:1123px;}
+#t44_6{left:84px;top:1137px;}
+#t45_6{left:84px;top:1152px;}
+#t46_6{left:212px;top:1152px;}
+#t47_6{left:67px;top:1172px;}
+#t48_6{left:84px;top:1172px;}
+#t49_6{left:141px;top:1172px;}
+#t4a_6{left:220px;top:1172px;}
+#t4b_6{left:84px;top:1186px;}
+#t4c_6{left:84px;top:1201px;}
+#t4d_6{left:84px;top:1215px;}
+#t4e_6{left:84px;top:1230px;}
+#t4f_6{left:478px;top:890px;}
+#t4g_6{left:461px;top:934px;}
+#t4h_6{left:461px;top:963px;}
+#t4i_6{left:461px;top:977px;}
+#t4j_6{left:461px;top:1006px;}
+#t4k_6{left:567px;top:890px;}
+#t4l_6{left:570px;top:934px;}
+#t4m_6{left:567px;top:963px;}
+#t4n_6{left:567px;top:1006px;}
+#t4o_6{left:638px;top:876px;}
+#t4p_6{left:620px;top:890px;}
+#t4q_6{left:662px;top:890px;}
+#t4r_6{left:667px;top:890px;}
+#t4s_6{left:642px;top:905px;}
+#t4t_6{left:643px;top:934px;}
+#t4u_6{left:646px;top:963px;}
+#t4v_6{left:646px;top:1006px;}
+#t4w_6{left:714px;top:876px;}
+#t4x_6{left:730px;top:890px;}
+#t4y_6{left:737px;top:905px;}
+#t4z_6{left:741px;top:905px;}
+#t50_6{left:746px;top:905px;}
+#t51_6{left:739px;top:934px;}
+#t52_6{left:739px;top:963px;}
+#t53_6{left:739px;top:1006px;}
+#t54_6{left:655px;top:847px;}
+#t55_6{left:366px;top:136px;}
+#t56_6{left:353px;top:150px;}
+#t57_6{left:289px;top:135px;}
+#t58_6{left:296px;top:150px;}
+#t59_6{left:82px;top:208px;}
+#t5a_6{left:71px;top:251px;}
+#t5b_6{left:71px;top:266px;}
+#t5c_6{left:71px;top:280px;}
+#t5d_6{left:71px;top:309px;}
+#t5e_6{left:115px;top:309px;}
+#t5f_6{left:71px;top:338px;}
+#t5g_6{left:71px;top:353px;}
+#t5h_6{left:71px;top:382px;}
+#t5i_6{left:163px;top:208px;}
+#t5j_6{left:169px;top:251px;}
+#t5k_6{left:165px;top:309px;}
+#t5l_6{left:165px;top:338px;}
+#t5m_6{left:165px;top:382px;}
+#t5n_6{left:230px;top:185px;}
+#t5o_6{left:229px;top:199px;}
+#t5p_6{left:231px;top:214px;}
+#t5q_6{left:235px;top:214px;}
+#t5r_6{left:241px;top:214px;}
+#t5s_6{left:235px;top:228px;}
+#t5t_6{left:225px;top:251px;}
+#t5u_6{left:231px;top:309px;}
+#t5v_6{left:223px;top:338px;}
+#t5w_6{left:223px;top:382px;}
+#t5x_6{left:292px;top:179px;}
+#t5y_6{left:335px;top:193px;}
+#t5z_6{left:312px;top:208px;}
+#t60_6{left:314px;top:222px;}
+#t61_6{left:371px;top:222px;}
+#t62_6{left:377px;top:222px;}
+#t63_6{left:306px;top:251px;}
+#t64_6{left:342px;top:266px;}
+#t65_6{left:331px;top:280px;}
+#t66_6{left:358px;top:280px;}
+#t67_6{left:296px;top:295px;}
+#t68_6{left:344px;top:316px;}
+#t69_6{left:331px;top:338px;}
+#t6a_6{left:358px;top:338px;}
+#t6b_6{left:311px;top:353px;}
+#t6c_6{left:342px;top:382px;}
+#t6d_6{left:334px;top:397px;}
+#t6e_6{left:355px;top:397px;}
+#t6f_6{left:296px;top:411px;}
+#t6g_6{left:344px;top:432px;}
+#t6h_6{left:334px;top:455px;}
+#t6i_6{left:355px;top:455px;}
+#t6j_6{left:315px;top:469px;}
+#t6k_6{left:229px;top:136px;}
+#t6l_6{left:257px;top:136px;}
+#t6m_6{left:222px;top:150px;}
+
+.s1_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: WLHSFP-HelveticaNeueLTStd-Bd6;
+	color: rgb(0,0,0);
+}
+
+.s6_6{
+	FONT-SIZE: 53px;
+	FONT-FAMILY: VDXMRR-Mt-ExtraPlain6;
+	color: rgb(0,0,0);
+}
+
+.s3_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: VDXMRR-Mt-ExtraPlain6;
+	color: rgb(0,0,0);
+}
+
+.s2_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: WLHSFP-HelveticaNeueLTStd-Lt6;
+	color: rgb(0,0,0);
+}
+
+.s5_6{
+	FONT-SIZE: 53px;
+	FONT-FAMILY: WLHSFP-HelveticaNeueLTStd-Bd6;
+	color: rgb(0,0,0);
+}
+
+.s4_6{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: WLHSFP-HelveticaNeueLTStd-It6;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: WLHSFP-HelveticaNeueLTStd-Lt6;
+	src: url("6/fonts/WLHSFP-HelveticaNeueLTStd-Lt.eot");
+	src: url("6/fonts/WLHSFP-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/WLHSFP-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+@font-face {
+	font-family: WLHSFP-HelveticaNeueLTStd-It6;
+	src: url("6/fonts/WLHSFP-HelveticaNeueLTStd-It.eot");
+	src: url("6/fonts/WLHSFP-HelveticaNeueLTStd-It.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/WLHSFP-HelveticaNeueLTStd-It.otf") format("opentype");
+}
+
+@font-face {
+	font-family: VDXMRR-Mt-ExtraPlain6;
+	src: url("6/fonts/VDXMRR-Mt-ExtraPlain.eot");
+	src: url("6/fonts/VDXMRR-Mt-ExtraPlain.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/VDXMRR-Mt-ExtraPlain.otf") format("opentype");
+}
+
+@font-face {
+	font-family: WLHSFP-HelveticaNeueLTStd-Bd6;
+	src: url("6/fonts/WLHSFP-HelveticaNeueLTStd-Bd.eot");
+	src: url("6/fonts/WLHSFP-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("6/fonts/WLHSFP-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_6" class="t s1_6">DUAL GOLD </div>
+<div id="t2_6" class="t s2_6">/ 6</div>
+<div id="t3_6" class="t s2_6">•	</div>
+<div id="t4_6" class="t s2_6">Op	 gronde	 met	 0	 -	 10	 %	 klei	 in	 Noordwes	 Provinsie	 en	</div>
+<div id="t5_6" class="t s2_6">Noord-Wes Vrystaat asook op kalkryke gronde kan hierdie </div>
+<div id="t6_6" class="t s2_6">lae dosisse van GARDOMIL GOLD (Tabel 5) nog steeds </div>
+<div id="t7_6" class="t s2_6">opvolggewasse beskadig.</div>
+<div id="t8_6" class="t s2_6">•	</div>
+<div id="t9_6" class="t s2_6">Hierdie	 lae	 dosisse	 mag	 ook	 swakker	 breëblaarbeheer	 en	</div>
+<div id="ta_6" class="t s2_6">korter nawerking op gronde met meer as 20 % klei tot gevolg </div>
+<div id="tb_6" class="t s2_6">hê (Tabel 5). </div>
+<div id="tc_6" class="t s2_6">Gevolglik behoort na-opkombeheer van breë-</div>
+<div id="td_6" class="t s2_6">blaaronkruide soos aanbeveel in Tabel 4, voorkeur te geniet </div>
+<div id="te_6" class="t s2_6">wanneer wisselbou met gevoelige gewasse onderneem word.</div>
+<div id="tf_6" class="t s1_6">Bymiddels</div>
+<div id="tg_6" class="t s2_6">•	</div>
+<div id="th_6" class="t s2_6">COMPLEMENT	SUPER	teen	100	m</div>
+<div id="ti_6" class="t s3_6">l</div>
+<div id="tj_6" class="t s2_6">/ha moet by gevoeg word </div>
+<div id="tk_6" class="t s2_6">waar GARDOMIL GOLD na-opkom toegedien word. </div>
+<div id="tl_6" class="t s1_6">Werkingswyse</div>
+<div id="tm_6" class="t s2_6">•	</div>
+<div id="tn_6" class="t s2_6">Grasdoders	wat	aan	die	chloorasetamied	onkruiddodergroep	</div>
+<div id="to_6" class="t s2_6">behoort (wat </div>
+<div id="tp_6" class="t s1_6">DUAL GOLD </div>
+<div id="tq_6" class="t s2_6">insluit) word via die koleoptiel van </div>
+<div id="tr_6" class="t s2_6">grasonkruide opgeneem. </div>
+<div id="ts_6" class="t s2_6">Vir goeie grasbeheer moet hierdie </div>
+<div id="tt_6" class="t s2_6">onkruiddoders dus teen letale konsentrasies beskikbaar wees </div>
+<div id="tu_6" class="t s2_6">in die boonste ± 50 mm van die grondprofiel. </div>
+<div id="tv_6" class="t s2_6">Die adsorp-</div>
+<div id="tw_6" class="t s2_6">siekapasiteit van ‘n grond vir hierdie onkruiddoders, sowel as </div>
+<div id="tx_6" class="t s2_6">die hoeveelheid water wat deur die grondprofiel beweeg met </div>
+<div id="ty_6" class="t s2_6">reën/besproeiing, bepaal die gevolglike konsentrasie van die </div>
+<div id="tz_6" class="t s2_6">onkruiddoders in die boonste lae van die grondprofiel. </div>
+<div id="t10_6" class="t s2_6">As </div>
+<div id="t11_6" class="t s2_6">gevolg van die lae adsorpsiekapasiteit van sandgronde (0 - </div>
+<div id="t12_6" class="t s2_6">15% klei, &lt;1 % organiese materiaalinhoud) kan bogenoemde </div>
+<div id="t13_6" class="t s2_6">onkruiddoders tot subletale vlakke in die boonste ± 50 mm </div>
+<div id="t14_6" class="t s2_6">verlaag word na die voorkoms van deurdringende reën (25 </div>
+<div id="t15_6" class="t s2_6">mm en meer per dag). </div>
+<div id="t16_6" class="t s2_6">Aanhoudende reën (50 mm en meer </div>
+<div id="t17_6" class="t s2_6">versprei oor 3 - 7 dae) sal dieselfde gevolg hê. </div>
+<div id="t18_6" class="t s2_6">Dit kan dus </div>
+<div id="t19_6" class="t s2_6">gebeur dat grasse ontkiem as sulke toestande voorkom. </div>
+<div id="t1a_6" class="t s2_6">‘n Splittoediening (soos aanbeveel in Tabel 4) word aan-</div>
+<div id="t1b_6" class="t s2_6">beveel indien </div>
+<div id="t1c_6" class="t s1_6">DUAL GOLD</div>
+<div id="t1d_6" class="t s2_6">op sulke gronde gebruik word. </div>
+<div id="t1e_6" class="t s2_6">Deurdringende en/of aanhoudende reën na die splittoediening </div>
+<div id="t1f_6" class="t s2_6">kan dieselfde gevolg hê. </div>
+<div id="t1g_6" class="t s2_6">Raadpleeg die GARDOMIL GOLD en GESAPRIM SUPER etikette </div>
+<div id="t1h_6" class="t s2_6">vir verdere besonderhede.</div>
+<div id="t1i_6" class="t s2_6">6.4.1.4 </div>
+<div id="t1j_6" class="t s2_6">Die gebruik van </div>
+<div id="t1k_6" class="t s1_6">DUAL GOLD</div>
+<div id="t1l_6" class="t s2_6">in kombinasie met ander </div>
+<div id="t1m_6" class="t s2_6">produkte om </div>
+<div id="t1n_6" class="t s4_6">Cyperus esculentus</div>
+<div id="t1o_6" class="t s2_6">te beheer.</div>
+<div id="t1p_6" class="t s1_6">TABEL 7: </div>
+<div id="t1q_6" class="t s1_6">Die dosis van ‘n tenkmengsel van DUAL GOLD </div>
+<div id="t1r_6" class="t s1_6">en GARDOMIL GOLD vroeg na-opkom toegedien na ‘n aan-</div>
+<div id="t1s_6" class="t s1_6">vanklike toediening van EPTC:</div>
+<div id="t1t_6" class="t s1_6">Belangrik</div>
+<div id="t1u_6" class="t s2_6">COMPLEMENT SUPER teen 100 m</div>
+<div id="t1v_6" class="t s3_6">l</div>
+<div id="t1w_6" class="t s2_6">/ha moet by hierdie na-</div>
+<div id="t1x_6" class="t s2_6">opkom spuitmengsel gevoeg word.</div>
+<div id="t1y_6" class="t s2_6">6.4.1.5 </div>
+<div id="t1z_6" class="t s2_6">Die gebruik van </div>
+<div id="t20_6" class="t s1_6">DUAL GOLD</div>
+<div id="t21_6" class="t s2_6">in kombinasie met verskil-</div>
+<div id="t22_6" class="t s2_6">lende produkte om die aanvanklike breëblaar beheer te verbeter.</div>
+<div id="t23_6" class="t s2_6">Om die wisselvallige aanvanklike breëblaar beheer van </div>
+<div id="t24_6" class="t s1_6">DUAL </div>
+<div id="t25_6" class="t s1_6">GOLD</div>
+<div id="t26_6" class="t s2_6">te verbeter, kan </div>
+<div id="t27_6" class="t s1_6">DUAL GOLD</div>
+<div id="t28_6" class="t s2_6">en GARDOMIL GOLD in </div>
+<div id="t29_6" class="t s2_6">die volgende mengsel vooropkom en GARDOMIL GOLD vroeg </div>
+<div id="t2a_6" class="t s2_6">na-opkom gebruik word.</div>
+<div id="t2b_6" class="t s1_6">TABEL 6: </div>
+<div id="t2c_6" class="t s1_6">Die dosis van DUAL GOLD vooropkom toegedien </div>
+<div id="t2d_6" class="t s1_6">of voor plant ingewerk opgevolg deur ‘n vroeg na-opkom-</div>
+<div id="t2e_6" class="t s1_6">toediening van GESAPRIM</div>
+<div id="t2f_6" class="t s1_6">SUPER plus 2,4-D amien:</div>
+<div id="t2g_6" class="t s1_6">Moet nie COMPLEMENT SUPER of enige ander benat-</div>
+<div id="t2h_6" class="t s1_6">tingsmiddel by GESAPRIM SUPER plus 2,4-D amien meng-</div>
+<div id="t2i_6" class="t s1_6">sel voeg nie.</div>
+<div id="t2j_6" class="t s1_6">OPMERKINGS TABELLE 1, 2, 3, 4, 5 en 6</div>
+<div id="t2k_6" class="t s1_6">Suikermielies </div>
+<div id="t2l_6" class="t s2_6">•	</div>
+<div id="t2m_6" class="t s2_6">Moet	nie	</div>
+<div id="t2n_6" class="t s1_6">DUAL GOLD </div>
+<div id="t2o_6" class="t s2_6">opvolg of in kombinasie gebruik met </div>
+<div id="t2p_6" class="t s2_6">GARDOMIL GOLD op SUIKERMIELIES nie. Gebruik slegs die </div>
+<div id="t2q_6" class="t s2_6">aanbevelings in Tabel 6.</div>
+<div id="t2r_6" class="t s1_6">Onkruide</div>
+<div id="t2s_6" class="t s2_6">•	</div>
+<div id="t2t_6" class="t s4_6">Cyperus esculentus</div>
+<div id="t2u_6" class="t s2_6">•		</div>
+<div id="t2v_6" class="t s2_6">Gebruik	 die	 hoër	 toedieningshoeveelheid	 van	</div>
+<div id="t2w_6" class="t s1_6">DUAL </div>
+<div id="t2x_6" class="t s1_6">GOLD </div>
+<div id="t2y_6" class="t s2_6">vir verbeterde beheer.</div>
+<div id="t2z_6" class="t s2_6">•		</div>
+<div id="t30_6" class="t s2_6">Waar	 EPTC	 gebruik	 word	 om	</div>
+<div id="t31_6" class="t s1_6">geeluintjies</div>
+<div id="t32_6" class="t s4_6">(C. esculen-</div>
+<div id="t33_6" class="t s4_6">tus)</div>
+<div id="t34_6" class="t s2_6">en grasse te beheer kan beter laatseisoen beheer van </div>
+<div id="t35_6" class="t s2_6">hierdie onkruide </div>
+<div id="t36_6" class="t s2_6">verkry word indien EPTC opgevolg word </div>
+<div id="t37_6" class="t s2_6">deur ‘n vroeë na-opkomtoediening van ‘n </div>
+<div id="t38_6" class="t s1_6">DUAL GOLD</div>
+<div id="t39_6" class="t s2_6">plus GARDOMIL GOLD tenkmengsel. </div>
+<div id="t3a_6" class="t s2_6">Gebruik EPTC soos </div>
+<div id="t3b_6" class="t s2_6">op die etiket aangedui.</div>
+<div id="t3c_6" class="t s2_6">•	</div>
+<div id="t3d_6" class="t s4_6">Digitaria sanguinalis</div>
+<div id="t3e_6" class="t s2_6">•		</div>
+<div id="t3f_6" class="t s2_6">Gebruik	 die	 hoër	 toedieningshoeveelheid	 van	</div>
+<div id="t3g_6" class="t s1_6">DUAL </div>
+<div id="t3h_6" class="t s1_6">GOLD</div>
+<div id="t3i_6" class="t s2_6">waar hoë infestasies voorkom.</div>
+<div id="t3j_6" class="t s2_6">•	</div>
+<div id="t3k_6" class="t s4_6">Brachiaria eruciformis</div>
+<div id="t3l_6" class="t s2_6">•		</div>
+<div id="t3m_6" class="t s2_6">Gebruik	 die	 hoër	 toedieningshoeveelheid	 van	</div>
+<div id="t3n_6" class="t s1_6">DUAL </div>
+<div id="t3o_6" class="t s1_6">GOLD </div>
+<div id="t3p_6" class="t s2_6">vir beter beheer.</div>
+<div id="t3q_6" class="t s1_6">Toedieningsmetodes - inwerking</div>
+<div id="t3r_6" class="t s2_6">•	</div>
+<div id="t3s_6" class="t s2_6">Gebruik	 die	 hoër	 toedieningshoeveelheid	 van	</div>
+<div id="t3t_6" class="t s1_6">DUAL GOLD</div>
+<div id="t3u_6" class="t s2_6">wanneer dit voor plant ingewerk word.</div>
+<div id="t3v_6" class="t s1_6">Grond</div>
+<div id="t3w_6" class="t s2_6">•	</div>
+<div id="t3x_6" class="t s2_6">Indien	die	organiese	materiaal	inhoud	van	die	grond	1	%	oor-</div>
+<div id="t3y_6" class="t s2_6">skry, moet die hoër toedieningshoeveelheid van </div>
+<div id="t3z_6" class="t s1_6">DUAL GOLD</div>
+<div id="t40_6" class="t s2_6">gebruik word.</div>
+<div id="t41_6" class="t s2_6">•	</div>
+<div id="t42_6" class="t s2_6">Op	 gronde	 wat	 meer	 as	 30	 %	 klei	 bevat,	 mag	 breëblaaron-</div>
+<div id="t43_6" class="t s2_6">kruide nie voldoende vooropkom beheer word nie (Tabel 1) en </div>
+<div id="t44_6" class="t s2_6">behoort voorkeur aan na-opkombeheer van breëblaaronkruide </div>
+<div id="t45_6" class="t s2_6">gegee te word (Tabelle </div>
+<div id="t46_6" class="t s2_6">3 en 4).</div>
+<div id="t47_6" class="t s2_6">•	</div>
+<div id="t48_6" class="t s2_6">Indien	 die	</div>
+<div id="t49_6" class="t s1_6">DUAL GOLD</div>
+<div id="t4a_6" class="t s2_6">plus GARDOMIL GOLD splittoedie-</div>
+<div id="t4b_6" class="t s2_6">ning geselekteer word op gronde wat meer as 30 % klei </div>
+<div id="t4c_6" class="t s2_6">bevat, kan die dosis van die GARDOMIL GOLD gevarieer word </div>
+<div id="t4d_6" class="t s2_6">na aanleiding van die vooropkombeheer wat verkry is en die </div>
+<div id="t4e_6" class="t s2_6">heersende weerstoestande. </div>
+<div id="t4f_6" class="t s1_6">Grondtipe</div>
+<div id="t4g_6" class="t s2_6">Sand</div>
+<div id="t4h_6" class="t s2_6">Leemsand /</div>
+<div id="t4i_6" class="t s2_6">Sandleem</div>
+<div id="t4j_6" class="t s2_6">Sandkleileem</div>
+<div id="t4k_6" class="t s1_6">% Klei</div>
+<div id="t4l_6" class="t s2_6">0 - 10</div>
+<div id="t4m_6" class="t s2_6">11 - 20</div>
+<div id="t4n_6" class="t s2_6">21 - 30</div>
+<div id="t4o_6" class="t s1_6">DUAL </div>
+<div id="t4p_6" class="t s1_6">GOLD (</div>
+<div id="t4q_6" class="t s3_6">l</div>
+<div id="t4r_6" class="t s1_6">/ha)</div>
+<div id="t4s_6" class="t s1_6">plus</div>
+<div id="t4t_6" class="t s2_6">0,55</div>
+<div id="t4u_6" class="t s2_6">0,5</div>
+<div id="t4v_6" class="t s2_6">0,6</div>
+<div id="t4w_6" class="t s1_6">GARDOMIL </div>
+<div id="t4x_6" class="t s1_6">GOLD</div>
+<div id="t4y_6" class="t s1_6">(</div>
+<div id="t4z_6" class="t s3_6">l</div>
+<div id="t50_6" class="t s1_6">/ha)</div>
+<div id="t51_6" class="t s2_6">2,2</div>
+<div id="t52_6" class="t s2_6">2,5</div>
+<div id="t53_6" class="t s2_6">3,2</div>
+<div id="t54_6" class="t s1_6">Vroeg na-opkoms</div>
+<div id="t55_6" class="t s1_6">Na-</div>
+<div id="t56_6" class="t s1_6">opkoms</div>
+<div id="t57_6" class="t s1_6">gevolg </div>
+<div id="t58_6" class="t s1_6">deur</div>
+<div id="t59_6" class="t s1_6">Grondtipe</div>
+<div id="t5a_6" class="t s2_6">Sand /</div>
+<div id="t5b_6" class="t s2_6">Leemsand /</div>
+<div id="t5c_6" class="t s2_6">Sandleem</div>
+<div id="t5d_6" class="t s2_6">Sandklei </div>
+<div id="t5e_6" class="t s2_6">leem</div>
+<div id="t5f_6" class="t s2_6">Sandkleileem /</div>
+<div id="t5g_6" class="t s2_6">Sandklei</div>
+<div id="t5h_6" class="t s2_6">Sandklei / Turf</div>
+<div id="t5i_6" class="t s1_6">% Klei</div>
+<div id="t5j_6" class="t s2_6">0 - 20</div>
+<div id="t5k_6" class="t s2_6">21 - 30</div>
+<div id="t5l_6" class="t s2_6">31 - 40</div>
+<div id="t5m_6" class="t s2_6">41 - 50</div>
+<div id="t5n_6" class="t s5_6">DUAL </div>
+<div id="t5o_6" class="t s5_6">GOLD </div>
+<div id="t5p_6" class="t s5_6">(</div>
+<div id="t5q_6" class="t s6_6">l</div>
+<div id="t5r_6" class="t s5_6">/ha)</div>
+<div id="t5s_6" class="t s5_6">plus</div>
+<div id="t5t_6" class="t s2_6">0,7 - 0,9</div>
+<div id="t5u_6" class="t s2_6">0,8 - 1</div>
+<div id="t5v_6" class="t s2_6">0,95 - 1,1</div>
+<div id="t5w_6" class="t s2_6">0,95 - 1,3</div>
+<div id="t5x_6" class="t s1_6">GESAPRIM SUPER </div>
+<div id="t5y_6" class="t s1_6">plus</div>
+<div id="t5z_6" class="t s1_6">2,4-D amine</div>
+<div id="t60_6" class="t s1_6">(480 g se/</div>
+<div id="t61_6" class="t s3_6">l</div>
+<div id="t62_6" class="t s1_6">)</div>
+<div id="t63_6" class="t s2_6">Alle grondtipes:</div>
+<div id="t64_6" class="t s1_6">of</div>
+<div id="t65_6" class="t s2_6">1,25 </div>
+<div id="t66_6" class="t s3_6">l</div>
+<div id="t67_6" class="t s2_6">GESAPRIM SUPER </div>
+<div id="t68_6" class="t s2_6">+</div>
+<div id="t69_6" class="t s2_6">0,75 </div>
+<div id="t6a_6" class="t s3_6">l</div>
+<div id="t6b_6" class="t s2_6">2,4 - D amine</div>
+<div id="t6c_6" class="t s1_6">of</div>
+<div id="t6d_6" class="t s2_6">1,7 </div>
+<div id="t6e_6" class="t s3_6">l</div>
+<div id="t6f_6" class="t s2_6">GESAPRIM SUPER </div>
+<div id="t6g_6" class="t s2_6">+</div>
+<div id="t6h_6" class="t s2_6">0,5 </div>
+<div id="t6i_6" class="t s3_6">l</div>
+<div id="t6j_6" class="t s2_6">2,4-D amien</div>
+<div id="t6k_6" class="t s1_6">Voor </div>
+<div id="t6l_6" class="t s1_6">-</div>
+<div id="t6m_6" class="t s1_6">opkoms</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg6Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg6"><img src="6/6.png" id="pdf6" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f6 = [['t1_6',290],['t2_6',58],['t4_6',1317],['t5_6',1304],['t6_6',1304],['t7_6',547],['t9_6',1317],['ta_6',1304],['tb_6',273],['tc_6',988],['td_6',1304],['te_6',1304],['tj_6',536],['tk_6',1102],['to_6',268],['tp_6',291],['tq_6',711],['tr_6',532],['ts_6',731],['tt_6',1304],['tu_6',1006],['tv_6',255],['tw_6',1304],['tx_6',1304],['ty_6',1304],['tz_6',1202],['t11_6',1304],['t12_6',1304],['t13_6',1304],['t14_6',1304],['t15_6',485],['t16_6',782],['t17_6',1017],['t18_6',248],['t19_6',1304],['t1a_6',1304],['t1b_6',282],['t1c_6',297],['t1d_6',679],['t1e_6',1304],['t1f_6',511],['t1g_6',1373],['t1h_6',552],['t1j_6',333],['t1k_6',292],['t1l_6',528],['t1m_6',272],['t1n_6',429],['t1o_6',214],['t1p_6',218],['t1q_6',1117],['t1r_6',1373],['t1s_6',709],['t1u_6',808],['t1w_6',543],['t1x_6',746],['t1z_6',327],['t20_6',290],['t21_6',547],['t22_6',1365],['t23_6',1212],['t26_6',343],['t27_6',296],['t28_6',529],['t29_6',1373],['t2a_6',523],['t2b_6',212],['t2c_6',1135],['t2d_6',1373],['t2e_6',619],['t2f_6',589],['t2g_6',1373],['t2h_6',1373],['t2i_6',293],['t2j_6',950],['t2n_6',294],['t2o_6',785],['t2p_6',1304],['t2q_6',509],['t2t_6',429],['t2v_6',1060],['t2y_6',461],['t30_6',656],['t32_6',268],['t34_6',1125],['t35_6',335],['t36_6',852],['t37_6',901],['t38_6',295],['t39_6',783],['t3a_6',411],['t3b_6',482],['t3d_6',432],['t3f_6',1060],['t3i_6',642],['t3k_6',473],['t3m_6',1060],['t3p_6',345],['t3q_6',766],['t3s_6',995],['t3t_6',298],['t3u_6',811],['t3y_6',1000],['t3z_6',289],['t40_6',291],['t42_6',1304],['t43_6',1304],['t44_6',1304],['t45_6',483],['t46_6',161],['t48_6',222],['t49_6',295],['t4a_6',759],['t4b_6',1304],['t4c_6',1304],['t4d_6',1304],['t4e_6',585],['t4h_6',252],['t4k_6',152],['t4l_6',129],['t4m_6',156],['t4n_6',156],['t4p_6',169],['t54_6',417],['t5a_6',141],['t5b_6',252],['t5f_6',310],['t5h_6',306],['t5i_6',152],['t5j_6',129],['t5k_6',156],['t5l_6',156],['t5m_6',156],['t5t_6',183],['t5u_6',143],['t5v_6',206],['t5w_6',206],['t5x_6',443],['t5z_6',281],['t60_6',228],['t63_6',327],['t67_6',413],['t6b_6',291],['t6f_6',413],['t6j_6',261]];
+var c6 = 0;
+function fontAdjustments6(){;
+	if (c6<f6.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f6[c6][0],f6[c6][1]);
+		c6++;
+		if (c6%10 == 0) {
+			setTimeout(function(){fontAdjustments6()},0);
+		} else {
+			fontAdjustments6();
+		}
+	}
+};
+function load6(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments6,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 239;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_6");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(9,6,909,1286,0);
+</script>
+</body>
+</html>

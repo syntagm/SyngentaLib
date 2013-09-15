@@ -1,0 +1,1061 @@
+<!DOCTYPE html >
+<html lang="en">
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+<meta charset="utf-8" />
+<title>GESAPRIM_SUPER___Afr_2009_07_16 Page1</title>
+</head>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/grey-washed-wall/ -->
+<body style="background:url('assets/bg.png') repeat scroll 0 0 transparent;">
+
+<style type="text/css">
+    body {
+        margin:0;
+    }
+
+    #prev, #next {
+        width: 100px;
+        height: 30px;
+        vertical-align: middle;
+    }
+
+    #goBtn {
+        width: 100px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+    #zoomOut, #zoomIn {
+        width: 35px;
+        height: 30px;
+        vertical-align: middle;
+    }
+	
+	#toggle {
+		margin-right:20px;
+        vertical-align: middle;
+	}
+
+    #zoomBtn {
+        width: 70px;
+        height: 27px;
+        vertical-align: middle;
+    }
+
+</style>
+
+<script type="text/javascript">
+
+    var zoom = 1;
+    var width = 0;
+    var height = 0;
+    var curPg = 0;
+    var pgCount = 0;
+	var jpedal;
+	var container;
+	var type;
+	
+	var isMouseDown = false;
+	var mouseX;
+	var mouseY;
+
+    var CUR_DEFAULT = 0;
+    var CUR_GRAB = 1;
+    var CUR_GRABBING = 2;
+
+    var SEL_SELECT = 0;
+    var SEL_MOVE = 1;
+
+    function makeNavBar(pageCount, curPage, w, h, t) {
+	
+		//type 0 = single pages
+		//type 1 = splitspreads
+
+        pgCount = pageCount;
+        curPg = curPage;
+        width = w;
+        height = h;
+		type = t;
+        var opt;
+
+        //Populate the goto dropdown with page numbers
+        var goBtn = d("goBtn");
+		
+		if (type == 1) {//splitspreads
+			jpedal = d("container" + curPage);
+			
+			opt = document.createElement('option');
+            opt.value = 1;
+            opt.innerHTML = "Page " + 1;
+			goBtn.appendChild(opt);
+			
+			for (var i = 2; i <= pgCount; i += 2) {
+			
+				opt = document.createElement('option');
+				opt.value = i;
+				var text;
+				if (i != pgCount || pgCount % 2 == 1) {
+					text = "Page " + i + "-" + (i+1);
+				} else {
+					text = "Page " + i;
+				}
+				opt.innerHTML = text;
+				goBtn.appendChild(opt);
+			}
+			
+			goBtn.selectedIndex = curPage/2;
+			
+		} else {
+			jpedal = d("jpedal");
+			
+			for (var i = 1; i <= pgCount; i++) {
+				opt = document.createElement('option');
+				opt.value = i;
+				opt.innerHTML = "Page " + i;
+				goBtn.appendChild(opt);
+			}
+			goBtn.selectedIndex = curPage - 1;
+		}
+		
+
+
+        jpedal.style.transformOrigin = "top left";
+        jpedal.style.webkitTransformOrigin = "top left";
+        jpedal.style.msTransformOrigin = "top left";
+        jpedal.style.mozTransformOrigin = "top left";
+        jpedal.style.oTransformOrigin = "top left";
+        jpedal.style.margin = "0";
+
+        container = d("container");
+        container.style.width = width + "px";
+        container.style.height = height + "px";
+        container.style.overflow = "hidden";
+
+
+
+        var doc = document.URL;
+        var jumper = "?zoom=";
+        var jumIdx = doc.toString().indexOf(jumper);
+        var zm = parseFloat(doc.substr(jumIdx + jumper.length));
+		var zoomBtn = d("zoomBtn");
+		if (width > getWidth()) {
+			zoomBtn.options[1].text = "100%";
+			zoomBtn.options[2].text = "Fit Width (Reset)";
+		}
+
+        if (!isNaN(zm) && zm > 0 && zm != 1) {
+            zoom = zm;
+            updateZoom();
+        } else if (width > getWidth()) {
+			zoomBtn.selectedIndex = 2;
+			zoomUpdate();
+		}
+    }
+
+    function setSelectMode(type) {
+        //0 Text selectin (SEL_SELECT)
+        //1 Panning (SEL_MOVE)
+
+        if (type == SEL_SELECT) {
+            container.style.cursor = getCursor(CUR_DEFAULT);
+
+            container.onmousedown = function(e) { }
+
+            window.onmouseup = function(e) { }
+
+            window.onmousemove = function(e) { }
+        } else {
+
+            if (window.getSelection) {
+                if (window.getSelection().empty) {  // Chrome
+                    window.getSelection().empty();
+                } else if (window.getSelection().removeAllRanges) {  // Firefox
+                    window.getSelection().removeAllRanges();
+                }
+            } else if (document.selection) {  // IE?
+                document.selection.empty();
+            }
+            
+            container.style.cursor = getCursor(CUR_GRAB);
+
+            container.onmousedown = function(e) {
+                container.style.cursor = getCursor(CUR_GRABBING);
+
+                //console.log(e.screenX + " " + e.screenY);
+                mouseX = e.screenX;
+                mouseY = e.screenY;
+                isMouseDown = true;
+                return false;
+            }
+
+            window.onmouseup = function(e) {
+                container.style.cursor = getCursor(CUR_GRAB);
+                isMouseDown = false;
+            }
+
+            window.onmousemove = function(e) {
+                if (isMouseDown) {
+                    //console.log((mouseX - e.screenX) + " " + (mouseY - e.screenY));
+                    window.scrollBy((mouseX - e.screenX), (mouseY - e.screenY));
+
+                    mouseX = e.screenX;
+                    mouseY = e.screenY;
+
+                }
+
+            }
+        }
+
+    }
+	
+	function getCursor(type) {
+		//0 Default (CUR_DEFAULT)
+		//1 Open grab (CUR_GRAB)
+		//2 Close grab (CUR_GRABBING)
+		
+		//Courtesy of http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+		var isOpera = !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+		// Opera 8.0+ (UA detection to detect Blink/v8-powered Opera)
+		var isFirefox = typeof InstallTrigger !== 'undefined';   // Firefox 1.0+
+		var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+		// At least Safari 3+: "[object HTMLElementConstructor]"
+		var isChrome = !!window.chrome && !isOpera;              // Chrome 1+
+		var isIE = /*@cc_on!@*/false || document.documentMode;   // At least IE6
+		
+		if (isFirefox) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-moz-grab";
+			} else {//CUR_GRABBING
+			    return "-moz-grabbing";
+			}
+		} else if (isChrome) {
+			if (type == CUR_DEFAULT) {
+                return "";
+			} else if (type == CUR_GRAB) {
+			    return "-webkit-grab";
+			} else {//CUR_GRABBING
+			    return "-webkit-grabbing";
+			}
+		} else {//CUR_DEFAULT
+			if (type == CUR_DEFAULT) {
+			    return "";
+			} else {//CUR_GRABBING
+			    return "all-scroll";
+			}
+		}
+	}
+	
+	function getWidth() {
+		var w = 0;
+		if (self.innerHeight) {
+			w = self.innerWidth;
+		} else if (document.documentElement && document.documentElement.clientHeight) {
+			w = document.documentElement.clientWidth;
+		} else if (document.body) {
+			w = document.body.clientWidth;
+		}
+		return w;
+	}
+
+    function updateZoom() {
+        jpedal.style.transform = "scale(" + zoom + ")";
+        jpedal.style.WebkitTransform = "scale(" + zoom + ")";
+        jpedal.style.msTransform = "scale(" + zoom + ")";
+        jpedal.style.MozTransform = "scale(" + zoom + ")";
+        jpedal.style.OTransform = "scale(" + zoom + ")";
+        d("container").style.width = width * zoom + "px";
+        d("container").style.height = height * zoom + "px";
+
+        var percent = Math.floor(zoom*100) + "%";
+        d("zoomBtn").options[0].innerHTML = percent;
+        d("zoomBtn").selectedIndex = 0;
+    }
+
+    function zoomIn() {
+        zoom = zoom*1.2;
+        updateZoom();
+    }
+
+    function zoomUpdate() {
+        var index = d("zoomBtn").selectedIndex;
+
+        if (index == 0) {
+            //Always current. Do nothing
+        } else if (index == 1) {//Reset
+            zoom = 1;
+        } else if (index == 2) {//Fit Width
+            var winWidth = window.innerWidth;
+            zoom = (winWidth - 40) / width;
+        } else if (index == 3) {//Fit Height
+            var winHeight = window.innerHeight;
+            zoom = (winHeight - 60) / height;
+        } else if (index == 4) {//Fit Page
+            var winWidth = window.innerWidth;
+            var winHeight = window.innerHeight;
+            var wScale = (winWidth - 40) / width;
+            var hScale = (winHeight - 60) / height;
+
+            if (wScale > hScale) {
+                zoom = hScale;
+            } else {
+                zoom = wScale;
+            }
+        }
+
+        updateZoom();
+    }
+
+    function zoomOut() {
+        zoom = zoom/1.2;
+        updateZoom();
+    }
+
+    function goToPage() {
+		var pg;
+		if (type == 0) {
+			pg = d("goBtn").selectedIndex + 1;
+		} else {
+			pg = (d("goBtn").selectedIndex * 2) + 1;
+		}
+        if (pg != curPg) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(pg, pgCount);
+			} else {
+				link = getMagazinePageHref(pg, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function getPageHref(page, count) {
+        var iWithLeadingZeros = page.toString();
+        var leadingZerosNeeded = count.toString().length - iWithLeadingZeros.length;
+
+        if(page === 1) {
+            iWithLeadingZeros = "index"
+        } else {
+            for(var n = 0; n < leadingZerosNeeded; n ++) {
+                iWithLeadingZeros = "0" + iWithLeadingZeros;
+            }
+        }
+        return iWithLeadingZeros;
+    }
+	
+	function getMagazinePageHref(page, count) {
+		if(page > count) page = count;
+		if(page === 1)
+			return getPageHref(page, count);
+		else if(page % 2 === 0) {
+			if(page === count)
+				return getPageHref(page, count);
+			else
+				return getPageHref(page, count) + "-" + getPageHref(page + 1, count);
+		} else {
+			return getPageHref(page-1, count) + "-" + getPageHref(page, count);
+		}
+	}
+
+    function next() {
+        if (curPg < pgCount) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg + 1, pgCount);
+			} else {
+				if (pgCount % 2 != 0 && curPg + 1 == pgCount) return;
+				link = getMagazinePageHref(curPg + 2, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function prev() {
+        if (curPg > 1) {
+            var zm = zoom != 1 ? "?zoom=" + zoom : "";
+			var link;
+			if (type == 0) {
+				link = getPageHref(curPg - 1, pgCount);
+			} else {
+				link = getMagazinePageHref(curPg - 1, pgCount);
+			}
+            window.open(link + ".html" + zm, "_self");
+        }
+    }
+
+    function d(id){
+        return document.getElementById(id);
+    }
+
+</script>
+
+<!-- Background pattern courtesy of http://subtlepatterns.com/mocha-grunge/ -->
+<div id="nav" style="background:url('assets/nav.png') repeat scroll 0 0 transparent; padding-top: 5px; text-align: center; position: fixed; width: 100%; height: 36px; z-index:999; border-bottom: 1px solid #555555">
+    <button onclick="prev()" id="prev">Prev &lt;&lt;</button>
+    <select id="goBtn" onchange="goToPage()">
+
+    </select>
+    <button onclick="next()" id="next" style="margin-right:20px;">&gt;&gt; Next</button>
+	
+	<span id="toggle">
+		<input type="radio" name="toggle" id="btnSelect" checked="checked" onclick="setSelectMode(0)"><img src="assets/cursor.png" /></input>
+		<input type="radio" name="toggle" id="btnMove" onclick="setSelectMode(1)"><img src="assets/grab16.png" /></input>
+	</span>
+
+    <button onclick="zoomOut()" id="zoomOut">-</button>
+    <select id="zoomBtn" onchange="zoomUpdate()">
+        <option value="0">100%</option>
+        <option value="1">100% (Reset)</option>
+        <option value="2">Fit Width</option>
+        <option value="3">Fit Height</option>
+        <option value="4">Fit Page</option>
+
+    </select>
+    <button onclick="zoomIn()" id="zoomIn">+</button>
+</div>
+<div style="position:relative; width: 100%; height: 42px; margin-bottom: 6px;"></div>
+<div style="position:fixed; top:0px; left: 0px; width: 100%; height: 42px; margin-bottom: 6px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.9); "></div>
+
+<div id="container" style="margin: 0 auto 10px; box-shadow: 0 0 60px rgba(40, 40, 40, 0.7);">
+</script>
+
+
+
+<div id="jpedal" style="position:relative; width: 909px; height: 1286px; overflow: hidden; margin: 0 auto; box-shadow: 0 2px 6px rgba(100, 100, 100, 0.5);">
+
+<!-- Begin shared CSS values -->
+<style type="text/css" >
+.t {
+	position: absolute;
+	-webkit-transform-origin: top left;
+	-moz-transform-origin: top left;
+	-o-transform-origin: top left;
+	-ms-transform-origin: top left;
+	-webkit-transform: scale(0.25);
+	-moz-transform: scale(0.25);
+	-o-transform: scale(0.25);
+	-ms-transform: scale(0.25);
+	z-index: 1;
+	position:absolute;
+	white-space:nowrap;
+	overflow:visible;
+}
+</style>
+<!-- End shared CSS values -->
+
+<!-- Begin shared JS -->
+<script type="text/javascript">
+
+// Ensure that we're not replacing any onload events
+function addLoadEvent(func) {
+	var oldonload = window.onload;
+	if (typeof window.onload != 'function') {
+		window.onload = func;
+	} else {
+		window.onload = function() {
+			if (oldonload) {
+				oldonload();
+			}
+			func();
+		}
+	}
+}
+addLoadEvent(function(){load1();});
+
+function adjustWordSpacing(divName,actualWidth) {
+
+	var el = document.getElementById(divName);
+	var rawWidth=el.offsetWidth;
+	if(actualWidth>rawWidth){
+		var spacing= 0;
+		var s=spacing+'px';
+		el.style.wordSpacing = s;
+		rawWidth=el.offsetWidth;
+
+		var diff=rawWidth-actualWidth;
+		if(diff<0)
+			diff=-diff;
+		var newDiff=diff-1;
+
+		while (spacing<40 && (newDiff===diff || newDiff<diff)){
+
+			diff=newDiff;
+			spacing= spacing+1;
+
+			s=spacing+'px';
+			el.style.wordSpacing = s;
+
+			newDiff=el.offsetWidth-actualWidth;
+			if(newDiff<0)
+				newDiff=-newDiff;
+		}
+		if(diff<=newDiff)
+			spacing=spacing-1;
+		s=spacing+'px';
+		el.style.wordSpacing =s;
+	}
+}
+
+</script>
+<!-- End shared JS -->
+
+
+<!-- Begin inline CSS -->
+<style type="text/css" >
+
+#t1_1{left:517px;top:401px;}
+#t2_1{left:517px;top:415px;}
+#t3_1{left:500px;top:430px;}
+#t4_1{left:517px;top:430px;}
+#t5_1{left:500px;top:459px;}
+#t6_1{left:500px;top:488px;}
+#t7_1{left:500px;top:517px;}
+#t8_1{left:500px;top:546px;}
+#t9_1{left:500px;top:560px;}
+#ta_1{left:563px;top:560px;}
+#tb_1{left:500px;top:575px;}
+#tc_1{left:772px;top:575px;}
+#td_1{left:500px;top:589px;}
+#te_1{left:500px;top:604px;}
+#tf_1{left:540px;top:604px;}
+#tg_1{left:500px;top:618px;}
+#th_1{left:619px;top:618px;}
+#ti_1{left:500px;top:633px;}
+#tj_1{left:653px;top:633px;}
+#tk_1{left:500px;top:648px;}
+#tl_1{left:500px;top:677px;}
+#tm_1{left:500px;top:706px;}
+#tn_1{left:667px;top:706px;}
+#to_1{left:500px;top:735px;}
+#tp_1{left:500px;top:764px;}
+#tq_1{left:619px;top:764px;}
+#tr_1{left:500px;top:778px;}
+#ts_1{left:500px;top:793px;}
+#tt_1{left:643px;top:793px;}
+#tu_1{left:756px;top:793px;}
+#tv_1{left:500px;top:807px;}
+#tw_1{left:681px;top:807px;}
+#tx_1{left:500px;top:822px;}
+#ty_1{left:500px;top:836px;}
+#tz_1{left:500px;top:851px;}
+#t10_1{left:500px;top:865px;}
+#t11_1{left:527px;top:865px;}
+#t12_1{left:641px;top:865px;}
+#t13_1{left:500px;top:880px;}
+#t14_1{left:500px;top:909px;}
+#t15_1{left:500px;top:938px;}
+#t16_1{left:517px;top:938px;}
+#t17_1{left:517px;top:952px;}
+#t18_1{left:767px;top:952px;}
+#t19_1{left:517px;top:967px;}
+#t1a_1{left:517px;top:981px;}
+#t1b_1{left:500px;top:996px;}
+#t1c_1{left:517px;top:996px;}
+#t1d_1{left:517px;top:1010px;}
+#t1e_1{left:500px;top:1039px;}
+#t1f_1{left:500px;top:1054px;}
+#t1g_1{left:500px;top:1083px;}
+#t1h_1{left:500px;top:1112px;}
+#t1i_1{left:500px;top:1126px;}
+#t1j_1{left:500px;top:1156px;}
+#t1k_1{left:500px;top:1170px;}
+#t1l_1{left:500px;top:1185px;}
+#t1m_1{left:517px;top:1185px;}
+#t1n_1{left:517px;top:1199px;}
+#t1o_1{left:500px;top:1214px;}
+#t1p_1{left:517px;top:1214px;}
+#t1q_1{left:517px;top:1228px;}
+#t1r_1{left:110px;top:401px;}
+#t1s_1{left:110px;top:430px;}
+#t1t_1{left:127px;top:430px;}
+#t1u_1{left:110px;top:444px;}
+#t1v_1{left:127px;top:444px;}
+#t1w_1{left:110px;top:459px;}
+#t1x_1{left:127px;top:459px;}
+#t1y_1{left:110px;top:473px;}
+#t1z_1{left:127px;top:473px;}
+#t20_1{left:396px;top:473px;}
+#t21_1{left:110px;top:488px;}
+#t22_1{left:127px;top:488px;}
+#t23_1{left:127px;top:502px;}
+#t24_1{left:110px;top:517px;}
+#t25_1{left:127px;top:517px;}
+#t26_1{left:222px;top:517px;}
+#t27_1{left:127px;top:531px;}
+#t28_1{left:127px;top:546px;}
+#t29_1{left:335px;top:546px;}
+#t2a_1{left:127px;top:560px;}
+#t2b_1{left:127px;top:575px;}
+#t2c_1{left:110px;top:589px;}
+#t2d_1{left:127px;top:589px;}
+#t2e_1{left:211px;top:589px;}
+#t2f_1{left:127px;top:604px;}
+#t2g_1{left:118px;top:633px;}
+#t2h_1{left:118px;top:648px;}
+#t2i_1{left:118px;top:662px;}
+#t2j_1{left:428px;top:662px;}
+#t2k_1{left:118px;top:677px;}
+#t2l_1{left:118px;top:691px;}
+#t2m_1{left:118px;top:706px;}
+#t2n_1{left:118px;top:720px;}
+#t2o_1{left:118px;top:735px;}
+#t2p_1{left:118px;top:749px;}
+#t2q_1{left:118px;top:764px;}
+#t2r_1{left:118px;top:778px;}
+#t2s_1{left:118px;top:793px;}
+#t2t_1{left:118px;top:807px;}
+#t2u_1{left:118px;top:822px;}
+#t2v_1{left:118px;top:836px;}
+#t2w_1{left:118px;top:851px;}
+#t2x_1{left:249px;top:851px;}
+#t2y_1{left:118px;top:865px;}
+#t2z_1{left:110px;top:894px;}
+#t30_1{left:110px;top:923px;}
+#t31_1{left:127px;top:923px;}
+#t32_1{left:110px;top:938px;}
+#t33_1{left:127px;top:938px;}
+#t34_1{left:110px;top:952px;}
+#t35_1{left:127px;top:952px;}
+#t36_1{left:110px;top:967px;}
+#t37_1{left:127px;top:967px;}
+#t38_1{left:127px;top:981px;}
+#t39_1{left:110px;top:996px;}
+#t3a_1{left:127px;top:996px;}
+#t3b_1{left:127px;top:1010px;}
+#t3c_1{left:150px;top:1010px;}
+#t3d_1{left:110px;top:1025px;}
+#t3e_1{left:127px;top:1025px;}
+#t3f_1{left:127px;top:1039px;}
+#t3g_1{left:110px;top:1054px;}
+#t3h_1{left:127px;top:1054px;}
+#t3i_1{left:110px;top:1068px;}
+#t3j_1{left:127px;top:1068px;}
+#t3k_1{left:127px;top:1083px;}
+#t3l_1{left:127px;top:1097px;}
+#t3m_1{left:110px;top:1112px;}
+#t3n_1{left:127px;top:1112px;}
+#t3o_1{left:127px;top:1126px;}
+#t3p_1{left:110px;top:1141px;}
+#t3q_1{left:127px;top:1141px;}
+#t3r_1{left:381px;top:1141px;}
+#t3s_1{left:127px;top:1156px;}
+#t3t_1{left:127px;top:1170px;}
+#t3u_1{left:110px;top:1185px;}
+#t3v_1{left:127px;top:1185px;}
+#t3w_1{left:127px;top:1199px;}
+#t3x_1{left:110px;top:1214px;}
+#t3y_1{left:127px;top:1214px;}
+#t3z_1{left:127px;top:1228px;}
+#t40_1{left:428px;top:1228px;}
+#t41_1{left:118px;top:313px;}
+#t42_1{left:118px;top:319px;}
+#t43_1{left:118px;top:324px;}
+#t44_1{left:118px;top:183px;}
+#t45_1{left:224px;top:183px;}
+#t46_1{left:253px;top:183px;}
+#t47_1{left:118px;top:206px;}
+#t48_1{left:118px;top:216px;}
+#t49_1{left:118px;top:227px;}
+#t4a_1{left:196px;top:227px;}
+#t4b_1{left:331px;top:227px;}
+#t4c_1{left:358px;top:227px;}
+#t4d_1{left:118px;top:237px;}
+#t4e_1{left:118px;top:247px;}
+#t4f_1{left:222px;top:247px;}
+#t4g_1{left:332px;top:247px;}
+#t4h_1{left:358px;top:247px;}
+#t4i_1{left:118px;top:257px;}
+#t4j_1{left:238px;top:257px;}
+#t4k_1{left:118px;top:267px;}
+#t4l_1{left:219px;top:267px;}
+#t4m_1{left:336px;top:267px;}
+#t4n_1{left:358px;top:267px;}
+#t4o_1{left:118px;top:288px;}
+#t4p_1{left:252px;top:160px;}
+#t4q_1{left:287px;top:160px;}
+#t4r_1{left:315px;top:160px;}
+#t4s_1{left:436px;top:160px;}
+#t4t_1{left:482px;top:160px;}
+#t4u_1{left:567px;top:160px;}
+#t4v_1{left:605px;top:160px;}
+#t4w_1{left:387px;top:176px;}
+#t4x_1{left:411px;top:176px;}
+#t4y_1{left:558px;top:176px;}
+#t4z_1{left:387px;top:190px;}
+#t50_1{left:387px;top:203px;}
+#t51_1{left:387px;top:217px;}
+#t52_1{left:387px;top:231px;}
+#t53_1{left:387px;top:249px;}
+#t54_1{left:387px;top:263px;}
+#t55_1{left:387px;top:276px;}
+#t56_1{left:387px;top:290px;}
+#t57_1{left:628px;top:248px;}
+#t58_1{left:628px;top:258px;}
+#t59_1{left:628px;top:268px;}
+#t5a_1{left:628px;top:278px;}
+#t5b_1{left:628px;top:288px;}
+#t5c_1{left:628px;top:298px;}
+#t5d_1{left:628px;top:178px;}
+#t5e_1{left:628px;top:189px;}
+#t5f_1{left:628px;top:199px;}
+#t5g_1{left:628px;top:219px;}
+#t5h_1{left:383px;top:321px;}
+#t5i_1{left:578px;top:321px;}
+#t5j_1{left:458px;top:359px;}
+#t5k_1{left:458px;top:369px;}
+#t5l_1{left:233px;top:26px;}
+
+.s5_1{
+	FONT-SIZE: 36px;
+	FONT-FAMILY: VSSAWR-HelveticaNeueLTStd-Lt1;
+	color: rgb(0,0,0);
+}
+
+.s1_1{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: VSSAWR-HelveticaNeueLTStd-Lt1;
+	color: rgb(0,0,0);
+}
+
+.s8_1{
+	FONT-SIZE: 33px;
+	FONT-FAMILY: VSSAWR-HelveticaNeueLTStd-Lt1;
+	color: rgb(0,0,0);
+}
+
+.s9_1{
+	FONT-SIZE: 33px;
+	FONT-FAMILY: UKIUIT-HelveticaNeueLTStd-Bd1;
+	color: rgb(0,0,0);
+}
+
+.s3_1{
+	FONT-SIZE: 20px;
+	FONT-FAMILY: UKIUIT-HelveticaNeueLTStd-Roman1;
+	color: rgb(0,0,0);
+}
+
+.s4_1{
+	FONT-SIZE: 36px;
+	FONT-FAMILY: UKIUIT-HelveticaNeueLTStd-Bd1;
+	color: rgb(0,0,0);
+}
+
+.s6_1{
+	FONT-SIZE: 36px;
+	FONT-FAMILY: UKIUIT-Mt-ExtraPlain1;
+	color: rgb(0,0,0);
+}
+
+.s2_1{
+	FONT-SIZE: 48px;
+	FONT-FAMILY: UKIUIT-HelveticaNeueLTStd-Bd1;
+	color: rgb(0,0,0);
+}
+
+.s7_1{
+	FONT-SIZE: 30px;
+	FONT-FAMILY: UKIUIT-HelveticaNeueLTStd-Bd1;
+	color: rgb(0,0,0);
+}
+
+</style>
+<!-- End inline CSS -->
+
+<!-- Begin embedded font definitions -->
+<style type="text/css" >
+
+@font-face {
+	font-family: UKIUIT-HelveticaNeueLTStd-Bd1;
+	src: url("index/fonts/UKIUIT-HelveticaNeueLTStd-Bd.eot");
+	src: url("index/fonts/UKIUIT-HelveticaNeueLTStd-Bd.eot?#iefix") format("embedded-opentype"),
+		url("index/fonts/UKIUIT-HelveticaNeueLTStd-Bd.otf") format("opentype");
+}
+
+@font-face {
+	font-family: UKIUIT-Mt-ExtraPlain1;
+	src: url("index/fonts/UKIUIT-Mt-ExtraPlain.eot");
+	src: url("index/fonts/UKIUIT-Mt-ExtraPlain.eot?#iefix") format("embedded-opentype"),
+		url("index/fonts/UKIUIT-Mt-ExtraPlain.otf") format("opentype");
+}
+
+@font-face {
+	font-family: UKIUIT-HelveticaNeueLTStd-Roman1;
+	src: url("index/fonts/UKIUIT-HelveticaNeueLTStd-Roman.eot");
+	src: url("index/fonts/UKIUIT-HelveticaNeueLTStd-Roman.eot?#iefix") format("embedded-opentype"),
+		url("index/fonts/UKIUIT-HelveticaNeueLTStd-Roman.otf") format("opentype");
+}
+
+@font-face {
+	font-family: VSSAWR-HelveticaNeueLTStd-Lt1;
+	src: url("index/fonts/VSSAWR-HelveticaNeueLTStd-Lt.eot");
+	src: url("index/fonts/VSSAWR-HelveticaNeueLTStd-Lt.eot?#iefix") format("embedded-opentype"),
+		url("index/fonts/VSSAWR-HelveticaNeueLTStd-Lt.otf") format("opentype");
+}
+
+</style>
+<!-- End embedded font definitions -->
+
+<!-- Begin text definitions (Positioned/styled in CSS) -->
+<div id="t1_1" class="t s1_1">die spoelwater by die inhoud van die spuittenk voordat die </div>
+<div id="t2_1" class="t s1_1">houer vernietig word.</div>
+<div id="t3_1" class="t s1_1">•	</div>
+<div id="t4_1" class="t s1_1">Moet die leë houer vir geen ander doel gebruik nie.</div>
+<div id="t5_1" class="t s2_1">SIMPTOME VAN MENSLIKE VERGIFTIGING</div>
+<div id="t6_1" class="t s1_1">Kalm, asemnood en ooguitpeuling.</div>
+<div id="t7_1" class="t s2_1">NOODHULPBEHANDELING</div>
+<div id="t8_1" class="t s1_1">As vergiftiging vermoed word, staak werk onmiddellik en skakel </div>
+<div id="t9_1" class="t s1_1">‘n dokter. </div>
+<div id="ta_1" class="t s1_1">Verwyder pasiënt van verdere kontak met die mid-</div>
+<div id="tb_1" class="t s1_1">del en plaas in ‘n goed geventileerde omgewing. </div>
+<div id="tc_1" class="t s1_1">Verwyder alle </div>
+<div id="td_1" class="t s1_1">besmette klere en was geaffekteerde liggaamsdele met seep en </div>
+<div id="te_1" class="t s1_1">water. </div>
+<div id="tf_1" class="t s1_1">Spoel oë in die geval van oogkontak met skoon water vir </div>
+<div id="tg_1" class="t s1_1">ten minste 15 minute. </div>
+<div id="th_1" class="t s1_1">Indien ingesluk veroorsaak braking mits die </div>
+<div id="ti_1" class="t s1_1">pasiënt by sy positiewe is. </div>
+<div id="tj_1" class="t s1_1">Moet niks per mond aan ‘n bewus-</div>
+<div id="tk_1" class="t s1_1">telose persoon toedien nie.</div>
+<div id="tl_1" class="t s2_1">NOTA AAN GENEESHEER</div>
+<div id="tm_1" class="t s1_1">Geen teenmiddel is beken nie. </div>
+<div id="tn_1" class="t s1_1">Behandel simptomaties.</div>
+<div id="to_1" class="t s2_1">3. WEERSTANDBESTUUR</div>
+<div id="tp_1" class="t s2_1">GESAPRIM SUPER</div>
+<div id="tq_1" class="t s1_1">is ‘n groepkode C1 onkruiddoder. Enige </div>
+<div id="tr_1" class="t s1_1">populasie van ‘n spesifieke onkruid mag individue insluit wat ‘n </div>
+<div id="ts_1" class="t s1_1">natuurlike weerstand teen </div>
+<div id="tt_1" class="t s2_1">GESAPRIM SUPER</div>
+<div id="tu_1" class="t s1_1">, of enige ander </div>
+<div id="tv_1" class="t s1_1">groepkode C1 onkruiddoder het. </div>
+<div id="tw_1" class="t s1_1">Indien hierdie onkruid doders in </div>
+<div id="tx_1" class="t s1_1">herhaaldelike en eksklusiewe programme aangewend word, kan </div>
+<div id="ty_1" class="t s1_1">die weerstandbiedende individue uiteindelik die onkruid populasie </div>
+<div id="tz_1" class="t s1_1">oorheers. Hierdie weerstandbiedende onkruide sal waarskynlik nie </div>
+<div id="t10_1" class="t s1_1">deur </div>
+<div id="t11_1" class="t s2_1">GESAPRIM SUPER </div>
+<div id="t12_1" class="t s1_1">of enige ander groepkode C1 onkruid-</div>
+<div id="t13_1" class="t s1_1">doder, beheer word nie. </div>
+<div id="t14_1" class="t s1_1">Om weerstand teen onkruiddoders te vertraag: </div>
+<div id="t15_1" class="t s1_1">•	</div>
+<div id="t16_1" class="t s1_1">Vermy die herhaaldelike en eksklusiewe gebruik van onkruid-</div>
+<div id="t17_1" class="t s1_1">doders in dieselfde onkruiddoder groepkode. </div>
+<div id="t18_1" class="t s1_1">Wissel af met, </div>
+<div id="t19_1" class="t s1_1">of gebruik tenkmengels van produkte in verskillende onkruid-</div>
+<div id="t1a_1" class="t s1_1">doder groepkodes. </div>
+<div id="t1b_1" class="t s1_1">•	</div>
+<div id="t1c_1" class="t s1_1">Integreer ander beheermaatreëls (chemies, verbouing, biolo-</div>
+<div id="t1d_1" class="t s1_1">gies) in onkruiddoder programme.</div>
+<div id="t1e_1" class="t s2_1">Vir spesifieke inligting oor weerstandsbestuur kontak die </div>
+<div id="t1f_1" class="t s2_1">registrasiehouer van hierdie produk.</div>
+<div id="t1g_1" class="t s2_1">4. GEBRUIKSBEPERKINGS</div>
+<div id="t1h_1" class="t s1_1">Om skade aan opvolggewasse te voorkom, moet die volgende </div>
+<div id="t1i_1" class="t s1_1">wagperiodes toegepas word:</div>
+<div id="t1j_1" class="t s1_1">a) Mielies en suikerriet - geen.</div>
+<div id="t1k_1" class="t s1_1">b) Graansorghum - 12 maande.</div>
+<div id="t1l_1" class="t s1_1">c) </div>
+<div id="t1m_1" class="t s1_1">Sonneblomme, grondbone, sojabone, aartappels, droëbone, </div>
+<div id="t1n_1" class="t s1_1">voersorghum en kleingraan - 18 maande.</div>
+<div id="t1o_1" class="t s1_1">d) </div>
+<div id="t1p_1" class="t s1_1">Alle ander gewasse - 24 maande (‘n toetsplanting word egter </div>
+<div id="t1q_1" class="t s1_1">aanbeveel).</div>
+<div id="t1r_1" class="t s2_1">1. WAARSKUWINGS</div>
+<div id="t1s_1" class="t s1_1">•	</div>
+<div id="t1t_1" class="t s1_1">Giftig indien ingesluk.</div>
+<div id="t1u_1" class="t s1_1">•	</div>
+<div id="t1v_1" class="t s1_1">Berg in ‘n koel plek.</div>
+<div id="t1w_1" class="t s1_1">•	</div>
+<div id="t1x_1" class="t s1_1">Berg weg van voedsel en voer.</div>
+<div id="t1y_1" class="t s1_1">•	</div>
+<div id="t1z_1" class="t s1_1">Hou buite bereik van kinders, oningeligte persone </div>
+<div id="t20_1" class="t s1_1">en diere.</div>
+<div id="t21_1" class="t s1_1">•	</div>
+<div id="t22_1" class="t s2_1">In geval van vergiftiging kontak ‘n geneesheer en toon </div>
+<div id="t23_1" class="t s2_1">hierdie etiket aan hom.</div>
+<div id="t24_1" class="t s1_1">•	</div>
+<div id="t25_1" class="t s2_1">Lugtoediening:</div>
+<div id="t26_1" class="t s1_1">Stel al die bewoners in die onmiddellike </div>
+<div id="t27_1" class="t s1_1">omgewing van die gebied wat bespuit gaan word in kennis </div>
+<div id="t28_1" class="t s1_1">en reik die nodige waarskuwings uit. </div>
+<div id="t29_1" class="t s1_1">Moet nie oor water of </div>
+<div id="t2a_1" class="t s1_1">aangrensende gebiede spuit of die spuitnewel toelaat om dit </div>
+<div id="t2b_1" class="t s1_1">te besoedel nie.</div>
+<div id="t2c_1" class="t s1_1">•	</div>
+<div id="t2d_1" class="t s2_1">Herbetreding:</div>
+<div id="t2e_1" class="t s1_1">Moet nie behandelde gebiede binne 1 dag na </div>
+<div id="t2f_1" class="t s1_1">toediening betree nie tensy beskermde oorklere gedra word.</div>
+<div id="t2g_1" class="t s1_1">Hoewel hierdie middel omvattend onder ’n groot verskeiden-</div>
+<div id="t2h_1" class="t s1_1">heid toestande getoets is, waarborg die registrasiehouer nie </div>
+<div id="t2i_1" class="t s1_1">dat dit onder alle toestande doeltreffend sal wees nie. </div>
+<div id="t2j_1" class="t s1_1">Die </div>
+<div id="t2k_1" class="t s1_1">werking en doeltreffendheid daarvan kan beïnvloed word deur </div>
+<div id="t2l_1" class="t s1_1">faktore soos abnormale grond-, klimaats- en bergingstoe-</div>
+<div id="t2m_1" class="t s1_1">stande, kwaliteit van die verdunningswater, verenigbaarheid </div>
+<div id="t2n_1" class="t s1_1">met ander stowwe wat nie op die etiket aangedui word nie en </div>
+<div id="t2o_1" class="t s1_1">die voorkoms van weerstand van die onkruid teen die betrokke </div>
+<div id="t2p_1" class="t s1_1">middel sowel as die metode, tyd en akkuraatheid van toedie-</div>
+<div id="t2q_1" class="t s1_1">ning. Verder aanvaar die registrasiehouer nie verantwoorde-</div>
+<div id="t2r_1" class="t s1_1">likheid vir skade aan gewasse, plantegroei en die omgewing </div>
+<div id="t2s_1" class="t s1_1">of nadelige invloede op mens of dier of vir ‘n gebrek aan </div>
+<div id="t2t_1" class="t s1_1">prestasie van die betrokke middel as gevolg van versuim van </div>
+<div id="t2u_1" class="t s1_1">die gebruiker om etiketaanwysings na te kom, of as gevolg </div>
+<div id="t2v_1" class="t s1_1">van die ontstaan van toestande wat nie kragtens die registrasie </div>
+<div id="t2w_1" class="t s1_1">voorsien kon word nie. </div>
+<div id="t2x_1" class="t s1_1">Raadpleeg die verskaffer in die geval </div>
+<div id="t2y_1" class="t s1_1">van enige onsekerheid.</div>
+<div id="t2z_1" class="t s2_1">2. VOORSORGMAATREËLS</div>
+<div id="t30_1" class="t s1_1">•	</div>
+<div id="t31_1" class="t s1_1">Moet nie die spuitnewel inasem nie.</div>
+<div id="t32_1" class="t s1_1">•	</div>
+<div id="t33_1" class="t s1_1">Was met seep en water na gebruik.</div>
+<div id="t34_1" class="t s1_1">•	</div>
+<div id="t35_1" class="t s1_1">Was besoedelde klere na gebruik.</div>
+<div id="t36_1" class="t s1_1">•	</div>
+<div id="t37_1" class="t s1_1">Moet nie eet, drink of rook tydens vermenging of toediening </div>
+<div id="t38_1" class="t s1_1">van die produk of voordat die hande en gesig gewas is nie.</div>
+<div id="t39_1" class="t s1_1">•	</div>
+<div id="t3a_1" class="t s1_1">Moet nader as 15 m vanaf boorgate, strome, riviere en damme </div>
+<div id="t3b_1" class="t s1_1">nie </div>
+<div id="t3c_1" class="t s1_1">meng en laai nie.</div>
+<div id="t3d_1" class="t s1_1">•	</div>
+<div id="t3e_1" class="t s1_1">Moet nie nader as 15 m van boorgate, strome en riviere </div>
+<div id="t3f_1" class="t s1_1">toedien nie.</div>
+<div id="t3g_1" class="t s1_1">•	</div>
+<div id="t3h_1" class="t s1_1">Moet nie nader as 60 m toedien van damme nie.</div>
+<div id="t3i_1" class="t s1_1">•	</div>
+<div id="t3j_1" class="t s1_1">Verseker dat geen terugsyfering plaasvind na boorgate </div>
+<div id="t3k_1" class="t s1_1">of damme wanneer die produk toegedien word deur ‘n </div>
+<div id="t3l_1" class="t s1_1">be sproeiing sisteem nie.</div>
+<div id="t3m_1" class="t s1_1">•	</div>
+<div id="t3n_1" class="t s1_1">Vermy spuitnewel op ander gewasse, weiveld en plekke wat </div>
+<div id="t3o_1" class="t s1_1">nie behandel moet word nie.</div>
+<div id="t3p_1" class="t s1_1">•	</div>
+<div id="t3q_1" class="t s1_1">Maak toedieningsapparaat skoon na gebruik. </div>
+<div id="t3r_1" class="t s1_1">Uitspoelwater </div>
+<div id="t3s_1" class="t s1_1">moet nie gewasse, weiveld, riviere, damme en boorgate </div>
+<div id="t3t_1" class="t s1_1">be soedel nie.</div>
+<div id="t3u_1" class="t s1_1">•	</div>
+<div id="t3v_1" class="t s1_1">Voorkom die besoedeling van voedsel, voer, drinkwater en </div>
+<div id="t3w_1" class="t s1_1">eetgerei.</div>
+<div id="t3x_1" class="t s1_1">•	</div>
+<div id="t3y_1" class="t s1_1">Spoel die leë houer drie keer uit met ‘n volume skoon water </div>
+<div id="t3z_1" class="t s1_1">gelykstaande aan ‘n minimum van 10 % van die houer. </div>
+<div id="t40_1" class="t s1_1">Gooi </div>
+<div id="t41_1" class="t s3_1">Product names marked ® or ™ , the ALLIANCE FRAME</div>
+<div id="t42_1" class="t s3_1">the SYNGENTA Logo and the PURPOSE ICON </div>
+<div id="t43_1" class="t s3_1">are Trademarks of a Syngenta Group Company</div>
+<div id="t44_1" class="t s4_1">HERBICIDE GROUP </div>
+<div id="t45_1" class="t s4_1">C1 </div>
+<div id="t46_1" class="t s4_1">ONKRUIDDODERGROEP</div>
+<div id="t47_1" class="t s5_1">Aktiewe bestanddele / Active ingredients:</div>
+<div id="t48_1" class="t s4_1">atrasien (triasien) /</div>
+<div id="t49_1" class="t s4_1">atrazine (triazine) </div>
+<div id="t4a_1" class="t s5_1">....................................................</div>
+<div id="t4b_1" class="t s4_1">291 g/</div>
+<div id="t4c_1" class="t s6_1">l</div>
+<div id="t4d_1" class="t s4_1">terbutilasien (triasien) /</div>
+<div id="t4e_1" class="t s4_1">terbuthylazine (triazine) </div>
+<div id="t4f_1" class="t s5_1">..........................................</div>
+<div id="t4g_1" class="t s4_1">291 g/</div>
+<div id="t4h_1" class="t s6_1">l</div>
+<div id="t4i_1" class="t s4_1">verwante aktiewe triasiene </div>
+<div id="t4j_1" class="t s5_1">/</div>
+<div id="t4k_1" class="t s4_1">related active triazines </div>
+<div id="t4l_1" class="t s5_1">.............................................</div>
+<div id="t4m_1" class="t s4_1">18 g/</div>
+<div id="t4n_1" class="t s6_1">l</div>
+<div id="t4o_1" class="t s7_1">UN 3082</div>
+<div id="t4p_1" class="t s8_1">Reg. No. </div>
+<div id="t4q_1" class="t s9_1">L3914</div>
+<div id="t4r_1" class="t s8_1">Act / Wet No. 36 of / van 1947 </div>
+<div id="t4s_1" class="t s9_1">N-AR 0812</div>
+<div id="t4t_1" class="t s8_1">(NAMIBIË / NAMIBIA) </div>
+<div id="t4u_1" class="t s9_1">W130353</div>
+<div id="t4v_1" class="t s8_1">(Botswana)</div>
+<div id="t4w_1" class="t s2_1">‘n </div>
+<div id="t4x_1" class="t s2_1">Suspensiekonsentraat </div>
+<div id="t4y_1" class="t s2_1">onkruid-</div>
+<div id="t4z_1" class="t s2_1">doder vir selektiewe beheer van die </div>
+<div id="t50_1" class="t s2_1">meeste eenjarige breëblaaronkruide </div>
+<div id="t51_1" class="t s2_1">asook jongosgras in mielies en graan-</div>
+<div id="t52_1" class="t s2_1">sorghum.</div>
+<div id="t53_1" class="t s2_1">A suspension concentrate herbicide </div>
+<div id="t54_1" class="t s2_1">for selective control of most annual </div>
+<div id="t55_1" class="t s2_1">broadleaf weeds as well as goose </div>
+<div id="t56_1" class="t s2_1">grass in maize and grain sorghum.</div>
+<div id="t57_1" class="t s8_1">Registration holder / Registrasiehouer:</div>
+<div id="t58_1" class="t s9_1">Syngenta SA (Pty) Ltd. / (Edms) Bpk.</div>
+<div id="t59_1" class="t s8_1">(Co./Mpy Reg. No. 1998/013761/07)</div>
+<div id="t5a_1" class="t s8_1">Private Bag / Privaatsak X 60</div>
+<div id="t5b_1" class="t s8_1">HALFWAY HOUSE, 1685 RSA. </div>
+<div id="t5c_1" class="t s8_1">Tel. (011) 541-4000</div>
+<div id="t5d_1" class="t s9_1">EMERGENCY TEL. / NOOD TEL. </div>
+<div id="t5e_1" class="t s9_1">++27 (0) 8312 33 911 </div>
+<div id="t5f_1" class="t s9_1">(Bateleur 911)</div>
+<div id="t5g_1" class="t s9_1">© SYNGENTA, AG</div>
+<div id="t5h_1" class="t s9_1">Batch No </div>
+<div id="t5i_1" class="t s9_1">Date of Manufacture</div>
+<div id="t5j_1" class="t s9_1">HARMFUL</div>
+<div id="t5k_1" class="t s9_1">SKADELIK</div>
+<div id="t5l_1" class="t s2_1">LEES VOLLEDIGE ETIKET DEEGLIK VOORDAT HIERDIE PRODUK GEBRUIK WORD</div>
+
+<!-- End text definitions -->
+
+<!-- Begin page background -->
+<div id="pg1Overlay" style="width:100%; height:100%; position:absolute; z-index:0; background-color:rgba(0,0,0,0); -webkit-user-select: none;"></div>
+<div id="pg1"><img src="index/1.png" id="pdf1" style="width:909px; height:1286px; background-color:white;"/></div>
+
+<!-- End page background -->
+
+<!-- Begin page loading JS -->
+<script type="text/javascript">
+var isIE = false;
+var f1 = [['t1_1',1304],['t2_1',445],['t4_1',1076],['t5_1',1014],['t6_1',736],['t8_1',1373],['t9_1',210],['ta_1',1118],['tb_1',1051],['tc_1',285],['td_1',1373],['tf_1',1211],['tg_1',452],['th_1',896],['ti_1',562],['tj_1',759],['tk_1',572],['tl_1',605],['tm_1',641],['tn_1',508],['to_1',617],['tp_1',452],['tq_1',896],['tr_1',1373],['ts_1',554],['tt_1',448],['tu_1',349],['tv_1',695],['tw_1',648],['tx_1',1373],['ty_1',1373],['tz_1',1373],['t11_1',442],['t12_1',808],['t13_1',509],['t14_1',992],['t16_1',1304],['t17_1',964],['t18_1',303],['t19_1',1304],['t1a_1',404],['t1c_1',1304],['t1d_1',716],['t1e_1',1373],['t1f_1',847],['t1g_1',645],['t1h_1',1373],['t1i_1',617],['t1j_1',647],['t1k_1',686],['t1m_1',1304],['t1n_1',874],['t1p_1',1304],['t1r_1',486],['t1t_1',447],['t1v_1',422],['t1x_1',655],['t1z_1',1046],['t20_1',183],['t22_1',1304],['t23_1',537],['t26_1',926],['t27_1',1304],['t28_1',791],['t29_1',473],['t2a_1',1304],['t2b_1',336],['t2e_1',968],['t2f_1',1277],['t2g_1',1304],['t2h_1',1304],['t2i_1',1191],['t2k_1',1304],['t2l_1',1304],['t2m_1',1304],['t2n_1',1304],['t2o_1',1304],['t2p_1',1304],['t2q_1',1304],['t2r_1',1304],['t2s_1',1304],['t2t_1',1304],['t2u_1',1304],['t2v_1',1304],['t2w_1',486],['t2x_1',783],['t2y_1',487],['t2z_1',654],['t31_1',753],['t33_1',755],['t35_1',719],['t37_1',1304],['t38_1',1253],['t3a_1',1304],['t3c_1',359],['t3e_1',1304],['t3f_1',244],['t3h_1',1032],['t3j_1',1305],['t3k_1',1304],['t3l_1',495],['t3n_1',1304],['t3o_1',603],['t3q_1',976],['t3s_1',1304],['t3t_1',281],['t3v_1',1304],['t3y_1',1304],['t3z_1',1172],['t41_1',510],['t42_1',427],['t43_1',422],['t44_1',348],['t47_1',654],['t48_1',328],['t49_1',301],['t4b_1',107],['t4d_1',404],['t4e_1',407],['t4g_1',106],['t4i_1',470],['t4k_1',395],['t4m_1',86],['t4o_1',122],['t4p_1',129],['t4r_1',453],['t4s_1',170],['t4t_1',309],['t4z_1',889],['t50_1',889],['t51_1',889],['t53_1',889],['t54_1',889],['t55_1',889],['t56_1',810],['t57_1',555],['t58_1',574],['t59_1',539],['t5a_1',425],['t5b_1',454],['t5c_1',287],['t5d_1',516],['t5e_1',325],['t5f_1',221],['t5g_1',290],['t5h_1',149],['t5i_1',331],['t5l_1',1945]];
+var c1 = 0;
+function fontAdjustments1(){;
+	if (c1<f1.length) {
+	if (isIE) f1[c1][1] = f1[c1][1] * 4;
+		adjustWordSpacing(f1[c1][0],f1[c1][1]);
+		c1++;
+		if (c1%10 == 0) {
+			setTimeout(function(){fontAdjustments1()},0);
+		} else {
+			fontAdjustments1();
+		}
+	}
+};
+function load1(){
+	var timeout = 100;
+	if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) timeout = 500;
+	setTimeout(fontAdjustments1,timeout);
+}
+</script>
+<!--[if lt IE 9]><script type="text/javascript">
+isIE = true;
+
+var divCount = 202;
+for (var i = 1; i < divCount; i++) {
+	var div = document.getElementById("t" + i.toString(36) + "_1");
+	div.style.top = (div.offsetTop * 4) + "px";
+	div.style.left = (div.offsetLeft * 4) + "px";
+	div.style.zoom = "25%";}
+</script><![endif]-->
+<!-- End page loading JS -->
+
+</div>
+
+</div>
+<div id="brand" style="margin:0 auto; width:94px; padding:5px; clear: both;">
+<a href="../../index.html">
+<img title="PDF to HTML5 Conversion by IDRsolutions" alt="PDF to HTML5 Conversion by IDRsolutions" style="border:0;" src="icons/logo.png" />
+</a>
+</div>
+<script type="text/javascript">
+	makeNavBar(5,1,909,1286,0);
+</script>
+</body>
+</html>
