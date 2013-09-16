@@ -18,16 +18,16 @@
  under the License.
 -->
 <widget xmlns     = "http://www.w3.org/ns/widgets"
-        id        = "io.cordova.helloCordova"
-        version   = "2.0.0">
-    <name>Hello Cordova</name>
+        id        = "za.co.synlibf"
+        version   = "2.9.0">
+    <name>Syngenta Label Library</name>
 
     <description>
-        A sample Apache Cordova application that responds to the deviceready event.
+        A repository of labels and package inserts
     </description>
 
-    <author href="http://cordova.io" email="dev@cordova.apache.org">
-        Apache Cordova Team
+    <author href="http://www.syntagm.co.za" email="syntagmresearch@gmail.com">
+        Syntagm Cordova Team
     </author>
 
     <access origin="*"/>
