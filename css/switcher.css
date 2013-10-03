@@ -62,7 +62,7 @@
 	#reset {margin: 0 0 15px 2px;}
 	#reset a {color: #fff; font-size: 12px; padding: 5px 14px; box-shadow: none; border-radius: 1px; }
 	
-	.blue { background: #169fe6; }
+	.blue { background: #000166; }
 	.green { background: #7cb600; }
 	.orange {background: #fa5b0f; }
 	.navy { background: #495d7f; }
@@ -75,7 +75,7 @@
 	.celadon { background: #74aea1;}
 	.brown { background: #784e3d; }
 	.cherry { background: #911938;}
-	a.gray { background: #707070;}
+	a.gray { background: #878753;}
 	.purple { background: #6957af; }
 	.olive { background: #b3c211; }
 	.dark { background: #404040; }
